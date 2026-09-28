@@ -1,0 +1,512 @@
+提示词（可以参考同目录下面的showcase）：
+STYLEKIT_STYLE_REFERENCE
+style_name: 固定侧边栏布局
+style_slug: sidebar-fixed
+style_source: /styles/sidebar-fixed
+
+# Hard Prompt
+
+## 什么时候用
+当你希望 AI 严格按风格规则生成代码时使用。它是生产界面最稳的默认选择。
+
+## 怎么用
+- 把完整提示词复制到 ChatGPT、Claude、Cursor 或其他编码助手。
+- 在提示词后追加具体产品、页面或组件需求。
+- 生成后按禁止项和交互状态检查，确认没有风格漂移。
+
+请严格遵守以下风格规则并保持一致性，禁止风格漂移。
+
+## 执行要求
+
+- 优先保证风格一致性，其次再做创意延展。
+- 遇到冲突时以禁止项为最高优先级。
+- 输出前自检：颜色、排版、间距、交互是否仍属于该风格。
+
+## Style Rules
+
+You are a frontend expert specializing in Fixed Sidebar layout. All generated code must strictly follow these constraints:
+
+## 必须遵守
+
+- 侧边栏使用 fixed 或 sticky 定位
+- 主内容区设置左边距 ml-64 或 pl-64
+- 移动端侧边栏可收起为抽屉或汉堡菜单
+- 提供展开/收起侧边栏的控制
+- 侧边栏宽度统一 w-64 (256px) 或 w-72 (288px)
+- 当前页面在侧边栏中高亮显示
+- 侧边栏可以包含品牌 logo、导航、用户信息
+- 导航项交互保持快速克制（duration-150），优先颜色和轻微图标位移反馈
+- 当前激活项使用稳定锚点（如左侧强调线）而非浮动动画
+- 主内容卡片 hover 仅允许微弱抬升和轻量阴影扩散
+
+## 绝对禁止
+
+- 禁止侧边栏过宽影响主内容区
+- 禁止移动端仍保持展开侧边栏
+- 禁止忽略当前页面状态指示
+- 禁止导航层级过深难以操作
+- 禁止侧边栏内容溢出无滚动
+- 禁止侧边栏菜单使用弹跳、旋转等花哨动画
+- 禁止激活项缺少清晰视觉锚点
+
+## Absolute Prohibitions
+
+- Do NOT make sidebar too wide (max 280px)
+- Do NOT keep sidebar expanded on mobile
+- Do NOT forget current page indicator
+- Do NOT create overly deep navigation
+- Do NOT ignore sidebar overflow scroll
+
+## Structure
+
+Sidebar (top to bottom):
+1. Logo/Brand area
+2. Search (optional)
+3. Main navigation (scrollable)
+4. Secondary nav or settings
+5. User profile/account
+
+Main content:
+- Left margin matches sidebar width
+- Own scrolling context
+- Header area for page title
+- Content area below
+
+## Responsive
+
+Desktop (1024px+):
+- Full sidebar visible
+- Main content with left margin
+
+Tablet/Mobile (< 1024px):
+- Sidebar as off-canvas drawer
+- Hamburger menu button
+- Overlay when sidebar open
+- Main content full width
+
+## Navigation
+
+- Group related items
+- Use icons + labels
+- Highlight active item
+- Support nested items (accordion)
+- Tooltips when collapsed
+
+## Self-Check
+
+After generating code, verify:
+1. Sidebar is fixed position
+2. Main content has correct margin
+3. Mobile has hamburger menu
+4. Current page is highlighted
+5. Sidebar scrolls if content overflows
+
+## Animation & Interaction Rules
+
+- Frictionless Utility: 高交互区统一使用 duration-150，避免花哨动效打断效率。
+- Magnetic Icon Shift: hover 时 icon 轻微右移（translate-x-0.5），引导视线进入主内容区。
+- Solid Active State: 当前项保持稳定锚点（左侧强调线或加粗边界），避免漂浮感。
+- Content Lift: 主区卡片 hover 仅允许 -translate-y-0.5 和轻量阴影，保证阅读稳定。
+
+---
+
+# Fixed Sidebar (固定侧边栏布局) Design System
+
+> 固定位置的侧边导航栏与可滚动主内容区的应用布局，适合后台管理、文档站点、仪表盘、SaaS 应用。
+
+## 核心理念
+
+Fixed Sidebar（固定侧边栏布局）是应用型界面的经典布局，提供持久可见的导航同时最大化内容展示空间。
+
+核心理念：
+- 导航常驻：重要入口始终可及
+- 内容优先：主区域最大化利用
+- 层级清晰：侧边栏体现信息架构
+- 响应适配：小屏幕优雅收起
+
+设计原则：
+- 视觉一致性：所有组件必须遵循统一的视觉语言，从色彩到字体到间距保持谐调
+- 层次分明：通过颜色深浅、字号大小、留白空间建立清晰的信息层级
+- 交互反馈：每个可交互元素都必须有明确的 hover、active、focus 状态反馈
+- 响应式适配：设计必须在移动端、平板、桌面端上保持一致的体验
+- 无障碍性：确保色彩对比度符合 WCAG 2.1 AA 标准，所有交互元素可键盘访问
+
+---
+
+## Token 字典（精确 Class 映射）
+
+### 边框
+```
+宽度: border
+颜色: border-zinc-200
+圆角: rounded-lg
+```
+
+### 阴影
+```
+小: shadow-sm
+中: shadow-sm
+大: shadow-md
+悬停: hover:shadow-md
+聚焦: focus:shadow-sm
+```
+
+### 交互效果
+```
+悬停位移: （无）
+悬停缩放: （无）
+悬停透明度: hover:opacity-90
+过渡动画: transition-colors duration-200
+按下状态: active:scale-95
+```
+
+### 字体
+```
+标题: font-semibold tracking-tight
+正文: font-sans
+等宽: font-mono
+```
+
+### 字号
+```
+Hero: text-2xl md:text-3xl
+H1: text-xl md:text-2xl
+H2: text-lg md:text-xl
+H3: text-base md:text-lg
+正文: text-sm
+小字: text-xs
+```
+
+### 间距
+```
+Section: py-6 md:py-8
+容器: px-4 md:px-6 lg:px-8
+卡片: p-4 md:p-6
+小间距: gap-2 md:gap-3
+中间距: gap-4 md:gap-6
+大间距: gap-6 md:gap-8
+```
+
+### 颜色角色
+```
+背景主色: bg-zinc-50
+背景辅色: bg-white
+背景强调色: bg-blue-500, bg-emerald-500, bg-amber-500, bg-red-500
+正文主色: text-zinc-900
+正文辅色: text-zinc-600
+正文弱化色: text-zinc-400
+按钮主色: bg-blue-500 text-white
+按钮辅色: bg-zinc-100 text-zinc-700
+```
+
+---
+
+## [FORBIDDEN] 绝对禁止
+
+以下 class 在本风格中**绝对禁止使用**，生成时必须检查并避免：
+
+### 禁止的 Class
+- `rounded-2xl`
+- `rounded-3xl`
+- `rounded-full`
+- `shadow-2xl`
+- `font-black`
+- `font-extrabold`
+- `text-4xl`
+- `text-5xl`
+- `text-6xl`
+
+### 禁止的模式
+- 匹配 `^rounded-(?:2xl|3xl|full)`
+- 匹配 `^shadow-2xl`
+- 匹配 `^text-[456]xl`
+
+### 禁止原因
+- `rounded-2xl`: Sidebar Fixed uses compact rounded-lg for functional UI elements
+- `shadow-2xl`: Sidebar Fixed uses subtle shadows for a clean dashboard feel
+- `text-5xl`: Sidebar Fixed uses compact typography appropriate for data-dense layouts
+
+> WARNING: 如果你的代码中包含以上任何 class，必须立即替换。
+
+---
+
+## [REQUIRED] 必须包含
+
+### 按钮必须包含
+```
+rounded-lg
+text-sm font-medium
+transition-colors
+```
+
+### 卡片必须包含
+```
+bg-white
+rounded-xl
+border border-zinc-200
+shadow-sm
+```
+
+### 输入框必须包含
+```
+bg-zinc-100
+border-0
+rounded-lg
+text-sm
+focus:outline-none focus:ring-2 focus:ring-blue-500/30
+```
+
+---
+
+## [COMPARE] Fixed Sidebar 错误 vs 正确对比
+
+以下错误示例只代表“未经过当前风格适配的通用默认值”，不要把错误示例当成视觉建议。
+
+### 按钮
+
+[WRONG] **错误示例**（通用组件库默认样式，不要直接复制）：
+```html
+<button class="{GENERIC_LIBRARY_BUTTON_DEFAULT}">
+  点击我
+</button>
+```
+
+[CORRECT] **正确示例**（使用当前风格的 token）：
+```html
+<button class="rounded-lg text-sm font-medium transition-colors bg-blue-500 text-white">
+  点击我
+</button>
+```
+
+### 卡片
+
+[WRONG] **错误示例**（未经当前风格适配的通用卡片）：
+```html
+<div class="{GENERIC_LIBRARY_CARD_DEFAULT}">
+  <h3>{TITLE}</h3>
+</div>
+```
+
+[CORRECT] **正确示例**（使用当前风格的 card token）：
+```html
+<div class="bg-white rounded-xl border border-zinc-200 shadow-sm p-4 md:p-6">
+  <h3 class="font-semibold tracking-tight text-base md:text-lg">{TITLE}</h3>
+</div>
+```
+
+### 输入框
+
+[WRONG] **错误示例**（未经当前风格适配的通用输入框）：
+```html
+<input class="{GENERIC_LIBRARY_INPUT_DEFAULT}" />
+```
+
+[CORRECT] **正确示例**（使用当前风格的 input token）：
+```html
+<input class="bg-zinc-100 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30" placeholder="{PLACEHOLDER}" />
+```
+
+---
+
+## [TEMPLATES] Fixed Sidebar 页面骨架模板
+
+以下骨架只使用当前风格的 token。替换 `{PLACEHOLDER}` 时，不要移除或替换这些 token：
+
+### 导航栏骨架
+```html
+<nav class="bg-zinc-50 text-zinc-900 border border-zinc-200 px-4 md:px-6 lg:px-8">
+  <div class="flex items-center justify-between max-w-6xl mx-auto gap-4 md:gap-6">
+    <a href="/" class="font-semibold tracking-tight text-base md:text-lg">
+      {LOGO_TEXT}
+    </a>
+    <div class="flex gap-4 md:gap-6 font-sans text-xs">
+      {NAV_LINKS}
+    </div>
+  </div>
+</nav>
+```
+
+### Hero 区块骨架
+```html
+<section class="bg-blue-500 text-zinc-900 py-6 md:py-8 px-4 md:px-6 lg:px-8">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="font-semibold tracking-tight text-2xl md:text-3xl">
+      {HEADLINE}
+    </h1>
+    <p class="font-sans text-sm max-w-xl">
+      {SUBHEADLINE}
+    </p>
+    <button class="rounded-lg text-sm font-medium transition-colors bg-blue-500 text-white">
+      {CTA_TEXT}
+    </button>
+  </div>
+</section>
+```
+
+### 卡片网格骨架
+```html
+<section class="bg-zinc-50 text-zinc-900 py-6 md:py-8 px-4 md:px-6 lg:px-8">
+  <div class="max-w-6xl mx-auto">
+    <h2 class="font-semibold tracking-tight text-lg md:text-xl">{SECTION_TITLE}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <!-- Card template - repeat for each card -->
+      <div class="bg-white rounded-xl border border-zinc-200 shadow-sm p-4 md:p-6">
+        <h3 class="font-semibold tracking-tight text-base md:text-lg">{CARD_TITLE}</h3>
+        <p class="font-sans text-sm text-zinc-400">{CARD_DESCRIPTION}</p>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+### 表单输入骨架
+```html
+<input class="bg-zinc-100 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30" placeholder="{PLACEHOLDER}" />
+```
+
+### 页脚骨架
+```html
+<footer class="bg-white text-zinc-600 py-6 md:py-8 px-4 md:px-6 lg:px-8">
+  <div class="max-w-6xl mx-auto">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+      <div>
+        <span class="font-semibold tracking-tight text-base md:text-lg">{LOGO_TEXT}</span>
+        <p class="font-sans text-xs">{TAGLINE}</p>
+      </div>
+      <div>
+        <h4 class="font-semibold tracking-tight text-base md:text-lg">{COLUMN_TITLE}</h4>
+        <ul class="font-sans text-xs">
+          {FOOTER_LINKS}
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+```
+
+---
+
+## [CHECKLIST] Fixed Sidebar 生成后自检清单
+
+**输出代码前，逐项验证当前风格的 token 和规则。如有违反，先修正再交付：**
+
+### Token 检查
+- [ ] 按钮包含： `rounded-lg text-sm font-medium transition-colors`
+- [ ] 卡片包含： `bg-white rounded-xl border border-zinc-200 shadow-sm`
+- [ ] 输入框包含： `bg-zinc-100 border-0 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30`
+
+### 禁止项检查
+- [ ] 没有使用 `rounded-2xl`
+- [ ] 没有使用 `rounded-3xl`
+- [ ] 没有使用 `rounded-full`
+- [ ] 没有使用 `shadow-2xl`
+- [ ] 没有使用 `font-black`
+- [ ] 没有使用 `font-extrabold`
+- [ ] 没有使用 `text-4xl`
+- [ ] 没有使用 `text-5xl`
+
+### 风格规则检查
+- [ ] 侧边栏使用 fixed 或 sticky 定位
+- [ ] 主内容区设置左边距 ml-64 或 pl-64
+- [ ] 移动端侧边栏可收起为抽屉或汉堡菜单
+- [ ] 提供展开/收起侧边栏的控制
+- [ ] 侧边栏宽度统一 w-64 (256px) 或 w-72 (288px)
+
+### 风格漂移检查
+- [ ] 没有违反：禁止侧边栏过宽影响主内容区
+- [ ] 没有违反：禁止移动端仍保持展开侧边栏
+- [ ] 没有违反：禁止忽略当前页面状态指示
+- [ ] 没有违反：禁止导航层级过深难以操作
+- [ ] 没有违反：禁止侧边栏内容溢出无滚动
+
+### 通用交付检查
+- [ ] 响应式布局在手机、平板和桌面下稳定，没有横向溢出
+- [ ] 所有交互元素有清晰焦点、可访问名称和 reduced-motion 方案
+- [ ] 文本对比度达到 WCAG AA，且没有用颜色单独传递状态
+- [ ] 结果仍然能够一眼识别为 Fixed Sidebar
+
+---
+
+## [EXAMPLES] 示例 Prompt
+
+### 1. 管理后台
+
+完整的后台管理布局
+
+```
+Create an admin dashboard with fixed sidebar:
+1. Fixed sidebar with logo, search, navigation, user
+2. Navigation groups: Dashboard, Content, Users, Settings
+3. Active page highlighted in nav
+4. Main area with header and content grid
+5. Mobile: hamburger menu, slide-out sidebar
+6. Collapsible sidebar option (icons only)
+7. User dropdown at bottom of sidebar
+Professional look with blue accent color
+```
+
+### 2. 文档站点
+
+技术文档的侧边导航布局
+
+```
+Create a documentation site with fixed sidebar:
+1. Sidebar with doc sections (Getting Started, API, Examples)
+2. Nested navigation with accordion expand
+3. Search at top of sidebar
+4. Main content area with article
+5. Right sidebar with table of contents (optional)
+6. Previous/Next article navigation at bottom
+7. Mobile: slide-out sidebar menu
+Clean minimal design focused on readability
+```
+
+### 3. SaaS 应用
+
+SaaS 产品的应用框架
+
+```
+Create a SaaS application shell with fixed sidebar:
+1. Sidebar with workspace switcher at top
+2. Main nav: Home, Projects, Team, Reports
+3. Secondary nav at bottom: Settings, Help
+4. Notification badge on nav item
+5. Main content with toolbar and data table
+6. Mobile: slide-out navigation
+7. Collapsible sidebar with keyboard shortcut hint
+Modern SaaS aesthetic with subtle shadows
+```
+
+## 绝对禁止（匹配即拒绝）
+
+以下模式一旦出现，视为风格违规——不找借口，直接重写。
+
+- 侧边栏过宽影响主内容区
+- 移动端仍保持展开侧边栏
+- 忽略当前页面状态指示
+- 导航层级过深难以操作
+- 侧边栏内容溢出无滚动
+- 侧边栏菜单使用弹跳、旋转等花哨动画
+- 激活项缺少清晰视觉锚点
+
+## 自检清单（交付前逐条确认）
+
+如果任何一条不通过，说明风格漂移了——修改后再交付。
+
+- [ ] 没有紫色到蓝色的渐变
+- [ ] 没有使用 Inter / Roboto / Geist 等过度使用的字体
+- [ ] 没有嵌套卡片（卡片里面套卡片）
+- [ ] 没有在彩色背景上放灰色文字
+- [ ] 正文对比度满足 WCAG AA（≥4.5:1）
+- [ ] 没有 bounce / elastic 缓动曲线
+- [ ] 动效有 prefers-reduced-motion 备选方案
+- [ ] 正文行宽不超过 65-75 个字符
+- [ ] 没有单侧粗边框装饰（border-left/right accent stripe）
+- [ ] 没有渐变文字（background-clip: text）
+- [ ] 没有把玻璃态（glassmorphism）当作默认风格
+- [ ] 没有 tiny uppercase tracked eyebrow 放在每个 section 标题上面
+- [ ] 禁止侧边栏过宽影响主内容区
+- [ ] 禁止移动端仍保持展开侧边栏
+- [ ] 禁止忽略当前页面状态指示
+- [ ] 禁止导航层级过深难以操作
+- [ ] 禁止侧边栏内容溢出无滚动
