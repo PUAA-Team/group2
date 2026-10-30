@@ -1,0 +1,113 @@
+/* 每套体系独立定义文字、密度和控件语义；页面复用业务结构。 */
+body[data-system="ali"] {
+  --font: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+  --body: 14px; --title: 22px; --title-weight: 500; --section-title: 16px;
+  --canvas: #f4f5f7; --text: #252525; --muted: #737780; --border: #e3e5e8;
+  --link: #0070cc; --primary: #c94c00; --primary-hover: #ae4000; --brand: #ff7d28;
+  --control: 32px; --control-font: 14px; --control-radius: 2px; --control-gap: 8px;
+  --button-padding: 14px; --button-bg: #fff; --button-border: #b8bec7; --button-weight: 400;
+  --input-border: #b8bec7; --input-padding: 10px; --focus-shadow: none;
+  --disabled-bg: #f5f6f7; --disabled-text: #a9afb8; --disabled-border: #d9dde2;
+  --hover-bg: #f3f7fc; --selected-bg: #eaf4ff; --danger-border: #d3a7a5;
+  --global-height: 50px; --global-bg: #22252b; --global-text: #fafafa; --global-border: #53565d;
+  --avatar-bg: #58616d; --avatar-text: #fff; --avatar-radius: 50%;
+  --sidebar: 208px; --nav-bg: #eaedf1; --nav-border: #d8dde3; --nav-text: #40464e;
+  --nav-selected-bg: #dce5ef; --nav-selected-text: #1768aa; --nav-hover: #dfe4ea;
+  --nav-padding: 0; --nav-height: 34px; --nav-font: 13px; --nav-weight: 500; --nav-radius: 0px;
+  --nav-selected-weight: 500; --nav-product-padding: 0 14px; --nav-product-size: 15px;
+  --breadcrumb-height: 38px; --breadcrumb-bg: transparent; --page-padding: 24px; --page-top: 8px;
+  --heading-gap: 18px; --section-gap: 20px; --panel-padding: 20px; --panel-radius: 0px; --panel-border: 1px solid #e0e3e7;
+  --tab-height: 42px; --tab-font: 14px; --tab-padding: 10px 0; --tab-gap: 28px; --tab-line: 2px; --tab-weight: 400; --tab-active: #c94c00;
+  --toolbar-padding: 16px 20px; --search-width: 250px;
+  --row: 58px; --table-min: 1030px; --table-font: 14px; --table-head-font: 12px; --table-head-weight: 400;
+  --table-head-height: 38px; --table-head-bg: #f5f6f8; --table-head-text: #606771; --table-border: #e9ebee;
+  --cell-padding: 14px; --cell-vertical: 8px; --task-font: 14px; --task-weight: 400; --meta-font: 12px; --table-action-font: 12px;
+  --status-font: 14px; --status-gap: 6px; --status-padding: 0px; --status-radius: 0px;
+  --running: #0070cc; --success: #228443; --waiting: #b26900; --error: #bf3028;
+  --running-bg: transparent; --success-bg: transparent; --waiting-bg: transparent; --error-bg: transparent; --neutral-bg: transparent;
+  --progress-height: 3px; --progress-radius: 0px; --progress-track: #e5e8ec; --progress-fill: #3686c6;
+  --pagination-padding: 16px 20px; --page-size: 28px; --page-border: #d8dce2; --page-current: #fff;
+  --label-font: 12px; --summary-size: 26px; --metric-size: 24px; --detail-padding: 20px; --info-gap: 16px 32px; --dd-margin: 5px 0 0;
+  --chart-gap: 20px; --chart-padding: 0px; --chart-border: 0px; --chart-primary: #0070cc; --chart-secondary: #cf7500;
+  --chart-width: 2px; --grid-color: #e7e9ec; --grid-dash: 0; --eval-dash: 5 3;
+  --log-bg: #f7f8fa; --log-text: #303b48; --resource-summary-bg: #fff; --resource-summary-padding: 20px;
+  --resource-summary-border: 1px solid #e0e3e7; --node-footer-bg: #f8fafc; --specimen-padding: 22px;
+  --field-gap: 18px; --field-label-gap: 12px; --form-indent: 102px; --form-section-padding: 18px 0 12px;
+  --form-section-margin: 4px 0 14px; --form-section-border: 1px solid #e9ebee;
+  --check-size: 14px; --check-radius: 1px; --alert-padding: 10px 12px; --alert-bg: #f0f6fd; --alert-border: #c6dcf5;
+  --step-size: 24px; --step-radius: 2px; --options-padding: 0px; --option-height: 32px; --option-radius: 0px;
+  --overlay-shadow: 0 2px 8px #18243320; --modal-width: 580px; --modal-radius: 2px; --modal-shadow: 0 6px 30px #1114;
+  --modal-title: 18px; --modal-header-padding: 14px 24px; --modal-header-border: 1px solid #e3e5e8;
+  --modal-body-padding: 24px; --modal-footer-padding: 14px 24px; --modal-footer-border: 1px solid #e3e5e8; --modal-footer-bg: #fafafa;
+  --drawer-width: 460px; --backdrop: #0005;
+}
+body[data-system="ali"] .field { align-items: flex-start; flex-wrap: wrap; }
+body[data-system="ali"] .field > span:first-child { width: 90px; flex-shrink: 0; padding-top: 6px; color: #5e6570; }
+body[data-system="ali"] .field > .input, body[data-system="ali"] .field > .select-wrap { flex: 1; min-width: 0; }
+body[data-system="ali"] .field > .field-error { margin-left: 102px; margin-top: -10px; }
+body[data-system="ali"] .field-pair { grid-template-columns: 1fr; gap: 0; }
+body[data-system="ali"] .form-grid, body[data-system="ali"] .parameter-fields { display: block; }
+body[data-system="ali"] .metric-summary { padding: 0 0 20px; border-bottom: 1px solid #e7e9ec; }
+body[data-system="ali"] .resource-table { min-width: 1000px; }
+
+body[data-system="tencent"] {
+  --font: "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  --body: 14px; --title: 24px; --title-weight: 600; --section-title: 16px;
+  --canvas: #f3f5f8; --text: #182334; --muted: #6b7685; --border: #e4e8ee;
+  --link: #0052d9; --primary: #0052d9; --primary-hover: #003cab; --brand: #0052d9;
+  --control: 36px; --control-font: 14px; --control-radius: 4px; --control-gap: 10px;
+  --button-padding: 18px; --button-bg: #fff; --button-border: #c5cdd8; --button-weight: 500;
+  --input-border: #c5cdd8; --input-padding: 12px; --focus-shadow: 0 0 0 3px #0052d912;
+  --disabled-bg: #f1f3f6; --disabled-text: #a4adba; --disabled-border: #e4e8ee;
+  --hover-bg: #f4f7fc; --selected-bg: #edf3ff; --danger-border: #e4b6b6;
+  --global-height: 56px; --global-bg: #fff; --global-text: #1c2b42; --global-border: #e2e7ee;
+  --avatar-bg: #e7efff; --avatar-text: #0052d9; --avatar-radius: 4px;
+  --sidebar: 224px; --nav-bg: #fff; --nav-border: #e4e8ee; --nav-text: #465368;
+  --nav-selected-bg: #eaf1ff; --nav-selected-text: #0052d9; --nav-hover: #f3f6fb;
+  --nav-padding: 0 12px; --nav-height: 40px; --nav-font: 14px; --nav-weight: 600; --nav-radius: 4px;
+  --nav-selected-weight: 600; --nav-product-padding: 0 22px; --nav-product-size: 16px;
+  --breadcrumb-height: 44px; --breadcrumb-bg: transparent; --page-padding: 28px; --page-top: 10px;
+  --heading-gap: 20px; --section-gap: 20px; --panel-padding: 20px; --panel-radius: 4px; --panel-border: 1px solid #e4e8ee;
+  --tab-height: 44px; --tab-font: 14px; --tab-padding: 10px 0; --tab-gap: 28px; --tab-line: 2px; --tab-weight: 500; --tab-active: #0052d9;
+  --toolbar-padding: 16px 20px; --search-width: 260px;
+  --row: 64px; --table-min: 980px; --table-font: 14px; --table-head-font: 13px; --table-head-weight: 500;
+  --table-head-height: 44px; --table-head-bg: #f5f7fa; --table-head-text: #5c6a7e; --table-border: #edf0f4;
+  --cell-padding: 18px; --cell-vertical: 10px; --task-font: 14px; --task-weight: 500; --meta-font: 12px; --table-action-font: 14px;
+  --status-font: 12px; --status-gap: 6px; --status-padding: 3px 8px; --status-radius: 3px;
+  --running: #0052d9; --success: #148245; --waiting: #9c5c00; --error: #be3030;
+  --running-bg: #eaf1ff; --success-bg: #eaf8ef; --waiting-bg: #fff4df; --error-bg: #fff0ef; --neutral-bg: #f0f2f5;
+  --progress-height: 6px; --progress-radius: 3px; --progress-track: #ebeff5; --progress-fill: #0052d9;
+  --pagination-padding: 20px 24px; --page-size: 32px; --page-border: #e0e5ec; --page-current: #edf3ff;
+  --label-font: 13px; --summary-size: 26px; --metric-size: 26px; --detail-padding: 22px; --info-gap: 20px 32px; --dd-margin: 6px 0 0;
+  --chart-gap: 24px; --chart-padding: 20px; --chart-border: 1px solid #e4e8ee; --chart-primary: #0052d9; --chart-secondary: #159b83;
+  --chart-width: 3px; --grid-color: #dce3ee; --grid-dash: 3 3; --eval-dash: 0;
+  --log-bg: #202c3e; --log-text: #e1e8f2; --resource-summary-bg: #fff; --resource-summary-padding: 24px 28px;
+  --resource-summary-border: 0px; --node-footer-bg: #f7f9fc; --specimen-padding: 28px;
+  --field-gap: 18px; --field-label-gap: 7px; --form-indent: 0px; --form-section-padding: 0;
+  --form-section-margin: 26px 0 18px; --form-section-border: 0px;
+  --check-size: 16px; --check-radius: 3px; --alert-padding: 12px 16px; --alert-bg: #f0f5ff; --alert-border: #d1e0ff;
+  --step-size: 28px; --step-radius: 50%; --options-padding: 4px; --option-height: 38px; --option-radius: 4px;
+  --overlay-shadow: 0 5px 18px #1c35551c; --modal-width: 680px; --modal-radius: 8px; --modal-shadow: 0 16px 64px #13284435;
+  --modal-title: 20px; --modal-header-padding: 18px 24px; --modal-header-border: 0px;
+  --modal-body-padding: 0 28px 24px; --modal-footer-padding: 18px 28px; --modal-footer-border: 1px solid #e4e8ee; --modal-footer-bg: #fff;
+  --drawer-width: 520px; --backdrop: #15253b66;
+}
+body[data-system="tencent"] .global { border-bottom: 1px solid #e4e8ee; }
+body[data-system="tencent"] .field { flex-direction: column; }
+body[data-system="tencent"] .field > span:first-child { font-weight: 500; color: #39465a; }
+body[data-system="tencent"] .task-overview { background: #fff; border-radius: 6px; padding: 20px 0; }
+body[data-system="tencent"] .task-overview > button { border: 0; background: #fff; padding: 0 28px; }
+body[data-system="tencent"] .task-overview > button + button { border-left: 1px solid #e4e8ee; }
+body[data-system="tencent"] .task-overview > button:hover { background: #f7f9fc; }
+body[data-system="tencent"] .jobs-table .progress-cell { margin-top: 8px; width: 110px; }
+body[data-system="tencent"] .jobs-table .sub-text { margin-top: 5px; }
+body[data-system="tencent"] .jobs-table th:first-child, body[data-system="tencent"] .jobs-table td:first-child { padding-left: 24px; }
+body[data-system="tencent"] .detail-status { padding-bottom: 20px; border-bottom: 1px solid #e4e8ee; }
+body[data-system="tencent"] .metric-summary > div + div { border-left: 1px solid #e4e8ee; padding-left: 24px; }
+body[data-system="tencent"] .detail-panel { overflow: hidden; }
+@media (max-width: 520px) {
+  body[data-system="ali"] .field > span:first-child { width: auto; padding: 0; }
+  body[data-system="ali"] .field > .field-error { margin-left: 0; margin-top: 0; }
+  body[data-system="tencent"] .task-overview > button { padding: 0 12px; }
+  body[data-system="tencent"] .metric-summary > div + div { border: 0; padding-left: 0; }
+}

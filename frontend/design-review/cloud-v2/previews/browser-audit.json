@@ -1,0 +1,453 @@
+{
+  "version": "palette-3",
+  "responsive": [
+    {
+      "system": "ali",
+      "page": "jobs",
+      "size": {
+        "width": 1280,
+        "height": 900
+      },
+      "client": 1072,
+      "document": 1280,
+      "main": 1072,
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "detail",
+      "size": {
+        "width": 1280,
+        "height": 900
+      },
+      "client": 1072,
+      "document": 1280,
+      "main": 1072,
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "resources",
+      "size": {
+        "width": 1280,
+        "height": 900
+      },
+      "client": 1072,
+      "document": 1280,
+      "main": 1072,
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "components",
+      "size": {
+        "width": 1280,
+        "height": 900
+      },
+      "client": 1062,
+      "document": 1280,
+      "main": 1062,
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "jobs",
+      "size": {
+        "width": 1280,
+        "height": 900
+      },
+      "client": 1056,
+      "document": 1280,
+      "main": 1056,
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "detail",
+      "size": {
+        "width": 1280,
+        "height": 900
+      },
+      "client": 1056,
+      "document": 1280,
+      "main": 1056,
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "resources",
+      "size": {
+        "width": 1280,
+        "height": 900
+      },
+      "client": 1046,
+      "document": 1280,
+      "main": 1046,
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "components",
+      "size": {
+        "width": 1280,
+        "height": 900
+      },
+      "client": 1046,
+      "document": 1280,
+      "main": 1046,
+      "width": 1280,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "jobs",
+      "size": {
+        "width": 768,
+        "height": 1024
+      },
+      "client": 768,
+      "document": 768,
+      "main": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "detail",
+      "size": {
+        "width": 768,
+        "height": 1024
+      },
+      "client": 758,
+      "document": 768,
+      "main": 758,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "resources",
+      "size": {
+        "width": 768,
+        "height": 1024
+      },
+      "client": 768,
+      "document": 768,
+      "main": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "components",
+      "size": {
+        "width": 768,
+        "height": 1024
+      },
+      "client": 758,
+      "document": 768,
+      "main": 758,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "jobs",
+      "size": {
+        "width": 768,
+        "height": 1024
+      },
+      "client": 768,
+      "document": 768,
+      "main": 768,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "detail",
+      "size": {
+        "width": 768,
+        "height": 1024
+      },
+      "client": 758,
+      "document": 768,
+      "main": 758,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "resources",
+      "size": {
+        "width": 768,
+        "height": 1024
+      },
+      "client": 758,
+      "document": 768,
+      "main": 758,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "components",
+      "size": {
+        "width": 768,
+        "height": 1024
+      },
+      "client": 758,
+      "document": 768,
+      "main": 758,
+      "width": 768,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "jobs",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "client": 380,
+      "document": 390,
+      "main": 380,
+      "width": 390,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "detail",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "client": 380,
+      "document": 390,
+      "main": 380,
+      "width": 390,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "resources",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "client": 380,
+      "document": 390,
+      "main": 380,
+      "width": 390,
+      "passed": true
+    },
+    {
+      "system": "ali",
+      "page": "components",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "client": 380,
+      "document": 390,
+      "main": 380,
+      "width": 390,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "jobs",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "client": 380,
+      "document": 390,
+      "main": 380,
+      "width": 390,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "detail",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "client": 380,
+      "document": 390,
+      "main": 380,
+      "width": 390,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "resources",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "client": 380,
+      "document": 390,
+      "main": 380,
+      "width": 390,
+      "passed": true
+    },
+    {
+      "system": "tencent",
+      "page": "components",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "client": 380,
+      "document": 390,
+      "main": 380,
+      "width": 390,
+      "passed": true
+    }
+  ],
+  "interactions": [
+    {
+      "name": "任务类型联动模型与数据",
+      "passed": true
+    },
+    {
+      "name": "新建任务",
+      "passed": true
+    },
+    {
+      "name": "排队取消",
+      "passed": true
+    },
+    {
+      "name": "运行停止",
+      "passed": true
+    },
+    {
+      "name": "日志页签",
+      "passed": true
+    },
+    {
+      "name": "新增节点待审核",
+      "passed": true
+    },
+    {
+      "name": "节点详情抽屉",
+      "passed": true
+    },
+    {
+      "name": "筛选与搜索",
+      "passed": true
+    },
+    {
+      "name": "预设颜色实时应用",
+      "passed": true
+    },
+    {
+      "name": "状态切换为线框",
+      "passed": true,
+      "details": {
+        "mode": "outline",
+        "style": "solid",
+        "width": "0.571429px"
+      }
+    },
+    {
+      "name": "状态显示业务符号",
+      "passed": true
+    },
+    {
+      "name": "外层面板直角",
+      "passed": true
+    },
+    {
+      "name": "外层面板柔和圆角",
+      "passed": true
+    },
+    {
+      "name": "自选颜色即时应用",
+      "passed": true
+    },
+    {
+      "name": "刷新保存颜色、状态与边角",
+      "passed": true
+    },
+    {
+      "name": "恢复默认不影响业务页面",
+      "passed": true
+    },
+    {
+      "name": "最后一行操作菜单不被主面板裁切",
+      "passed": true
+    },
+    {
+      "name": "操作菜单可打开复制弹窗",
+      "passed": true
+    },
+    {
+      "name": "两套方案外观偏好独立",
+      "passed": true
+    },
+    {
+      "name": "协作型收紧字号、行高且去除重复统计",
+      "passed": true,
+      "details": {
+        "body": "14px",
+        "control": 36,
+        "row": 64.5714340209961,
+        "stats": 0,
+        "title": "24px"
+      }
+    },
+    {
+      "name": "手机外观抽屉和固定底栏在视口内",
+      "passed": true
+    },
+    {
+      "name": "浅色主色具有深色文字和边框",
+      "passed": true
+    },
+    {
+      "name": "调色预览保持主页面原亮度",
+      "passed": true
+    },
+    {
+      "name": "资源详情继续使用遮罩",
+      "passed": true
+    }
+  ],
+  "typography": [
+    {
+      "system": "ali",
+      "body": "14px",
+      "control": 32,
+      "row": 58.000003814697266,
+      "task": "14px",
+      "title": "22px",
+      "viewport": [
+        1440,
+        1000
+      ]
+    },
+    {
+      "system": "tencent",
+      "body": "14px",
+      "control": 36,
+      "row": 64.5714340209961,
+      "task": "14px",
+      "title": "24px",
+      "viewport": [
+        1440,
+        1000
+      ]
+    }
+  ]
+}

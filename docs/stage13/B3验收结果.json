@@ -1,0 +1,88 @@
+{
+  "release": "/srv/model-platform/releases/20261029-13b3",
+  "previous_release": "/srv/model-platform/releases/20261029-13b2",
+  "compatible_rollback": "/srv/model-platform/releases/20261029-13b2-compat05",
+  "backup": "/srv/model-platform/backups/pre-stage13-b3-20261029",
+  "linux_tests": {
+    "tests": 94,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "existing_records_preserved": true,
+  "counts": {
+    "users": 2,
+    "workspaces": 1,
+    "models": 3,
+    "model_versions": 4,
+    "datasets": 3,
+    "dataset_versions": 3,
+    "jobs": 2,
+    "compute_nodes": 1
+  },
+  "public_https_ready": true,
+  "schema": "0005_data",
+  "web_version": "stage13-3",
+  "operations_running": true,
+  "komari_active": true,
+  "source_sha256": "b66726aead4a0d07560017a385e230e1709e82eeb7f3795a94686c6a131d4385",
+  "windows_unique_backend_tests": 94,
+  "windows_full_run": 93,
+  "windows_data_final_run": 11,
+  "frontend_tests": 100,
+  "local_browser": {
+    "layouts": 72,
+    "flows": 15,
+    "javascript_errors": 0
+  },
+  "cloud_browser": {
+    "layouts": 72,
+    "javascript_errors": 0,
+    "job_preserved": true,
+    "actual_device": "cuda",
+    "accuracy": 0.5,
+    "worker_online": false,
+    "worker_connected": true,
+    "node_status": [
+      "暂停接收"
+    ]
+  },
+  "cloud_data_example": {
+    "url": "https://47.93.115.188:5488",
+    "workspace_id": "wsp_36be5031d33d4083b35faeb1e413e177",
+    "workspace_name": "数据工作流示例",
+    "annotation_id": "ann_c3c8a24cc61a4f5e9b1b8fb573da975c",
+    "text": {
+      "dataset": "dat_fbc7d3d4dd5547b6a38bf6b1b006364e",
+      "version": "dvr_804d39ed66414d578428c2b439e2a1db",
+      "sample_count": 12
+    },
+    "images": {
+      "dataset": "dat_07458b88fc5d44ae82db556107705d7b",
+      "version": "dvr_089e823881c94168be8e0b9cf89ee76e",
+      "sample_count": 24
+    },
+    "clean_id": "dop_ddf360d285bc48d3a2abb46e2060c387",
+    "split_id": "dop_2ec29dcd37b84569b6ed1babe60d6aa0",
+    "augmentation_id": "dop_65b6433c4d114121901dec26e599ec41",
+    "annotation_published": true,
+    "clean_counts": [
+      12,
+      11
+    ],
+    "split_counts": [
+      7,
+      2,
+      2
+    ],
+    "augmentation_counts": [
+      24,
+      48
+    ],
+    "source_preserved": true,
+    "real_postgresql_workflow": true,
+    "gpu_used": false,
+    "training_metrics_created": false
+  },
+  "provider_real_call_verified": false
+}

@@ -1,0 +1,36 @@
+{
+  "release": "/srv/model-platform/releases/20261029-13b1",
+  "previous_release": "/srv/model-platform/releases/20261029-04",
+  "backup": "/srv/model-platform/backups/pre-stage13-b1-20261029",
+  "linux_tests": {
+    "tests": 70,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "counts_preserved": true,
+  "counts": {
+    "users": 1,
+    "workspaces": 1,
+    "models": 3,
+    "datasets": 3,
+    "jobs": 1,
+    "nodes": 1
+  },
+  "public_https_ready": true,
+  "schema": "0003_jobs",
+  "web_version": "stage13-1",
+  "komari_active": true,
+  "windows_backend_tests": 70,
+  "frontend_tests": 91,
+  "local_browser": {
+    "layouts": 33,
+    "flows": 4
+  },
+  "cloud_browser": {
+    "layouts": 33,
+    "screenshots": 8,
+    "javascript_errors": 0,
+    "worker_online": true
+  }
+}

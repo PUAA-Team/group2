@@ -1,0 +1,923 @@
+{
+  "project_id": "prj_ba07517f42ae4d15a5ec3765c5b95545",
+  "experiments": {
+    "sms_5": {
+      "name": "SMS 5epoch / LR0.01",
+      "training": {
+        "id": "job_df24f71729b94143b4f4d0227e1c1bd4",
+        "result": {
+          "accuracy": 0.8934624697336562,
+          "macro_f1": 0.6105860923604414,
+          "labels": [
+            "ham",
+            "spam"
+          ],
+          "confusion_matrix": [
+            [
+              721,
+              2
+            ],
+            [
+              86,
+              17
+            ]
+          ],
+          "samples": 826,
+          "validation_samples": 826,
+          "training_samples": 3302,
+          "device": "cuda",
+          "validation_loss": 0.23797692358493805
+        },
+        "output_model_version_id": "mvr_20352317385944eb9f3c33983599f3c4",
+        "config": {
+          "epochs": 5,
+          "batch_size": 32,
+          "learning_rate": 0.01,
+          "validation_ratio": 0.2,
+          "seed": 42,
+          "max_length": 128,
+          "lora_rank": 4
+        },
+        "model_version_id": "mvr_887a3e83f050456c85b1c897102d87a5",
+        "dataset_version_id": "dvr_94f54e94082d46628dfbce3310ea73a4",
+        "status": "succeeded"
+      },
+      "test": {
+        "id": "job_cec33608a997493594addd98956e700a",
+        "result": {
+          "accuracy": 0.8884578079534433,
+          "macro_f1": 0.5940625246082369,
+          "labels": [
+            "ham",
+            "spam"
+          ],
+          "confusion_matrix": [
+            [
+              897,
+              6
+            ],
+            [
+              109,
+              19
+            ]
+          ],
+          "samples": 1031,
+          "device": "cuda"
+        },
+        "output_model_version_id": null,
+        "config": {
+          "epochs": 5,
+          "batch_size": 8,
+          "learning_rate": 0.01,
+          "validation_ratio": 0.2,
+          "seed": 42,
+          "max_length": 128,
+          "lora_rank": 4
+        },
+        "model_version_id": "mvr_20352317385944eb9f3c33983599f3c4",
+        "dataset_version_id": "dvr_e7f26c76a1b74f05af61dd01a90bbddc",
+        "status": "succeeded"
+      },
+      "elapsed_seconds": 9.74
+    },
+    "sms_25": {
+      "name": "SMS 25epoch / LR0.03",
+      "training": {
+        "id": "job_e8ab79e0898c482c89a1d4e17098d9f0",
+        "result": {
+          "accuracy": 0.9721549636803875,
+          "macro_f1": 0.9325323967370653,
+          "labels": [
+            "ham",
+            "spam"
+          ],
+          "confusion_matrix": [
+            [
+              718,
+              5
+            ],
+            [
+              18,
+              85
+            ]
+          ],
+          "samples": 826,
+          "validation_samples": 826,
+          "training_samples": 3302,
+          "device": "cuda",
+          "validation_loss": 0.08961240947246552
+        },
+        "output_model_version_id": "mvr_885780f9153041f89210939f27e15878",
+        "config": {
+          "epochs": 25,
+          "batch_size": 32,
+          "learning_rate": 0.03,
+          "validation_ratio": 0.2,
+          "seed": 42,
+          "max_length": 128,
+          "lora_rank": 4
+        },
+        "model_version_id": "mvr_887a3e83f050456c85b1c897102d87a5",
+        "dataset_version_id": "dvr_94f54e94082d46628dfbce3310ea73a4",
+        "status": "succeeded"
+      },
+      "test": {
+        "id": "job_a207714d74be4117874a1f8485e7ccce",
+        "result": {
+          "accuracy": 0.9689621726479146,
+          "macro_f1": 0.9245517746066594,
+          "labels": [
+            "ham",
+            "spam"
+          ],
+          "confusion_matrix": [
+            [
+              895,
+              8
+            ],
+            [
+              24,
+              104
+            ]
+          ],
+          "samples": 1031,
+          "device": "cuda"
+        },
+        "output_model_version_id": null,
+        "config": {
+          "epochs": 5,
+          "batch_size": 8,
+          "learning_rate": 0.01,
+          "validation_ratio": 0.2,
+          "seed": 42,
+          "max_length": 128,
+          "lora_rank": 4
+        },
+        "model_version_id": "mvr_885780f9153041f89210939f27e15878",
+        "dataset_version_id": "dvr_e7f26c76a1b74f05af61dd01a90bbddc",
+        "status": "succeeded"
+      },
+      "elapsed_seconds": 13.3
+    },
+    "fashion_3": {
+      "name": "Fashion 3epoch / LR0.003",
+      "training": {
+        "id": "job_da5b1381389e43c98bda562a776fd967",
+        "result": {
+          "accuracy": 0.8066666666666666,
+          "macro_f1": 0.7997063490323688,
+          "labels": [
+            "Ankle-boot",
+            "Bag",
+            "Coat",
+            "Dress",
+            "Pullover",
+            "Sandal",
+            "Shirt",
+            "Sneaker",
+            "T-shirt",
+            "Trouser"
+          ],
+          "confusion_matrix": [
+            [
+              114,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              6,
+              0,
+              0
+            ],
+            [
+              0,
+              115,
+              0,
+              0,
+              1,
+              2,
+              2,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              101,
+              7,
+              6,
+              0,
+              4,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              3,
+              108,
+              0,
+              0,
+              4,
+              0,
+              3,
+              2
+            ],
+            [
+              0,
+              0,
+              39,
+              1,
+              62,
+              1,
+              17,
+              0,
+              0,
+              0
+            ],
+            [
+              2,
+              0,
+              0,
+              0,
+              0,
+              111,
+              0,
+              7,
+              0,
+              0
+            ],
+            [
+              0,
+              4,
+              31,
+              12,
+              6,
+              0,
+              42,
+              0,
+              25,
+              0
+            ],
+            [
+              5,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              114,
+              0,
+              0
+            ],
+            [
+              0,
+              2,
+              0,
+              15,
+              1,
+              2,
+              15,
+              0,
+              85,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              4,
+              0,
+              0,
+              0,
+              0,
+              0,
+              116
+            ]
+          ],
+          "samples": 1200,
+          "validation_samples": 1200,
+          "training_samples": 4800,
+          "device": "cuda",
+          "validation_loss": 0.5037842392921448
+        },
+        "output_model_version_id": "mvr_130263fb9a8b41a2963d4edacd7edbea",
+        "config": {
+          "epochs": 3,
+          "batch_size": 32,
+          "learning_rate": 0.003,
+          "validation_ratio": 0.2,
+          "seed": 42,
+          "max_length": 128,
+          "lora_rank": 4
+        },
+        "model_version_id": "mvr_7fecdc43425a491799b82dfbca64da83",
+        "dataset_version_id": "dvr_942aa5b8d79048bba724a202b318eaa0",
+        "status": "succeeded"
+      },
+      "test": {
+        "id": "job_507292a1369945d39bc2bcb1f6afda57",
+        "result": {
+          "accuracy": 0.813,
+          "macro_f1": 0.8093312601534448,
+          "labels": [
+            "Ankle-boot",
+            "Bag",
+            "Coat",
+            "Dress",
+            "Pullover",
+            "Sandal",
+            "Shirt",
+            "Sneaker",
+            "T-shirt",
+            "Trouser"
+          ],
+          "confusion_matrix": [
+            [
+              185,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              14,
+              0,
+              0
+            ],
+            [
+              0,
+              192,
+              0,
+              4,
+              0,
+              0,
+              2,
+              0,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              173,
+              4,
+              10,
+              1,
+              11,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              7,
+              178,
+              0,
+              0,
+              9,
+              0,
+              5,
+              0
+            ],
+            [
+              0,
+              3,
+              54,
+              2,
+              117,
+              0,
+              23,
+              0,
+              1,
+              0
+            ],
+            [
+              2,
+              0,
+              0,
+              0,
+              0,
+              177,
+              0,
+              21,
+              0,
+              0
+            ],
+            [
+              0,
+              7,
+              46,
+              10,
+              25,
+              1,
+              83,
+              0,
+              27,
+              1
+            ],
+            [
+              10,
+              0,
+              0,
+              0,
+              0,
+              5,
+              0,
+              185,
+              0,
+              0
+            ],
+            [
+              0,
+              4,
+              2,
+              19,
+              3,
+              0,
+              18,
+              0,
+              154,
+              0
+            ],
+            [
+              0,
+              0,
+              5,
+              11,
+              1,
+              0,
+              1,
+              0,
+              0,
+              182
+            ]
+          ],
+          "samples": 2000,
+          "device": "cuda"
+        },
+        "output_model_version_id": null,
+        "config": {
+          "epochs": 5,
+          "batch_size": 8,
+          "learning_rate": 0.01,
+          "validation_ratio": 0.2,
+          "seed": 42,
+          "max_length": 128,
+          "lora_rank": 4
+        },
+        "model_version_id": "mvr_130263fb9a8b41a2963d4edacd7edbea",
+        "dataset_version_id": "dvr_424742e8a99f4a04831ef5670f7e0077",
+        "status": "succeeded"
+      },
+      "elapsed_seconds": 12.9
+    },
+    "fashion_10": {
+      "name": "Fashion 10epoch / LR0.003",
+      "training": {
+        "id": "job_29a6fb42326c428fb13692171a82fe64",
+        "result": {
+          "accuracy": 0.8533333333333334,
+          "macro_f1": 0.853113683543347,
+          "labels": [
+            "Ankle-boot",
+            "Bag",
+            "Coat",
+            "Dress",
+            "Pullover",
+            "Sandal",
+            "Shirt",
+            "Sneaker",
+            "T-shirt",
+            "Trouser"
+          ],
+          "confusion_matrix": [
+            [
+              115,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              5,
+              0,
+              0
+            ],
+            [
+              0,
+              115,
+              0,
+              0,
+              0,
+              1,
+              4,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              97,
+              2,
+              4,
+              0,
+              14,
+              0,
+              1,
+              1
+            ],
+            [
+              0,
+              0,
+              6,
+              99,
+              0,
+              0,
+              5,
+              0,
+              9,
+              1
+            ],
+            [
+              0,
+              0,
+              20,
+              0,
+              80,
+              0,
+              17,
+              0,
+              3,
+              0
+            ],
+            [
+              2,
+              0,
+              0,
+              0,
+              0,
+              114,
+              0,
+              4,
+              0,
+              0
+            ],
+            [
+              0,
+              2,
+              13,
+              6,
+              5,
+              0,
+              68,
+              0,
+              26,
+              0
+            ],
+            [
+              3,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              116,
+              0,
+              0
+            ],
+            [
+              0,
+              3,
+              0,
+              5,
+              1,
+              0,
+              10,
+              0,
+              101,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              119
+            ]
+          ],
+          "samples": 1200,
+          "validation_samples": 1200,
+          "training_samples": 4800,
+          "device": "cuda",
+          "validation_loss": 0.4056946337223053
+        },
+        "output_model_version_id": "mvr_05d3662620734e038763ea85079b93e6",
+        "config": {
+          "epochs": 10,
+          "batch_size": 32,
+          "learning_rate": 0.003,
+          "validation_ratio": 0.2,
+          "seed": 42,
+          "max_length": 128,
+          "lora_rank": 4
+        },
+        "model_version_id": "mvr_7fecdc43425a491799b82dfbca64da83",
+        "dataset_version_id": "dvr_942aa5b8d79048bba724a202b318eaa0",
+        "status": "succeeded"
+      },
+      "test": {
+        "id": "job_3d955512af7d417984599d0cf4123011",
+        "result": {
+          "accuracy": 0.8615,
+          "macro_f1": 0.8617617234178561,
+          "labels": [
+            "Ankle-boot",
+            "Bag",
+            "Coat",
+            "Dress",
+            "Pullover",
+            "Sandal",
+            "Shirt",
+            "Sneaker",
+            "T-shirt",
+            "Trouser"
+          ],
+          "confusion_matrix": [
+            [
+              195,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              5,
+              0,
+              0
+            ],
+            [
+              0,
+              195,
+              0,
+              2,
+              0,
+              0,
+              1,
+              0,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              161,
+              3,
+              8,
+              0,
+              27,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              6,
+              166,
+              0,
+              0,
+              13,
+              0,
+              13,
+              1
+            ],
+            [
+              0,
+              1,
+              29,
+              0,
+              139,
+              0,
+              26,
+              0,
+              4,
+              1
+            ],
+            [
+              3,
+              0,
+              0,
+              0,
+              0,
+              190,
+              0,
+              7,
+              0,
+              0
+            ],
+            [
+              0,
+              6,
+              19,
+              3,
+              11,
+              0,
+              129,
+              0,
+              31,
+              1
+            ],
+            [
+              3,
+              0,
+              0,
+              0,
+              0,
+              5,
+              0,
+              192,
+              0,
+              0
+            ],
+            [
+              0,
+              6,
+              3,
+              8,
+              4,
+              0,
+              14,
+              0,
+              165,
+              0
+            ],
+            [
+              0,
+              0,
+              2,
+              6,
+              0,
+              0,
+              0,
+              0,
+              1,
+              191
+            ]
+          ],
+          "samples": 2000,
+          "device": "cuda"
+        },
+        "output_model_version_id": null,
+        "config": {
+          "epochs": 5,
+          "batch_size": 8,
+          "learning_rate": 0.01,
+          "validation_ratio": 0.2,
+          "seed": 42,
+          "max_length": 128,
+          "lora_rank": 4
+        },
+        "model_version_id": "mvr_05d3662620734e038763ea85079b93e6",
+        "dataset_version_id": "dvr_424742e8a99f4a04831ef5670f7e0077",
+        "status": "succeeded"
+      },
+      "elapsed_seconds": 12.93
+    },
+    "qwen_1": {
+      "name": "Qwen LoRA 1epoch",
+      "training": {
+        "id": "job_af3e8527e5754808b773d27122e2a2e8",
+        "result": {
+          "validation_loss": 0.044230148035587585,
+          "perplexity": 1.0452228832021428,
+          "response_tokens": 204,
+          "training_samples": 410,
+          "validation_samples": 102,
+          "device": "cuda"
+        },
+        "output_model_version_id": "mvr_3e6309ace70845458674a6b1f4eea272",
+        "config": {
+          "epochs": 1,
+          "batch_size": 4,
+          "learning_rate": 0.0002,
+          "validation_ratio": 0.2,
+          "seed": 42,
+          "max_length": 192,
+          "lora_rank": 4
+        },
+        "model_version_id": "mvr_0bbbfff44a514f31aea659b40dc12b64",
+        "dataset_version_id": "dvr_9f7eeb2ab119491e89bc1c265d15f3bb",
+        "status": "succeeded"
+      },
+      "test": {
+        "id": "job_f6c27fdc6a934d15a4024febbb507d7f",
+        "result": {
+          "loss": 0.023722952684089194,
+          "perplexity": 1.0240065803135185,
+          "response_tokens": 256,
+          "samples": 128
+        },
+        "output_model_version_id": null,
+        "config": {
+          "epochs": 5,
+          "batch_size": 8,
+          "learning_rate": 0.01,
+          "validation_ratio": 0.2,
+          "seed": 42,
+          "max_length": 128,
+          "lora_rank": 4
+        },
+        "model_version_id": "mvr_3e6309ace70845458674a6b1f4eea272",
+        "dataset_version_id": "dvr_629e880ffbb348da97544549db647c4b",
+        "status": "succeeded"
+      },
+      "elapsed_seconds": 94.9
+    }
+  },
+  "qwen_generation_test": {
+    "accuracy": 0.984375,
+    "macro_f1": 0.9843711843711844,
+    "labels": [
+      "ham",
+      "spam"
+    ],
+    "prediction_columns": [
+      "ham",
+      "spam",
+      "invalid"
+    ],
+    "confusion_matrix": [
+      [
+        64,
+        0,
+        0
+      ],
+      [
+        2,
+        62,
+        0
+      ]
+    ],
+    "samples": 128,
+    "invalid_outputs": 0
+  },
+  "sms_majority_baseline": {
+    "accuracy": 0.8758486905916586,
+    "macro_f1": 0.46690796277145813,
+    "labels": [
+      "ham",
+      "spam"
+    ],
+    "prediction_columns": [
+      "ham",
+      "spam",
+      "invalid"
+    ],
+    "confusion_matrix": [
+      [
+        903,
+        0,
+        0
+      ],
+      [
+        128,
+        0,
+        0
+      ]
+    ],
+    "samples": 1031,
+    "invalid_outputs": 0
+  },
+  "fashion_majority_baseline": {
+    "accuracy": 0.1,
+    "macro_f1": 0.01818181818181818,
+    "samples": 2000
+  },
+  "jobs": {
+    "sms_5": "job_df24f71729b94143b4f4d0227e1c1bd4",
+    "sms_5_test": "job_cec33608a997493594addd98956e700a",
+    "sms_25": "job_e8ab79e0898c482c89a1d4e17098d9f0",
+    "sms_25_test": "job_a207714d74be4117874a1f8485e7ccce",
+    "fashion_3": "job_da5b1381389e43c98bda562a776fd967",
+    "fashion_3_test": "job_507292a1369945d39bc2bcb1f6afda57",
+    "fashion_10": "job_29a6fb42326c428fb13692171a82fe64",
+    "fashion_10_test": "job_3d955512af7d417984599d0cf4123011",
+    "qwen_1": "job_af3e8527e5754808b773d27122e2a2e8",
+    "qwen_1_test": "job_f6c27fdc6a934d15a4024febbb507d7f",
+    "qwen_service": "job_cea5bcf8f9994063ae9b6c27bac22a26"
+  }
+}

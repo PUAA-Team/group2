@@ -1,0 +1,97 @@
+{
+  "url": "https://47.93.115.188:5488",
+  "errors": [],
+  "layouts": [
+    {
+      "route": "/home",
+      "width": 1440,
+      "overflow": false,
+      "heading": "工作台",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/admin/resources",
+      "width": 1440,
+      "overflow": false,
+      "heading": "资源管理",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/datasets",
+      "width": 1440,
+      "overflow": false,
+      "heading": "数据集",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/models",
+      "width": 1440,
+      "overflow": false,
+      "heading": "模型仓库",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/runs?project=prj_a2fc45db0e504698a2cc9dab6cd00292",
+      "width": 1440,
+      "overflow": false,
+      "heading": "训练任务",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa",
+      "width": 1440,
+      "overflow": false,
+      "heading": "云端首次GPU训练 · TinyCNN",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/home",
+      "width": 390,
+      "overflow": false,
+      "heading": "工作台",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/admin/resources",
+      "width": 390,
+      "overflow": false,
+      "heading": "资源管理",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/datasets",
+      "width": 390,
+      "overflow": false,
+      "heading": "数据集",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/models",
+      "width": 390,
+      "overflow": false,
+      "heading": "模型仓库",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/runs?project=prj_a2fc45db0e504698a2cc9dab6cd00292",
+      "width": 390,
+      "overflow": false,
+      "heading": "训练任务",
+      "minimumInspectedFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa",
+      "width": 390,
+      "overflow": false,
+      "heading": "云端首次GPU训练 · TinyCNN",
+      "minimumInspectedFont": 14
+    }
+  ],
+  "screenshots": [
+    "cloud-resources.png",
+    "cloud-training-desktop.png",
+    "cloud-training-mobile.png"
+  ],
+  "environmentLabel": false,
+  "success": true
+}

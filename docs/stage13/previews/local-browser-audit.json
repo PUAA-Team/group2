@@ -1,0 +1,220 @@
+{
+  "layouts": [
+    {
+      "route": "/home",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/models",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/projects",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/new",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/train/new",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=overview",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=metrics",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=logs",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=outputs",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/users",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/home",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/models",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/projects",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/new",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/train/new",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=overview",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=metrics",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=logs",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=outputs",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/users",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/home",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/models",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/projects",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/new",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/train/new",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=overview",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=metrics",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=logs",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_a6b4c2106f6c49ad89c2cbf397af72b5?tab=outputs",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/users",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    }
+  ],
+  "screenshots": [
+    "home-1440.png",
+    "models-1440.png",
+    "train-new-1440.png",
+    "home-390.png",
+    "models-390.png",
+    "train-new-390.png",
+    "wizard-parameters-1440.png",
+    "dataset-preview-1440.png"
+  ],
+  "checks": [
+    "四步向导、样本预览、切步保留、草稿保存",
+    "复制配置生成独立向导草稿",
+    "真实文件校验、预览、上传与版本登记",
+    "菜单滚动与收窄恢复"
+  ],
+  "errors": [],
+  "success": true
+}

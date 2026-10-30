@@ -1,0 +1,15 @@
+import { badge, card, escapeHtml as e, icon, pageHeader } from "../ui.js?v=console-4";
+
+export const JOIN_COMMAND = "agentctl join --endpoint https://<平台地址> --token <一次性令牌>";
+
+export function renderResources(state, ui = {}) {
+  const free = state.resources.filter(item => item.status === "空闲").length;
+  const busy = state.resources.filter(item => item.status === "使用中").length;
+  const tab = ui.resourceTab || "devices";
+  const tabs = [["devices", "设备"], ["nodes", "计算节点"], ["connect", "接入新节点"]];
+  const devices = `<div class="grid-3">${card(`<div class="metric-label">GPU 设备</div><div class="metric-value">${state.resources.length}</div>`, "metric-card")}${card(`<div class="metric-label">空闲</div><div class="metric-value green">${free}</div>`, "metric-card")}${card(`<div class="metric-label">使用中</div><div class="metric-value blue">${busy}</div>`, "metric-card")}</div><div class="section-heading"><h2>设备列表</h2></div><div class="grid-3">${state.resources.map(item => card(`<div class="card-header"><h2>${e(item.name)}</h2>${badge(item.status)}</div><div class="resource-spec">${e(item.model)} · 显存 ${e(item.memory)}</div><div class="resource-meter"><div class="progress"><span style="width:${Number(item.util)}%"></span></div><span class="subtle">${Number(item.util)}%</span></div><div class="callout-row"><span class="label">当前任务</span><span class="value">${e(item.owner)}</span></div>`, "resource-card")).join("")}</div>`;
+  const nodes = card(`<div class="table-scroll"><table class="table"><thead><tr><th>节点</th><th>地址标识</th><th>GPU</th><th>CPU</th><th>内存</th><th>状态</th><th>操作</th></tr></thead><tbody>${state.nodes.map(node => `<tr><td><strong>${e(node.name)}</strong></td><td class="mono">${e(node.address)}</td><td>${e(node.gpus)}</td><td>${e(node.cpu)}</td><td>${e(node.memory)}</td><td>${badge(node.status)}</td><td>${node.demo && node.status === "待探测" ? `<button class="btn btn-primary btn-small" data-action="probe-node" data-node-id="${e(node.id)}">模拟自动探测</button>` : "—"}</td></tr>`).join("")}</tbody></table></div>`);
+  const connect = `<div class="notice notice-warning">接入命令仅为不可执行的占位示意，请勿在服务器运行。</div><div class="grid-2" style="margin-top:16px">${card(`<div class="card-header"><h2>接入命令</h2></div><pre class="template-preview join-command">${e(JOIN_COMMAND)}</pre><button class="btn btn-secondary btn-small" data-action="copy-join-command">${icon("download", 14)}复制示意命令</button>`)}${card(`<div class="card-header"><h2>接入流程</h2></div><div class="connect-steps"><div><span>01</span><strong>执行接入命令</strong></div><div><span>02</span><strong>自动探测硬件</strong></div><div><span>03</span><strong>审核并分配资源</strong></div></div>`)}</div>`;
+  const action = tab === "devices" ? "" : `<button class="btn btn-primary" data-action="open-modal" data-modal="node-new">登记节点</button>`;
+  return `${pageHeader("资源管理", "", action)}<div class="tabs">${tabs.map(([key, label]) => `<button class="tab ${tab === key ? "active" : ""}" data-action="resource-tab" data-tab="${key}">${label}</button>`).join("")}</div>${tab === "devices" ? devices : tab === "nodes" ? nodes : connect}`;
+}

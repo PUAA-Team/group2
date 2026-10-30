@@ -1,0 +1,85 @@
+[
+  {
+    "check": "运行中筛选",
+    "value": 2,
+    "pass": true
+  },
+  {
+    "check": "状态和模型组合搜索",
+    "value": 1,
+    "pass": true
+  },
+  {
+    "check": "Escape 关闭弹窗",
+    "pass": true
+  },
+  {
+    "check": "创建记录与菜单数量联动",
+    "value": 7,
+    "nav": "7",
+    "pass": true
+  },
+  {
+    "check": "运行任务停止状态",
+    "value": "已停止",
+    "pass": true
+  },
+  {
+    "check": "侧栏收窄不重置手动分组",
+    "pass": true
+  },
+  {
+    "check": "页面切换保留菜单滚动",
+    "before": 172.57142639160156,
+    "after": 172.57142639160156,
+    "pass": true
+  },
+  {
+    "check": "模拟节点登记与待审核状态",
+    "pending": true,
+    "registered": true,
+    "summary": "GPU 设备\n6\n在线节点\n5 / 7\n空闲 GPU\n2\n等待任务\n2",
+    "pass": true
+  },
+  {
+    "check": "训练指标切换",
+    "value": "验证 F1",
+    "pass": true
+  },
+  {
+    "check": "日志页签",
+    "pass": true
+  },
+  {
+    "check": "等待队列视图",
+    "value": 1,
+    "pass": true
+  },
+  {
+    "check": "数据样本预览弹窗",
+    "pass": true
+  },
+  {
+    "check": "手机弹窗边界",
+    "footerBottom": 694.7947006225586,
+    "modalWidth": 356.2857360839844,
+    "pageWidth": 390,
+    "viewportHeight": 844,
+    "width": 390,
+    "pass": true
+  },
+  {
+    "check": "手机导航与抽屉关闭",
+    "pass": true
+  },
+  {
+    "check": "审查选择刷新后保留",
+    "before": "已选：实验室",
+    "after": "已选：实验室",
+    "pass": true
+  },
+  {
+    "check": "清除审查选择",
+    "pass": true
+  }
+]

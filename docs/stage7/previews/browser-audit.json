@@ -1,0 +1,299 @@
+{
+  "errors": [],
+  "pages": [
+    {
+      "width": 1440,
+      "path": "/home",
+      "heading": "工作台",
+      "overflow": false,
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1440,
+      "path": "/admin/resources",
+      "heading": "资源管理",
+      "overflow": false,
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1440,
+      "path": "/projects",
+      "heading": "训练项目",
+      "overflow": false,
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1440,
+      "path": "/runs",
+      "heading": "训练任务",
+      "overflow": false,
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1440,
+      "path": "/runs/job_7d97cea28bcb4150b257a854312b334a",
+      "heading": "文本分类训练",
+      "overflow": false,
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1440,
+      "path": "/evaluation",
+      "heading": "模型评估",
+      "overflow": false,
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1440,
+      "path": "/services",
+      "heading": "在线服务",
+      "overflow": false,
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1440,
+      "path": "/api-keys",
+      "heading": "API KEY管理",
+      "overflow": false,
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1440,
+      "path": "/admin/users",
+      "heading": "用户管理",
+      "overflow": false,
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1024,
+      "path": "/home",
+      "heading": "工作台",
+      "overflow": false,
+      "viewportWidth": 1024,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1024,
+      "path": "/admin/resources",
+      "heading": "资源管理",
+      "overflow": false,
+      "viewportWidth": 1024,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1024,
+      "path": "/projects",
+      "heading": "训练项目",
+      "overflow": false,
+      "viewportWidth": 1024,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1024,
+      "path": "/runs",
+      "heading": "训练任务",
+      "overflow": false,
+      "viewportWidth": 1024,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1024,
+      "path": "/runs/job_7d97cea28bcb4150b257a854312b334a",
+      "heading": "文本分类训练",
+      "overflow": false,
+      "viewportWidth": 1024,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1024,
+      "path": "/evaluation",
+      "heading": "模型评估",
+      "overflow": false,
+      "viewportWidth": 1024,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1024,
+      "path": "/services",
+      "heading": "在线服务",
+      "overflow": false,
+      "viewportWidth": 1024,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1024,
+      "path": "/api-keys",
+      "heading": "API KEY管理",
+      "overflow": false,
+      "viewportWidth": 1024,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1024,
+      "path": "/admin/users",
+      "heading": "用户管理",
+      "overflow": false,
+      "viewportWidth": 1024,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 390,
+      "path": "/home",
+      "heading": "工作台",
+      "overflow": false,
+      "viewportWidth": 390,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 390,
+      "path": "/admin/resources",
+      "heading": "资源管理",
+      "overflow": false,
+      "viewportWidth": 390,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 390,
+      "path": "/projects",
+      "heading": "训练项目",
+      "overflow": false,
+      "viewportWidth": 390,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 390,
+      "path": "/runs",
+      "heading": "训练任务",
+      "overflow": false,
+      "viewportWidth": 390,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 390,
+      "path": "/runs/job_7d97cea28bcb4150b257a854312b334a",
+      "heading": "文本分类训练",
+      "overflow": false,
+      "viewportWidth": 390,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 390,
+      "path": "/evaluation",
+      "heading": "模型评估",
+      "overflow": false,
+      "viewportWidth": 390,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 390,
+      "path": "/services",
+      "heading": "在线服务",
+      "overflow": false,
+      "viewportWidth": 390,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 390,
+      "path": "/api-keys",
+      "heading": "API KEY管理",
+      "overflow": false,
+      "viewportWidth": 390,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 390,
+      "path": "/admin/users",
+      "heading": "用户管理",
+      "overflow": false,
+      "viewportWidth": 390,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    }
+  ],
+  "dialogs": [
+    {
+      "width": 1440,
+      "kind": "training",
+      "heading": "训练任务",
+      "overflow": false,
+      "dialogWidth": 760,
+      "dialogBottom": 950,
+      "viewportWidth": 1440,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 1024,
+      "kind": "training",
+      "heading": "训练任务",
+      "overflow": false,
+      "dialogWidth": 760,
+      "dialogBottom": 950,
+      "viewportWidth": 1024,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    },
+    {
+      "width": 390,
+      "kind": "training",
+      "heading": "训练任务",
+      "overflow": false,
+      "dialogWidth": 366,
+      "dialogBottom": 988,
+      "viewportWidth": 390,
+      "viewportHeight": 1000,
+      "minimumText": 14
+    }
+  ],
+  "screenshots": [
+    "resources-desktop.png",
+    "training-list-desktop.png",
+    "training-detail-desktop.png",
+    "training-dialog-desktop.png",
+    "training-dialog-tablet.png",
+    "training-dialog-mobile.png",
+    "enrollment-dialog-desktop.png",
+    "enrollment-command-desktop.png",
+    "ui-submitted-training-result.png",
+    "ui-service-inference-result.png"
+  ],
+  "maskedCommand": true,
+  "createdFromUi": true,
+  "invokedFromUi": true,
+  "success": true
+}

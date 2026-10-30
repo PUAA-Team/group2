@@ -1,0 +1,1571 @@
+{
+  "date": "2026-10-15",
+  "version": "console-4",
+  "automatedTests": {
+    "total": 63,
+    "passed": 63,
+    "completePrototype": 26,
+    "reviewSamples": 37
+  },
+  "responsive": [
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "工作台",
+      "url": "#/home",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "17px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "用户空间",
+      "url": "#/space",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "资源监控",
+      "url": "#/monitor",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "数据集",
+      "url": "#/datasets",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "在线标注",
+      "url": "#/annotation",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "数据增强",
+      "url": "#/augmentation",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "训练项目",
+      "url": "#/projects",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "训练任务",
+      "url": "#/runs",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型仓库",
+      "url": "#/models",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "17px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型评估",
+      "url": "#/evaluation",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "在线服务",
+      "url": "#/services",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "API KEY管理",
+      "url": "#/api-keys",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "统计面板",
+      "url": "#/admin/stats",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "资源管理",
+      "url": "#/admin/resources",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "数据管理",
+      "url": "#/admin/data",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型管理",
+      "url": "#/admin/models",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "作业管理",
+      "url": "#/admin/jobs",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "用户管理",
+      "url": "#/admin/users",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "操作记录",
+      "url": "#/admin/audit",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "系统设置",
+      "url": "#/admin/settings",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "21px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽标注样本",
+      "url": "#/datasets/ds-helmet",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "19px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测",
+      "url": "#/projects/pr-helmet",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "21px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 02",
+      "url": "#/runs/run-1042",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "MobileNetV3",
+      "url": "#/models/mobilenet",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "客服意图识别服务",
+      "url": "#/services/svc-intent",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "导入数据集",
+      "url": "#/datasets/new",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "新建训练",
+      "url": "#/train/new",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 02",
+      "url": "#/runs/run-1042?tab=metrics",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 02",
+      "url": "#/runs/run-1042?tab=logs",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 01",
+      "url": "#/runs/run-1038?tab=outputs",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型仓库",
+      "url": "#/models?tab=network",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型仓库",
+      "url": "#/models?tab=my",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "工作台",
+      "url": "#/home",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "17px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "用户空间",
+      "url": "#/space",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "资源监控",
+      "url": "#/monitor",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "数据集",
+      "url": "#/datasets",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "在线标注",
+      "url": "#/annotation",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "数据增强",
+      "url": "#/augmentation",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "训练项目",
+      "url": "#/projects",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "训练任务",
+      "url": "#/runs",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型仓库",
+      "url": "#/models",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "17px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型评估",
+      "url": "#/evaluation",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "在线服务",
+      "url": "#/services",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "API KEY管理",
+      "url": "#/api-keys",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "统计面板",
+      "url": "#/admin/stats",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "资源管理",
+      "url": "#/admin/resources",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "数据管理",
+      "url": "#/admin/data",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型管理",
+      "url": "#/admin/models",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "作业管理",
+      "url": "#/admin/jobs",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "用户管理",
+      "url": "#/admin/users",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "操作记录",
+      "url": "#/admin/audit",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "系统设置",
+      "url": "#/admin/settings",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "21px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽标注样本",
+      "url": "#/datasets/ds-helmet",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "19px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测",
+      "url": "#/projects/pr-helmet",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "21px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 02",
+      "url": "#/runs/run-1042",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "MobileNetV3",
+      "url": "#/models/mobilenet",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "客服意图识别服务",
+      "url": "#/services/svc-intent",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "导入数据集",
+      "url": "#/datasets/new",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "新建训练",
+      "url": "#/train/new",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 02",
+      "url": "#/runs/run-1042?tab=metrics",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 02",
+      "url": "#/runs/run-1042?tab=logs",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 01",
+      "url": "#/runs/run-1038?tab=outputs",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型仓库",
+      "url": "#/models?tab=network",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型仓库",
+      "url": "#/models?tab=my",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "工作台",
+      "url": "#/home",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "17px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "用户空间",
+      "url": "#/space",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "资源监控",
+      "url": "#/monitor",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "数据集",
+      "url": "#/datasets",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "在线标注",
+      "url": "#/annotation",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "数据增强",
+      "url": "#/augmentation",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "训练项目",
+      "url": "#/projects",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "训练任务",
+      "url": "#/runs",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型仓库",
+      "url": "#/models",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "17px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型评估",
+      "url": "#/evaluation",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "在线服务",
+      "url": "#/services",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "API KEY管理",
+      "url": "#/api-keys",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "统计面板",
+      "url": "#/admin/stats",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "资源管理",
+      "url": "#/admin/resources",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "数据管理",
+      "url": "#/admin/data",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型管理",
+      "url": "#/admin/models",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "作业管理",
+      "url": "#/admin/jobs",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "用户管理",
+      "url": "#/admin/users",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "操作记录",
+      "url": "#/admin/audit",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "系统设置",
+      "url": "#/admin/settings",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "21px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽标注样本",
+      "url": "#/datasets/ds-helmet",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "19px",
+        "24px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测",
+      "url": "#/projects/pr-helmet",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "24px",
+        "21px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 02",
+      "url": "#/runs/run-1042",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "MobileNetV3",
+      "url": "#/models/mobilenet",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "客服意图识别服务",
+      "url": "#/services/svc-intent",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "导入数据集",
+      "url": "#/datasets/new",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "新建训练",
+      "url": "#/train/new",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 02",
+      "url": "#/runs/run-1042?tab=metrics",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 02",
+      "url": "#/runs/run-1042?tab=logs",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "16px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "安全帽检测 · 基线 01",
+      "url": "#/runs/run-1038?tab=outputs",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型仓库",
+      "url": "#/models?tab=network",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "22px",
+        "15px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "模型仓库",
+      "url": "#/models?tab=my",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "16px",
+        "46.08px",
+        "27px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "登录工作空间",
+      "url": "#/login",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "16px",
+        "46.08px",
+        "27px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "创建账号",
+      "url": "#/register",
+      "version": "./js/app.js?v=console-4",
+      "width": 1440,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "16px",
+        "32.768px",
+        "27px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "登录工作空间",
+      "url": "#/login",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "16px",
+        "32.768px",
+        "27px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "创建账号",
+      "url": "#/register",
+      "version": "./js/app.js?v=console-4",
+      "width": 1024,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "16px",
+        "27px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "登录工作空间",
+      "url": "#/login",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    },
+    {
+      "fontSizes": [
+        "14px",
+        "16px",
+        "27px"
+      ],
+      "overflow": false,
+      "panel": true,
+      "title": "创建账号",
+      "url": "#/register",
+      "version": "./js/app.js?v=console-4",
+      "width": 390,
+      "small": []
+    }
+  ],
+  "dialogs": [
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "user-new",
+      "radius": "10px",
+      "title": "新增用户"
+    },
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "user-access",
+      "radius": "10px",
+      "title": "林舟 · 权限与配额"
+    },
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "api-key-new",
+      "radius": "10px",
+      "title": "创建 API KEY"
+    },
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "service-new",
+      "radius": "10px",
+      "title": "创建推理服务"
+    },
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "settings",
+      "radius": "10px",
+      "title": "修改系统设置"
+    },
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "annotation-new",
+      "radius": "10px",
+      "title": "新建标注批次"
+    },
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "augmentation-new",
+      "radius": "10px",
+      "title": "创建增强方案"
+    },
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "process-dataset",
+      "radius": "10px",
+      "title": "处理 安全帽标注样本"
+    },
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "group-new",
+      "radius": "10px",
+      "title": "新建用户组"
+    },
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "group-access",
+      "radius": "10px",
+      "title": "研发组 · 用户组配置"
+    },
+    {
+      "fits": true,
+      "focusInside": true,
+      "kind": "node-new",
+      "radius": "10px",
+      "title": "登记演示节点"
+    }
+  ],
+  "interactions": {
+    "menuScroll": {
+      "before": 64,
+      "afterRoute": 64,
+      "afterCollapseExpand": 64,
+      "passed": true
+    },
+    "mobileGroupKeepsDrawer": true,
+    "wizard": {
+      "validationText": "训练轮次须在 1–100 之间。",
+      "reviewHasDraft": true,
+      "mobile": {
+        "hints": 0,
+        "lora": true,
+        "overflow": false
+      }
+    },
+    "status": {
+      "roundSymbols": true,
+      "listLabelsHidden": true,
+      "focusTooltipVerified": true
+    }
+  },
+  "limitations": [
+    "纯前端演示，未连接后端",
+    "未提交训练、用户或节点创建，不进行真实资源操作"
+  ]
+}

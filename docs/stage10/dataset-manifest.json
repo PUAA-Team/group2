@@ -1,0 +1,130 @@
+{
+  "seed": 42,
+  "sms": {
+    "source": {
+      "url": "https://archive.ics.uci.edu/static/public/228/sms+spam+collection.zip",
+      "filename": "sms.zip",
+      "bytes": 203415,
+      "sha256": "1587ea43e58e82b14ff1f5425c88e17f8496bfcdb67a583dbff9eefaf9963ce3",
+      "official_md5": null
+    },
+    "license": "CC BY 4.0",
+    "attribution": "Almeida, T. & Hidalgo, J. (2011). SMS Spam Collection. UCI. DOI:10.24432/C5CC84",
+    "raw_lines": 5574,
+    "malformed_lines": 0,
+    "duplicate_rows": 415,
+    "conflicting_groups_removed": 0,
+    "development": {
+      "ham": 3614,
+      "spam": 514
+    },
+    "test": {
+      "ham": 903,
+      "spam": 128
+    },
+    "qwen_development": 512,
+    "qwen_test": 128,
+    "cross_split_overlap": 0
+  },
+  "fashion": {
+    "sources": [
+      {
+        "url": "https://raw.githubusercontent.com/zalandoresearch/fashion-mnist/master/data/fashion/train-images-idx3-ubyte.gz",
+        "filename": "train-images-idx3-ubyte.gz",
+        "bytes": 26421880,
+        "sha256": "3aede38d61863908ad78613f6a32ed271626dd12800ba2636569512369268a84",
+        "official_md5": "8d4fb7e6c68d591d4c3dfef9ec88bf0d"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/zalandoresearch/fashion-mnist/master/data/fashion/train-labels-idx1-ubyte.gz",
+        "filename": "train-labels-idx1-ubyte.gz",
+        "bytes": 29515,
+        "sha256": "a04f17134ac03560a47e3764e11b92fc97de4d1bfaf8ba1a3aa29af54cc90845",
+        "official_md5": "25c81989df183df01b3e8a0aad5dffbe"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/zalandoresearch/fashion-mnist/master/data/fashion/t10k-images-idx3-ubyte.gz",
+        "filename": "t10k-images-idx3-ubyte.gz",
+        "bytes": 4422102,
+        "sha256": "346e55b948d973a97e58d2351dde16a484bd415d4595297633bb08f03db6a073",
+        "official_md5": "bef4ecab320f06d8554ea6380940ec79"
+      },
+      {
+        "url": "https://raw.githubusercontent.com/zalandoresearch/fashion-mnist/master/data/fashion/t10k-labels-idx1-ubyte.gz",
+        "filename": "t10k-labels-idx1-ubyte.gz",
+        "bytes": 5148,
+        "sha256": "67da17c76eaffca5446c3361aaab5c3cd6d1c2608764d35dfb1850b086bf8dd5",
+        "official_md5": "bb300cfdad3c16e7a12a480ee83cd310"
+      }
+    ],
+    "license": "MIT",
+    "attribution": "Xiao, H., Rasul, K. & Vollgraf, R. (2017). Fashion-MNIST. Zalando SE.",
+    "counts": {
+      "fashion-development": {
+        "samples": 6000,
+        "per_class": {
+          "T-shirt": 600,
+          "Trouser": 600,
+          "Pullover": 600,
+          "Dress": 600,
+          "Coat": 600,
+          "Sandal": 600,
+          "Shirt": 600,
+          "Sneaker": 600,
+          "Bag": 600,
+          "Ankle-boot": 600
+        },
+        "duplicates_skipped": 0
+      },
+      "fashion-test": {
+        "samples": 2000,
+        "per_class": {
+          "T-shirt": 200,
+          "Trouser": 200,
+          "Pullover": 200,
+          "Dress": 200,
+          "Coat": 200,
+          "Sandal": 200,
+          "Shirt": 200,
+          "Sneaker": 200,
+          "Bag": 200,
+          "Ankle-boot": 200
+        },
+        "duplicates_skipped": 0
+      }
+    },
+    "cross_split_overlap": 0
+  },
+  "files": [
+    {
+      "filename": "fashion-development.zip",
+      "bytes": 3818793,
+      "sha256": "1c823d12f9a04dd75ee4f42c2fb1024ed5f6273a110bd6122b8135825007600a"
+    },
+    {
+      "filename": "fashion-test.zip",
+      "bytes": 1274544,
+      "sha256": "e2e5cec9507b50383dd5e550a049580bfe499a96529239f553548628e1563e98"
+    },
+    {
+      "filename": "qwen-sms-development.jsonl",
+      "bytes": 112328,
+      "sha256": "234997fca6748e7359d3be5c4047365c36a8964be757ebdf9a18bd02579609ce"
+    },
+    {
+      "filename": "qwen-sms-test.jsonl",
+      "bytes": 28002,
+      "sha256": "e41af73c0dce2e37ea2ff62a64c064f458f13aa4d67d0cf4f6c73abf5df3e1ab"
+    },
+    {
+      "filename": "sms-development.csv",
+      "bytes": 354717,
+      "sha256": "9df896f3f3b759db53a3691bfc105d4a4be3b4d9959a177bac43c4451ca3833c"
+    },
+    {
+      "filename": "sms-test.csv",
+      "bytes": 88682,
+      "sha256": "8f00593876dace3428c677480a7f34ec441036a9aeb48d8dd961672147fa59b0"
+    }
+  ]
+}

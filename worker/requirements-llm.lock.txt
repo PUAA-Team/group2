@@ -1,0 +1,11 @@
+# 本机只读复用 torch_env 的覆盖层；基础环境另含 torch2.5.1+cu121、Pillow12.0.0。
+accelerate==1.15.0
+charset-normalizer==3.5.2
+huggingface_hub==0.36.2
+peft==0.18.1
+regex==2026.9.29
+requests==2.34.2
+safetensors==0.8.0
+tokenizers==0.22.2
+transformers==4.57.6
+urllib3==2.8.0

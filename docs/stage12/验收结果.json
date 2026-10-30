@@ -1,0 +1,110 @@
+{
+  "server": {
+    "url": "https://47.93.115.188:5488",
+    "release": "/srv/model-platform/releases/20261029-04",
+    "python": "Python 3.12.16",
+    "postgresql": "17.11 (Debian 17.11-1.pgdg12+2)",
+    "counts": {
+      "users": 1,
+      "workspaces": 1,
+      "models": 3,
+      "datasets": 3,
+      "completed_jobs": 1,
+      "nodes": 1
+    },
+    "application_database_role": "model_platform:false:false:false",
+    "certificate_not_after": "Nov  5 00:24:54 2026 GMT",
+    "certificate_ip_san": [
+      [
+        "IP Address",
+        "47.93.115.188"
+      ]
+    ],
+    "renewal_timer": "enabled",
+    "disk_free_bytes": 35824553984
+  },
+  "checks": {
+    "url": "https://47.93.115.188:5488",
+    "anonymous_denied": true,
+    "secure_cookie": true,
+    "csrf_required": true,
+    "foreign_origin_denied": true,
+    "training_persisted": true,
+    "worker_online": true,
+    "gpu_idle": true,
+    "windows-tests-final.xml": {
+      "tests": 63,
+      "failures": 0
+    },
+    "linux-tests-final.xml": {
+      "tests": 63,
+      "failures": 0
+    }
+  },
+  "frontend_tests": 85,
+  "browser_layouts": 12,
+  "browser_errors": [],
+  "training": {
+    "workspace_id": "wsp_5dda033c6b22409e892bcc19d29b06da",
+    "project_id": "prj_a2fc45db0e504698a2cc9dab6cd00292",
+    "node_id": "nod_0d8d563dfbaf44179badcf17b3848d54",
+    "job_id": "job_db847a8e9ad54ddfad8d1933938a3daa",
+    "gpu_released": true,
+    "artifact_files": [
+      "manifest.json",
+      "weights.safetensors"
+    ]
+  },
+  "result": {
+    "accuracy": 0.5,
+    "macro_f1": 0.3333333333333333,
+    "labels": [
+      "圆形",
+      "方形"
+    ],
+    "confusion_matrix": [
+      [
+        3,
+        0
+      ],
+      [
+        3,
+        0
+      ]
+    ],
+    "samples": 6,
+    "validation_samples": 6,
+    "training_samples": 18,
+    "device": "cuda",
+    "validation_loss": 0.6497122645378113
+  },
+  "epochs": [
+    {
+      "epoch": 1,
+      "step": 3,
+      "loss": 0.7142092850473192,
+      "accuracy": 0.5,
+      "val_loss": 0.6848157048225403,
+      "val_accuracy": 0.5
+    },
+    {
+      "epoch": 2,
+      "step": 6,
+      "loss": 0.6760819488101535,
+      "accuracy": 0.6666666666666666,
+      "val_loss": 0.6659079194068909,
+      "val_accuracy": 0.6666666865348816
+    },
+    {
+      "epoch": 3,
+      "step": 9,
+      "loss": 0.6635231309466891,
+      "accuracy": 0.6666666666666666,
+      "val_loss": 0.6497122645378113,
+      "val_accuracy": 0.5
+    }
+  ],
+  "artifact_sha256": "b5edd05d258fb9adbf1d4e5a577552feb705f8d7f96f71f1cf78bbf709438988",
+  "backup_policy": "server-only",
+  "old_local_reservation_preserved": true
+}

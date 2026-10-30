@@ -1,0 +1,11 @@
+[Unit]
+Description=Check model platform certificate twice daily
+
+[Timer]
+OnCalendar=*-*-* 03,15:15:00
+RandomizedDelaySec=600
+Persistent=true
+Unit=model-platform-certificate.service
+
+[Install]
+WantedBy=timers.target

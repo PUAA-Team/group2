@@ -1,0 +1,10 @@
+[project]
+name = "model-platform"
+version = "0.1.0"
+description = "内部模型训练平台控制平面"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "--strict-markers"

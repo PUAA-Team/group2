@@ -1,0 +1,31 @@
+{
+  "errors": [],
+  "layouts": [
+    {
+      "width": 1440,
+      "overflow": false,
+      "dialogWidth": 760,
+      "footerBottom": 874,
+      "textMinimum": 14
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "dialogWidth": 366,
+      "footerBottom": 895.5,
+      "textMinimum": 14
+    }
+  ],
+  "screenshots": [
+    "deployment-desktop.png",
+    "deployment-mobile.png"
+  ],
+  "suggestion": {
+    "mode": "label",
+    "instruction": true,
+    "labels": 2
+  },
+  "generateMode": true,
+  "draftSaved": true,
+  "success": true
+}

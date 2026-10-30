@@ -1,0 +1,916 @@
+{
+  "modelId": "MB01",
+  "title": "大模型集成训练平台核心业务类图",
+  "version": "1.0",
+  "date": "2026-10-19",
+  "classes": [
+    {
+      "id": "O01",
+      "name": "用户",
+      "key": "User",
+      "core": true,
+      "responsibility": "代表操作主体及账号状态",
+      "attributes": "userId、account、status、primaryGroupId",
+      "operations": "disable、enable",
+      "attributeNotes": "userId 为稳定主体标识；account 用于登录；status 决定账号是否可发起操作；primaryGroupId 表示当前主组，允许尚未分组。",
+      "operationNotes": "disable/enable 根据管理授权停用或启用账号，返回账号状态；已有业务记录保留其主体引用。",
+      "x": 0,
+      "y": -4.2,
+      "diagramAttributes": [
+        "userId: ID",
+        "status: AccountState"
+      ],
+      "diagramOperation": "disable(): void"
+    },
+    {
+      "id": "O02",
+      "name": "角色",
+      "key": "Role",
+      "core": true,
+      "responsibility": "表达职责和允许操作",
+      "attributes": "roleId、name、allowedActions",
+      "operations": "allowsAction",
+      "attributeNotes": "roleId 标识职责角色；name 是角色名称；allowedActions 表达该角色允许的操作集合。角色与用户可多对多关联。",
+      "operationNotes": "allowsAction(action) 判断角色是否包含该操作，返回布尔结果；最终授权还要合并组、个人与对象约束。",
+      "x": 0,
+      "y": 0,
+      "diagramAttributes": [
+        "roleId: ID",
+        "allowedActions: ActionSet"
+      ],
+      "diagramOperation": "allowsAction(action): Boolean"
+    },
+    {
+      "id": "O03",
+      "name": "用户组",
+      "key": "UserGroup",
+      "core": true,
+      "responsibility": "提供基础授权及组上限",
+      "attributes": "groupId、name、grantRefs、quotaPolicyRef",
+      "operations": "changePolicy",
+      "attributeNotes": "groupId 标识用户组；name 用于展示；grantRefs 引用基础授权；quotaPolicyRef 引用组上限。组权限与资源池分别管理。",
+      "operationNotes": "changePolicy(policy) 接收包含基础授权及配额策略的规则对象，在管理员确认后更新组规则并保留审计；任务提交和启动时重新核对有效规则。",
+      "x": 7.4,
+      "y": 0,
+      "diagramAttributes": [
+        "groupId: ID",
+        "quotaPolicyRef: ID"
+      ],
+      "diagramOperation": "changePolicy(policy): void"
+    },
+    {
+      "id": "O04",
+      "name": "工作空间",
+      "key": "Workspace",
+      "core": true,
+      "responsibility": "组织成员与业务资产",
+      "attributes": "workspaceId、name、memberRefs、status",
+      "operations": "addMember、removeMember",
+      "attributeNotes": "workspaceId 限定资产的业务空间；name 为名称；memberRefs 记录成员及访问资格；status 决定空间是否可操作。",
+      "operationNotes": "addMember/removeMember 接收成员与授权范围并调整成员关系，返回处理结果；资产查询和后续操作按当前关系过滤。",
+      "x": 7.4,
+      "y": -4.2,
+      "diagramAttributes": [
+        "workspaceId: ID",
+        "status: WorkspaceState"
+      ],
+      "diagramOperation": "addMember(member): void"
+    },
+    {
+      "id": "O05",
+      "name": "训练项目",
+      "key": "TrainingProject",
+      "core": true,
+      "responsibility": "组织多次训练和结果比较",
+      "attributes": "projectId、workspaceId、name、ownerId",
+      "operations": "addTask、listComparableTasks",
+      "attributeNotes": "projectId 是项目标识；workspaceId 指明唯一所属空间；name 为名称；ownerId 为负责人。一个项目组织多次训练。",
+      "operationNotes": "addTask(task) 将新任务归入项目；listComparableTasks(criteria) 返回具备可比条件的任务，数据和指标差异另行说明。",
+      "x": 0,
+      "y": -8.4,
+      "diagramAttributes": [
+        "projectId: ID",
+        "workspaceId: ID"
+      ],
+      "diagramOperation": "addTask(task): void"
+    },
+    {
+      "id": "O06",
+      "name": "模型模板",
+      "key": "ModelTemplate",
+      "core": true,
+      "responsibility": "定义网络、任务、参数契约与执行能力",
+      "attributes": "templateId、taskType、supportedModes、parameterContract、runtimeRequirements",
+      "operations": "validateConfig",
+      "attributeNotes": "templateId 标识模型执行模板；taskType 描述任务种类；supportedModes 表示支持的训练方式；parameterContract 定义参数类型及范围；runtimeRequirements 描述环境和设备要求。",
+      "operationNotes": "validateConfig(config) 校验配置及其引用的模型、数据、参数和运行环境，返回结构化校验结果及字段问题。",
+      "x": 14.8,
+      "y": -12.600000000000001,
+      "diagramAttributes": [
+        "templateId: ID",
+        "taskType: TaskType"
+      ],
+      "diagramOperation": "validateConfig(config): Result"
+    },
+    {
+      "id": "O07",
+      "name": "模型版本",
+      "key": "ModelVersion",
+      "core": true,
+      "responsibility": "提供确定权重或适配器及来源",
+      "attributes": "versionId、entryId、templateId、artifactRefs、baseVersionId、sourceExecutionId",
+      "operations": "validateDependencies",
+      "attributeNotes": "versionId 标识确定的权重或适配器；entryId 组织同模型版本；templateId 标识解释执行方式；artifactRefs 引用文件；baseVersionId 保留 LoRA 等基础依赖；sourceExecutionId 可为空，支持导入模型。",
+      "operationNotes": "validateDependencies() 核对版本产物和基础依赖的完整性与兼容条件，返回可用性结果；版本发布后不覆盖原权重。",
+      "x": 7.4,
+      "y": -16.8,
+      "diagramAttributes": [
+        "versionId: ID",
+        "baseVersionId: ID[0..1]"
+      ],
+      "diagramOperation": "validateDependencies(): Result"
+    },
+    {
+      "id": "O08",
+      "name": "数据集",
+      "key": "Dataset",
+      "core": true,
+      "responsibility": "组织同一数据资产的版本",
+      "attributes": "datasetId、name、taskType、visibility",
+      "operations": "addVersion、checkDeletion",
+      "attributeNotes": "datasetId 标识数据资产；name 为名称；taskType 表示适用任务；visibility 说明可见范围。版本按数据集归档并受所属空间或公共可见策略控制。",
+      "operationNotes": "addVersion(source, result) 产生并关联新版本；checkDeletion() 检查引用和保留约束，返回允许或阻止删除的原因。",
+      "x": 7.4,
+      "y": -8.4,
+      "diagramAttributes": [
+        "datasetId: ID",
+        "taskType: TaskType"
+      ],
+      "diagramOperation": "addVersion(source, result): ID"
+    },
+    {
+      "id": "O09",
+      "name": "数据版本",
+      "key": "DatasetVersion",
+      "core": true,
+      "responsibility": "固定样本、标签、划分与来源",
+      "attributes": "versionId、datasetId、parentVersionId、schema、manifest、splitRef、checksum、status",
+      "operations": "validate、publish",
+      "attributeNotes": "versionId 标识固定版本；datasetId 为所属数据集；parentVersionId 保留处理来源；schema 定义字段和标签；manifest 固定样本；splitRef 固定划分；checksum 用于完整性核对；status 表达可用性。",
+      "operationNotes": "validate() 返回格式、样本及标签问题；publish(review) 在校验和必要审核完成后使版本可用。已发布版本内容保持不变。",
+      "x": 7.4,
+      "y": -12.600000000000001,
+      "diagramAttributes": [
+        "versionId: ID",
+        "status: DataState"
+      ],
+      "diagramOperation": "publish(review): Result"
+    },
+    {
+      "id": "O10",
+      "name": "训练任务",
+      "key": "TrainingTask",
+      "core": true,
+      "responsibility": "表示一次固定配置实验及其业务结果",
+      "attributes": "taskId、projectId、ownerId、taskType、status、submittedAt、priority、sourceTaskId",
+      "operations": "submit、requestStop、recordOutcome",
+      "attributeNotes": "taskId 表示一次业务实验；projectId 为所属项目；ownerId 为提交主体；taskType 约束可用模板；status 表示业务状态；submittedAt 记录平台受理时间；priority 用于排序；sourceTaskId 保留重跑来源。",
+      "operationNotes": "submit(snapshot) 将符合受理条件的任务入队；requestStop(reason) 按真实启动情况请求取消或停止；recordOutcome(fact) 依据执行事实登记结果，终态不被普通重跑覆盖。",
+      "x": 0,
+      "y": -12.600000000000001,
+      "diagramAttributes": [
+        "taskId: ID",
+        "status: TaskState"
+      ],
+      "diagramOperation": "requestStop(reason): Result"
+    },
+    {
+      "id": "O11",
+      "name": "配置快照",
+      "key": "ConfigSnapshot",
+      "core": true,
+      "responsibility": "固定一次受理的完整输入",
+      "attributes": "snapshotId、templateId、initialModelVersionId 或随机初始化标记、datasetVersionId、splitRef、runtimeRef、parameters、resourceRequest、hash",
+      "operations": "freeze、checkCompatibility",
+      "attributeNotes": "snapshotId 标识受理输入；templateId 指定模板；initialModelVersionId 与随机初始化标记互斥；datasetVersionId、splitRef 固定数据；runtimeRef 固定环境；parameters 和 resourceRequest 固定超参与资源约束；hash 用于内容核对。",
+      "operationNotes": "freeze(config) 固定已受理输入；checkCompatibility(context) 返回兼容性问题。采纳新建议先产生新配置，用户确认后再提交新任务。",
+      "x": 0,
+      "y": -16.8,
+      "diagramAttributes": [
+        "snapshotId: ID",
+        "hash: Digest"
+      ],
+      "diagramOperation": "freeze(config): void"
+    },
+    {
+      "id": "O12",
+      "name": "执行记录",
+      "key": "ExecutionRecord",
+      "core": true,
+      "responsibility": "跟踪实际派发、启动、事件与结束",
+      "attributes": "executionId、taskId、attemptNo、nodeId 或 providerExecutionId、phase、startedAt、finishedAt",
+      "operations": "confirmStart、recordEvent、recordExit",
+      "attributeNotes": "executionId 区分实际派发尝试；taskId 关联任务；attemptNo 记录次序；nodeId 或 providerExecutionId 标识执行位置；phase 表示准备、训练或上传阶段；startedAt、finishedAt 记录真实执行时间。",
+      "operationNotes": "confirmStart(evidence) 确认实际启动；recordEvent(event) 去重并保留事实；recordExit(evidence) 登记退出。节点失联先核查，不据此直接重建训练。",
+      "x": 0,
+      "y": -21,
+      "diagramAttributes": [
+        "executionId: ID",
+        "phase: ExecutionPhase"
+      ],
+      "diagramOperation": "recordEvent(event): Result"
+    },
+    {
+      "id": "O13",
+      "name": "计算节点",
+      "key": "ComputeNode",
+      "core": true,
+      "responsibility": "表达可接单 CPU/GPU 节点及运行能力",
+      "attributes": "nodeId、source、runtimeCapabilities、lastHeartbeatAt、health",
+      "operations": "register、recordHeartbeat、isolate",
+      "attributeNotes": "nodeId 稳定标识接入节点；source 说明本机、实验室或托管来源；runtimeCapabilities 记录 CPU/GPU 与环境能力；lastHeartbeatAt 表示末次心跳；health 表示审核和健康状态。",
+      "operationNotes": "register(capabilities) 保存探测信息；recordHeartbeat(sample) 更新存活事实；isolate(reason) 阻止新派发并保留原执行占用。",
+      "x": 0,
+      "y": -25.200000000000003,
+      "diagramAttributes": [
+        "nodeId: ID",
+        "health: NodeHealth"
+      ],
+      "diagramOperation": "recordHeartbeat(sample): void"
+    },
+    {
+      "id": "O14",
+      "name": "GPU 资源",
+      "key": "GPUResource",
+      "core": true,
+      "responsibility": "表达具体设备的能力和占用",
+      "attributes": "deviceId、nodeId、localIndex、memoryMiB、capabilities、allocationState",
+      "operations": "checkCapacity、changeAllocationState",
+      "attributeNotes": "deviceId 是跨节点稳定设备标识；nodeId 指明唯一所属节点；localIndex 仅为节点内显示编号；memoryMiB 明确显存单位；capabilities 描述设备能力；allocationState 表示占用。",
+      "operationNotes": "checkCapacity(request) 检查设备和显存要求；changeAllocationState(evidence) 依据预留、启动或释放事实更新占用，不仅依据任务文字状态。",
+      "x": 7.4,
+      "y": -25.200000000000003,
+      "diagramAttributes": [
+        "deviceId: ID",
+        "memoryMiB: Integer"
+      ],
+      "diagramOperation": "checkCapacity(request): Result"
+    },
+    {
+      "id": "O15",
+      "name": "资源分配记录",
+      "key": "ResourceAllocation",
+      "core": true,
+      "responsibility": "跟踪预留、占用、释放与清理",
+      "attributes": "allocationId、ownerKind、ownerId、nodeId、deviceId、quantity、state、reservedAt、releasedAt",
+      "operations": "reserve、confirmUse、confirmRelease",
+      "attributeNotes": "allocationId 标识一次资源分配；ownerKind、ownerId 指向执行或推理服务，二者恰选其一；nodeId、deviceId 定位资源，CPU 分配可无 GPU；quantity 表示用量；state、reservedAt、releasedAt 跟踪生命周期。",
+      "operationNotes": "reserve(request) 表示原子预留；confirmUse(evidence) 确认占用；confirmRelease(evidence) 确认真实释放。重复操作不重复记账，未知占用保持待核查。",
+      "x": 7.4,
+      "y": -21,
+      "diagramAttributes": [
+        "allocationId: ID",
+        "state: AllocationState"
+      ],
+      "diagramOperation": "confirmRelease(evidence): Result"
+    },
+    {
+      "id": "O16",
+      "name": "模型产物",
+      "key": "ModelArtifact",
+      "core": true,
+      "responsibility": "保存模型文件、检查点及校验结果",
+      "attributes": "artifactId、sourceExecutionId、kind、locationRef、size、checksum、integrityState",
+      "operations": "verifyIntegrity、archive",
+      "attributeNotes": "artifactId 标识文件产物；sourceExecutionId 保留本平台执行来源，导入产物可为空；kind 区分最终权重、适配器和检查点；locationRef 指向受控位置；size、checksum 用于完整性；integrityState 表示校验结果。",
+      "operationNotes": "verifyIntegrity(manifest) 校验文件清单及校验和；archive() 保存可追溯产物。必要文件未完整时，训练不能提前记为成功。",
+      "x": 14.8,
+      "y": -16.8,
+      "diagramAttributes": [
+        "artifactId: ID",
+        "integrityState: IntegrityState"
+      ],
+      "diagramOperation": "verifyIntegrity(manifest): Result"
+    },
+    {
+      "id": "O17",
+      "name": "推理服务",
+      "key": "InferenceService",
+      "core": true,
+      "responsibility": "发布指定模型、就绪检查、调用与停止",
+      "attributes": "serviceId、modelVersionId、runtimeRef、allocationRefs、accessPolicy、status",
+      "operations": "publish、confirmReady、requestStop",
+      "attributeNotes": "serviceId 标识服务实例；modelVersionId 固定模型；runtimeRef 和 allocationRefs 固定环境与占用；accessPolicy 控制调用；status 区分创建、运行、停止和失败。",
+      "operationNotes": "publish(config) 申请创建并加载；confirmReady(evidence) 在就绪检查后开放调用；requestStop(reason) 拒绝新请求、结束执行并安排清理。",
+      "x": 14.8,
+      "y": -21,
+      "diagramAttributes": [
+        "serviceId: ID",
+        "status: ServiceState"
+      ],
+      "diagramOperation": "confirmReady(evidence): Result"
+    },
+    {
+      "id": "O18",
+      "name": "审计记录",
+      "key": "AuditRecord",
+      "core": true,
+      "responsibility": "追溯关键操作与结果",
+      "attributes": "auditId、actorId、action、objectRef、occurredAt、result、reason",
+      "operations": "append",
+      "attributeNotes": "auditId 标识审计记录；actorId 指向操作主体；action、objectRef 标识动作和目标；occurredAt 记录发生时间；result、reason 说明结果。系统动作使用可追溯的系统主体。",
+      "operationNotes": "append(operation) 追加关键操作事实，保留历史。审计与训练日志分别管理；主体或对象停用后，审计记录仍可追溯。",
+      "x": 14.8,
+      "y": 0,
+      "diagramAttributes": [
+        "auditId: ID",
+        "objectRef: ObjectRef"
+      ],
+      "diagramOperation": "append(operation): void"
+    },
+    {
+      "id": "O19",
+      "name": "外部模型连接",
+      "key": "ExternalModelConnection",
+      "core": true,
+      "responsibility": "管理辅助 API 渠道与能力",
+      "attributes": "connectionId、provider、endpointRef、modelName、capabilities、credentialRef、limits、status",
+      "operations": "testConnection、disable",
+      "attributeNotes": "connectionId 标识辅助渠道；provider、endpointRef、modelName 描述提供商和模型；capabilities 区分文本、图像等能力；credentialRef 引用受控秘密；limits 为调用约束；status 表示启用情况。",
+      "operationNotes": "testConnection(input) 使用经批准的无敏感测试输入检查能力及响应；disable() 停用后阻止新调用。连接可用不代表真实业务数据已获外发授权。",
+      "x": 14.8,
+      "y": -4.2,
+      "diagramAttributes": [
+        "connectionId: ID",
+        "status: ConnectionState"
+      ],
+      "diagramOperation": "testConnection(input): Result"
+    },
+    {
+      "id": "O20",
+      "name": "智能辅助请求",
+      "key": "AssistantRequest",
+      "core": true,
+      "responsibility": "跟踪一次解释、推荐或预标注",
+      "attributes": "requestId、kind、actorId、inputVersionRefs、authorizationRef、connectionId、status、resultRefs、usage",
+      "operations": "submit、cancel、recordResult",
+      "attributeNotes": "requestId 标识一次解释、推荐或预标注；kind 区分类型；actorId 为请求者；inputVersionRefs 固定输入；authorizationRef 保存授权依据；connectionId 指向渠道；status、resultRefs、usage 记录处理结果与用量。",
+      "operationNotes": "submit(input, authorization) 在授权后发起；cancel(reason) 取消辅助请求；recordResult(candidate) 保存经校验的候选。结果经人工确认及再次校验后才应用到新配置或新数据版本。",
+      "x": 14.8,
+      "y": -8.4,
+      "diagramAttributes": [
+        "requestId: ID",
+        "kind: AssistanceKind"
+      ],
+      "diagramOperation": "recordResult(candidate): Result"
+    },
+    {
+      "id": "A09",
+      "name": "资源池",
+      "key": "ResourcePool",
+      "core": false,
+      "responsibility": "组织可调度节点并描述使用策略",
+      "attributes": "poolId、nodes、policy",
+      "operations": "addNode、removeNode",
+      "attributeNotes": "poolId 标识调度池；nodes 为成员节点；policy 描述使用策略。当前节点至多归一个调度池，移出池仍可保留节点。",
+      "operationNotes": "addNode/removeNode 调整节点集合，不删除节点、GPU 或已有分配。",
+      "x": 14.8,
+      "y": -25.2,
+      "diagramAttributes": [
+        "poolId: ID",
+        "policy: PoolPolicy"
+      ],
+      "diagramOperation": "addNode(node): void"
+    }
+  ],
+  "relations": [
+    {
+      "id": "R01",
+      "a": "Role",
+      "b": "User",
+      "label": "角色",
+      "ma": "0..*",
+      "mb": "0..*",
+      "points": [
+        [0, -1.4],
+        [0, -2.8]
+      ],
+      "kind": "association",
+      "constraint": "每个用户可承担零至多个角色，同一角色可分配给多个用户；角色变更不改变用户身份。"
+    },
+    {
+      "id": "R02",
+      "a": "UserGroup",
+      "b": "User",
+      "label": "主组",
+      "ma": "0..1",
+      "mb": "0..*",
+      "points": [
+        [7.4, -1.4],
+        [7.4, -2.1],
+        [-0.9, -2.1],
+        [-0.9, -2.8]
+      ],
+      "kind": "association",
+      "constraint": "每个用户至多归属一个主组，一个组可包含多个用户；尚未分组的用户不获得组基础授权。"
+    },
+    {
+      "id": "R03",
+      "a": "User",
+      "b": "Workspace",
+      "label": "成员",
+      "ma": "0..*",
+      "mb": "0..*",
+      "points": [
+        [2.8, -4.2],
+        [4.6, -4.2]
+      ],
+      "kind": "association",
+      "constraint": "用户可加入多个工作空间，一个空间可接纳多个成员；访问资产时继续核对具体成员及对象权限。"
+    },
+    {
+      "id": "R04",
+      "a": "Workspace",
+      "b": "TrainingProject",
+      "label": "组织",
+      "ma": "1",
+      "mb": "0..*",
+      "points": [
+        [7.4, -5.6],
+        [7.4, -6.3],
+        [0, -6.3],
+        [0, -7]
+      ],
+      "kind": "association",
+      "constraint": "每个训练项目恰属一个工作空间，空间可组织多个项目；空间切换后重新过滤项目与操作。"
+    },
+    {
+      "id": "R05",
+      "a": "User",
+      "b": "TrainingProject",
+      "label": "负责",
+      "ma": "1",
+      "mb": "0..*",
+      "points": [
+        [-0.9, -5.6],
+        [-0.9, -7]
+      ],
+      "kind": "association",
+      "constraint": "每个项目有一个负责用户，一个用户可负责多个项目；负责人停用时保留原主体引用并按管理流程处理。"
+    },
+    {
+      "id": "R06",
+      "a": "Workspace",
+      "b": "Dataset",
+      "label": "资产",
+      "ma": "0..1",
+      "mb": "0..*",
+      "points": [
+        [6.5, -5.6],
+        [6.5, -7]
+      ],
+      "kind": "association",
+      "constraint": "空间私有数据集必须关联一个空间；公共数据集按公共可见策略授权。"
+    },
+    {
+      "id": "R07",
+      "a": "TrainingProject",
+      "b": "TrainingTask",
+      "label": "实验",
+      "ma": "1",
+      "mb": "0..*",
+      "points": [
+        [0, -9.8],
+        [0, -11.2]
+      ],
+      "kind": "association",
+      "constraint": "每个训练任务恰属一个项目，项目可组织多次实验；比较任务时保留各自数据、模型和指标条件。"
+    },
+    {
+      "id": "R08",
+      "a": "Dataset",
+      "b": "DatasetVersion",
+      "label": "版本",
+      "ma": "1",
+      "mb": "0..*",
+      "points": [
+        [7.4, -9.8],
+        [7.4, -11.2]
+      ],
+      "kind": "association",
+      "constraint": "每个数据版本恰属一个数据集，数据集可有多个版本；发布版本内容保持不变，处理结果通过新版本保存。"
+    },
+    {
+      "id": "R09",
+      "a": "TrainingTask",
+      "b": "ConfigSnapshot",
+      "label": "固定输入",
+      "ma": "1",
+      "mb": "0..1",
+      "points": [
+        [0, -14],
+        [0, -15.4]
+      ],
+      "kind": "composition",
+      "constraint": "草稿至多一份快照；受理后恰有一份固定快照，随任务保留归档。"
+    },
+    {
+      "id": "R10",
+      "a": "TrainingTask",
+      "b": "ExecutionRecord",
+      "label": "派发尝试",
+      "ma": "1",
+      "mb": "0..*",
+      "points": [
+        [-2.8, -12.6],
+        [-3.7, -12.6],
+        [-3.7, -21],
+        [-2.8, -21]
+      ],
+      "kind": "composition",
+      "constraint": "内部派发尝试随任务归档；用户重跑创建新任务。"
+    },
+    {
+      "id": "R11",
+      "a": "ConfigSnapshot",
+      "b": "ModelVersion",
+      "label": "初始权重",
+      "ma": "0..*",
+      "mb": "0..1",
+      "points": [
+        [2.8, -16.8],
+        [4.6, -16.8]
+      ],
+      "kind": "association",
+      "constraint": "随机初始化时无初始模型版本，初始化方式另记。"
+    },
+    {
+      "id": "R12",
+      "a": "ConfigSnapshot",
+      "b": "DatasetVersion",
+      "label": "训练数据",
+      "ma": "0..*",
+      "mb": "1",
+      "points": [
+        [0.9, -15.4],
+        [0.9, -14.7],
+        [6.5, -14.7],
+        [6.5, -14]
+      ],
+      "kind": "association",
+      "constraint": "每份受理快照引用一个可用数据版本，同一数据版本可被多次实验复用；数据划分由 splitRef 固定。"
+    },
+    {
+      "id": "R13",
+      "a": "ConfigSnapshot",
+      "b": "ModelTemplate",
+      "label": "模板",
+      "ma": "0..*",
+      "mb": "1",
+      "points": [
+        [-2.8, -16.8],
+        [-4.5, -16.8],
+        [-4.5, -10.5],
+        [18.6, -10.5],
+        [18.6, -12.6],
+        [17.6, -12.6]
+      ],
+      "kind": "association",
+      "constraint": "每份快照指定一个模型模板，用以解释网络、参数和环境契约；随机初始化训练同样需要模板。"
+    },
+    {
+      "id": "R14",
+      "a": "ExecutionRecord",
+      "b": "ComputeNode",
+      "label": "执行位置",
+      "ma": "0..*",
+      "mb": "0..1",
+      "points": [
+        [0, -22.4],
+        [0, -23.8]
+      ],
+      "kind": "association",
+      "constraint": "本地 Worker 执行绑定一个节点；外部托管执行可仅有 providerExecutionId。"
+    },
+    {
+      "id": "R15",
+      "a": "ComputeNode",
+      "b": "GPUResource",
+      "label": "设备",
+      "ma": "1",
+      "mb": "0..*",
+      "points": [
+        [2.8, -25.2],
+        [4.6, -25.2]
+      ],
+      "kind": "association",
+      "constraint": "CPU 节点可以没有 GPU；设备标识独立于本机显示序号。"
+    },
+    {
+      "id": "R16",
+      "a": "ResourcePool",
+      "b": "ComputeNode",
+      "label": "组织节点",
+      "ma": "0..1",
+      "mb": "0..*",
+      "points": [
+        [14.8, -26.6],
+        [14.8, -27.4],
+        [0, -27.4],
+        [0, -26.6]
+      ],
+      "kind": "aggregation",
+      "constraint": "节点可独立存在；移出池不删除节点。多池归属待确认。"
+    },
+    {
+      "id": "R17",
+      "a": "ExecutionRecord",
+      "b": "ResourceAllocation",
+      "label": "使用资源",
+      "ma": "0..1",
+      "mb": "0..*",
+      "points": [
+        [2.8, -21],
+        [4.6, -21]
+      ],
+      "kind": "association",
+      "constraint": "每条分配的执行所有者与推理服务所有者恰选其一。"
+    },
+    {
+      "id": "R18",
+      "a": "ResourceAllocation",
+      "b": "GPUResource",
+      "label": "分配设备",
+      "ma": "0..*",
+      "mb": "0..1",
+      "points": [
+        [7.4, -22.4],
+        [7.4, -23.8]
+      ],
+      "kind": "association",
+      "constraint": "GPU 分配引用一个设备；CPU 分配可无设备引用，同一设备有效占用不得超过容量。"
+    },
+    {
+      "id": "R19",
+      "a": "InferenceService",
+      "b": "ResourceAllocation",
+      "label": "使用资源",
+      "ma": "0..1",
+      "mb": "0..*",
+      "points": [
+        [12, -21],
+        [10.2, -21]
+      ],
+      "kind": "association",
+      "constraint": "与执行所有者关系互斥；服务占用同样计入配额。"
+    },
+    {
+      "id": "R20",
+      "a": "InferenceService",
+      "b": "ModelVersion",
+      "label": "发布模型",
+      "ma": "0..*",
+      "mb": "1",
+      "points": [
+        [14.8, -19.6],
+        [14.8, -18.9],
+        [8.3, -18.9],
+        [8.3, -18.2]
+      ],
+      "kind": "association",
+      "constraint": "每个推理服务固定一个模型版本，同一版本可部署多个服务；各服务独立检查依赖、配额及资源占用。"
+    },
+    {
+      "id": "R21",
+      "a": "ModelVersion",
+      "b": "ModelArtifact",
+      "label": "文件",
+      "ma": "0..*",
+      "mb": "1..*",
+      "points": [
+        [10.2, -16.8],
+        [12, -16.8]
+      ],
+      "kind": "association",
+      "constraint": "可用模型版本至少引用一项完整产物，多个版本可复用底层权重。"
+    },
+    {
+      "id": "R22",
+      "a": "ExecutionRecord",
+      "b": "ModelArtifact",
+      "label": "产生",
+      "ma": "0..1",
+      "mb": "0..*",
+      "points": [
+        [0.9, -19.6],
+        [0.9, -19.1],
+        [15.7, -19.1],
+        [15.7, -18.2]
+      ],
+      "kind": "association",
+      "constraint": "导入产物可无本平台来源执行；产物独立保留。"
+    },
+    {
+      "id": "R23",
+      "a": "ExternalModelConnection",
+      "b": "AssistantRequest",
+      "label": "调用渠道",
+      "ma": "1",
+      "mb": "0..*",
+      "points": [
+        [14.8, -5.6],
+        [14.8, -7]
+      ],
+      "kind": "association",
+      "constraint": "每次辅助请求固定一个模型连接，多次请求可以复用连接；请求历史保留调用时模型和能力信息。"
+    },
+    {
+      "id": "R24",
+      "a": "User",
+      "b": "AssistantRequest",
+      "label": "发起",
+      "ma": "1",
+      "mb": "0..*",
+      "points": [
+        [0.9, -5.6],
+        [0.9, -6.1],
+        [15.7, -6.1],
+        [15.7, -7]
+      ],
+      "kind": "association",
+      "constraint": "每次辅助请求由一个用户发起，用户可发起多次请求；生成建议与最终采纳分别检查授权。"
+    },
+    {
+      "id": "R25",
+      "a": "User",
+      "b": "AuditRecord",
+      "label": "操作主体",
+      "ma": "1",
+      "mb": "0..*",
+      "points": [
+        [-2.8, -4.2],
+        [-4.1, -4.2],
+        [-4.1, 2.3],
+        [14.8, 2.3],
+        [14.8, 1.4]
+      ],
+      "kind": "association",
+      "constraint": "自动动作使用可识别的系统主体；审计记录保留历史。"
+    },
+    {
+      "id": "R26",
+      "a": "AssistantRequest",
+      "b": "TrainingTask",
+      "label": "任务上下文",
+      "ma": "0..*",
+      "mb": "0..1",
+      "points": [
+        [14.8, -9.8],
+        [14.8, -10.8],
+        [0.9, -10.8],
+        [0.9, -11.2]
+      ],
+      "kind": "association",
+      "constraint": "日志解释可关联一个任务；新配置推荐和标注请求可以不关联现有任务，输入版本另行固定。"
+    },
+    {
+      "id": "R27",
+      "a": "ModelTemplate",
+      "b": "ModelVersion",
+      "label": "适配",
+      "ma": "1",
+      "mb": "0..*",
+      "points": [
+        [13.9, -14],
+        [13.9, -14.5],
+        [8.3, -14.5],
+        [8.3, -15.4]
+      ],
+      "kind": "association",
+      "constraint": "每个模型版本按一个模板适配执行，模板可支持多个版本；权重及适配器还须满足具体依赖条件。"
+    }
+  ],
+  "supplementary": [
+    {
+      "id": "A01",
+      "key": "PermissionGrant",
+      "name": "资源授权",
+      "description": "主体、对象/GPU 范围、任务类型、允许或禁用；供权限判断"
+    },
+    {
+      "id": "A02",
+      "key": "QuotaPolicy",
+      "name": "配额策略",
+      "description": "主体、资源种类、范围、上限；检查当前已用及预留"
+    },
+    {
+      "id": "A03",
+      "key": "UsageRecord",
+      "name": "使用记录",
+      "description": "主体、资源、来源分配、开始结束时间、使用量及单位；提供计量依据"
+    },
+    {
+      "id": "A04",
+      "key": "RuntimeTemplate",
+      "name": "运行环境模板",
+      "description": "编号、版本、框架、依赖、设备要求；校验环境兼容"
+    },
+    {
+      "id": "A05",
+      "key": "ModelEntry",
+      "name": "模型条目",
+      "description": "编号、名称、来源、可见范围；组织模型版本"
+    },
+    {
+      "id": "A06",
+      "key": "DataProcessingTask",
+      "name": "数据处理任务",
+      "description": "来源版本、处理规则、状态、错误报告、结果版本；跟踪校验与处理"
+    },
+    {
+      "id": "A07",
+      "key": "AnnotationRecord",
+      "name": "标注记录",
+      "description": "样本编号、标签、草稿/审核状态、操作者、模型来源；保留人工与候选结果"
+    },
+    {
+      "id": "A08",
+      "key": "SplitRecord",
+      "name": "划分记录",
+      "description": "来源版本、算法、种子、比例及样本归属；固定数据划分"
+    },
+    {
+      "id": "A09",
+      "key": "ResourcePool",
+      "name": "资源池",
+      "description": "编号、节点集合、来源和使用策略；组织资源，独立于用户组"
+    },
+    {
+      "id": "A10",
+      "key": "MetricPoint",
+      "name": "指标点",
+      "description": "executionId、名称、值、单位、step、源时间与接收时间；保留真实采样"
+    },
+    {
+      "id": "A11",
+      "key": "LogEntry",
+      "name": "日志条目",
+      "description": "executionId、来源、序号、时间、级别、内容；支持检索与续传"
+    },
+    {
+      "id": "A12",
+      "key": "EvaluationTask",
+      "name": "评估任务",
+      "description": "模型版本、测试数据版本、指标契约、配置、状态；固定条件运行评估"
+    },
+    {
+      "id": "A13",
+      "key": "EvaluationReport",
+      "name": "评估报告",
+      "description": "评估任务、指标、样本结果和错误明细；支持比较与下载"
+    },
+    {
+      "id": "A14",
+      "key": "CredentialRef",
+      "name": "凭据引用",
+      "description": "标识、用途、主体、作用域、有效期、撤销状态；节点、推理调用和外部模型凭据用途分离，不展示明文秘密"
+    },
+    {
+      "id": "A15",
+      "key": "AssistantResult",
+      "name": "辅助结果",
+      "description": "请求、候选内容、证据、差异、有效条件、确认状态；等待人工审核"
+    },
+    {
+      "id": "A16",
+      "key": "AdoptionRecord",
+      "name": "结果采纳记录",
+      "description": "结果、审核者、采纳项、时间及新对象标识；追踪部分/全部采纳或拒绝"
+    },
+    {
+      "id": "A17",
+      "key": "FaultEvent",
+      "name": "故障事件",
+      "description": "执行、阶段、类别、证据、时间、处理状态；保留错误事实"
+    },
+    {
+      "id": "A18",
+      "key": "Checkpoint",
+      "name": "检查点",
+      "description": "来源执行、step、内容清单、校验和、兼容条件；作为可选恢复输入"
+    },
+    {
+      "id": "A19",
+      "key": "RecoveryRecord",
+      "name": "恢复记录",
+      "description": "故障或来源任务、动作、检查点、新任务及结果；追踪恢复"
+    }
+  ],
+  "constraints": [
+    "数据版本的 parentVersionId、模型版本的 baseVersionId、任务的 sourceTaskId 记录可选自关联来源；图以属性和说明保留这些来源，关联的两端均使用稳定标识。",
+    "资源分配必须由 ExecutionRecord 或 InferenceService 恰好一个对象持有；确认结束和清理前不释放占用。",
+    "配置快照在受理后不可变；任何建议采纳都产生新配置或新数据版本。",
+    "外部辅助结果分为待确认、已采纳、已拒绝、已过期；成功生成候选不等于已经应用。",
+    "外发日志、配置和样本范围待定，授权未落实前不发送真实内容。"
+  ]
+}

@@ -1,0 +1,326 @@
+[
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "a",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "a",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "a",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "b",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "b",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "b",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "c",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "c",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "c",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "d",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "d",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 1280,
+    "height": 900,
+    "scheme": "d",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 1265
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "a",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 768
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "a",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 768
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "a",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 768
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "b",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 753
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "b",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 753
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "b",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 753
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "c",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 753
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "c",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 753
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "c",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 753
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "d",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 753
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "d",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 768
+  },
+  {
+    "width": 768,
+    "height": 1024,
+    "scheme": "d",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 768
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "a",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "a",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "a",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "b",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "b",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "b",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "c",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "c",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "c",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "d",
+    "page": "home",
+    "headline": "工作台",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "d",
+    "page": "run",
+    "headline": "客服意图 · LoRA 04",
+    "horizontal": false,
+    "pageWidth": 375
+  },
+  {
+    "width": 390,
+    "height": 844,
+    "scheme": "d",
+    "page": "resources",
+    "headline": "资源管理",
+    "horizontal": false,
+    "pageWidth": 375
+  }
+]

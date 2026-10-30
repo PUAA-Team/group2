@@ -1,0 +1,10 @@
+[Unit]
+Description=Renew model platform IP certificate
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/bin/python3 /srv/model-platform/ops/renew_certificate.py --root /srv/model-platform --ip 47.93.115.188
+TimeoutStartSec=300

@@ -1,0 +1,336 @@
+{
+  "url": "https://47.93.115.188:5488",
+  "layouts": [
+    {
+      "route": "/home",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/models",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/projects",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/new",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/train/new",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=overview",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=metrics",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=logs",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=outputs",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/stats",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/settings",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/data",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/models",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/jobs",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/audit",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/home",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/models",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/projects",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/new",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/train/new",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=overview",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=metrics",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=logs",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=outputs",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/stats",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/settings",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/data",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/models",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/jobs",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/audit",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/home",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/models",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/projects",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/new",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/train/new",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=overview",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=metrics",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=logs",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=outputs",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/stats",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/settings",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/data",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/models",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/jobs",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/audit",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    }
+  ],
+  "screenshots": [
+    "home-1440.png",
+    "models-1440.png",
+    "training-wizard-1440.png",
+    "training-metrics-1440.png",
+    "admin-statistics-1440.png",
+    "admin-settings-1440.png",
+    "home-390.png",
+    "models-390.png",
+    "training-wizard-390.png",
+    "training-metrics-390.png",
+    "admin-statistics-390.png",
+    "admin-settings-390.png"
+  ],
+  "errors": [],
+  "persisted": {
+    "job_preserved": true,
+    "actual_device": "cuda",
+    "accuracy": 0.5,
+    "worker_online": true,
+    "node_status": [
+      "在线"
+    ]
+  },
+  "success": true
+}

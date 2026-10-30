@@ -1,0 +1,43 @@
+{
+  "release": "/srv/model-platform/releases/20261029-13b2",
+  "previous_release": "/srv/model-platform/releases/20261029-13b1",
+  "compatible_rollback": "/srv/model-platform/releases/20261029-13b1-compat04",
+  "backup": "/srv/model-platform/backups/pre-stage13-b2-20261029",
+  "linux_tests": {
+    "tests": 83,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "existing_records_preserved": true,
+  "counts": {
+    "users": 2,
+    "workspaces": 1,
+    "models": 3,
+    "datasets": 3,
+    "jobs": 2,
+    "nodes": 1
+  },
+  "public_https_ready": true,
+  "schema": "0004_admin",
+  "web_version": "stage13-2",
+  "komari_active": true,
+  "windows_backend_tests": 83,
+  "frontend_tests": 95,
+  "local_browser": {
+    "layouts": 51,
+    "flows": 11
+  },
+  "cloud_browser": {
+    "layouts": 51,
+    "javascript_errors": 0,
+    "job_preserved": true,
+    "actual_device": "cuda",
+    "accuracy": 0.5,
+    "worker_online": true,
+    "node_status": [
+      "鍦ㄧ嚎"
+    ]
+  },
+  "provider_real_call_verified": false
+}

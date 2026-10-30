@@ -1,0 +1,141 @@
+@startuml MB01
+skinparam monochrome true
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide circle
+title MB01 核心业务类图
+class "用户\nUser" as User {
+  - userId: ID
+  - status: AccountState
+  + disable(): void
+}
+class "角色\nRole" as Role {
+  - roleId: ID
+  - allowedActions: ActionSet
+  + allowsAction(action): Boolean
+}
+class "用户组\nUserGroup" as UserGroup {
+  - groupId: ID
+  - quotaPolicyRef: ID
+  + changePolicy(policy): void
+}
+class "工作空间\nWorkspace" as Workspace {
+  - workspaceId: ID
+  - status: WorkspaceState
+  + addMember(member): void
+}
+class "训练项目\nTrainingProject" as TrainingProject {
+  - projectId: ID
+  - workspaceId: ID
+  + addTask(task): void
+}
+class "模型模板\nModelTemplate" as ModelTemplate {
+  - templateId: ID
+  - taskType: TaskType
+  + validateConfig(config): Result
+}
+class "模型版本\nModelVersion" as ModelVersion {
+  - versionId: ID
+  - baseVersionId: ID[0..1]
+  + validateDependencies(): Result
+}
+class "数据集\nDataset" as Dataset {
+  - datasetId: ID
+  - taskType: TaskType
+  + addVersion(source, result): ID
+}
+class "数据版本\nDatasetVersion" as DatasetVersion {
+  - versionId: ID
+  - status: DataState
+  + publish(review): Result
+}
+class "训练任务\nTrainingTask" as TrainingTask {
+  - taskId: ID
+  - status: TaskState
+  + requestStop(reason): Result
+}
+class "配置快照\nConfigSnapshot" as ConfigSnapshot {
+  - snapshotId: ID
+  - hash: Digest
+  + freeze(config): void
+}
+class "执行记录\nExecutionRecord" as ExecutionRecord {
+  - executionId: ID
+  - phase: ExecutionPhase
+  + recordEvent(event): Result
+}
+class "计算节点\nComputeNode" as ComputeNode {
+  - nodeId: ID
+  - health: NodeHealth
+  + recordHeartbeat(sample): void
+}
+class "GPU 资源\nGPUResource" as GPUResource {
+  - deviceId: ID
+  - memoryMiB: Integer
+  + checkCapacity(request): Result
+}
+class "资源分配记录\nResourceAllocation" as ResourceAllocation {
+  - allocationId: ID
+  - state: AllocationState
+  + confirmRelease(evidence): Result
+}
+class "模型产物\nModelArtifact" as ModelArtifact {
+  - artifactId: ID
+  - integrityState: IntegrityState
+  + verifyIntegrity(manifest): Result
+}
+class "推理服务\nInferenceService" as InferenceService {
+  - serviceId: ID
+  - status: ServiceState
+  + confirmReady(evidence): Result
+}
+class "审计记录\nAuditRecord" as AuditRecord {
+  - auditId: ID
+  - objectRef: ObjectRef
+  + append(operation): void
+}
+class "外部模型连接\nExternalModelConnection" as ExternalModelConnection {
+  - connectionId: ID
+  - status: ConnectionState
+  + testConnection(input): Result
+}
+class "智能辅助请求\nAssistantRequest" as AssistantRequest {
+  - requestId: ID
+  - kind: AssistanceKind
+  + recordResult(candidate): Result
+}
+class "资源池\nResourcePool" as ResourcePool {
+  - poolId: ID
+  - policy: PoolPolicy
+  + addNode(node): void
+}
+Role "0..*" -- "0..*" User : R01 角色
+UserGroup "0..1" -- "0..*" User : R02 主组
+User "0..*" -- "0..*" Workspace : R03 成员
+Workspace "1" -- "0..*" TrainingProject : R04 组织
+User "1" -- "0..*" TrainingProject : R05 负责
+Workspace "0..1" -- "0..*" Dataset : R06 资产
+TrainingProject "1" -- "0..*" TrainingTask : R07 实验
+Dataset "1" -- "0..*" DatasetVersion : R08 版本
+TrainingTask "1" *-- "0..1" ConfigSnapshot : R09 固定输入
+TrainingTask "1" *-- "0..*" ExecutionRecord : R10 派发尝试
+ConfigSnapshot "0..*" -- "0..1" ModelVersion : R11 初始权重
+ConfigSnapshot "0..*" -- "1" DatasetVersion : R12 训练数据
+ConfigSnapshot "0..*" -- "1" ModelTemplate : R13 模板
+ExecutionRecord "0..*" -- "0..1" ComputeNode : R14 执行位置
+ComputeNode "1" -- "0..*" GPUResource : R15 设备
+ResourcePool "0..1" o-- "0..*" ComputeNode : R16 组织节点
+ExecutionRecord "0..1" -- "0..*" ResourceAllocation : R17 使用资源
+ResourceAllocation "0..*" -- "0..1" GPUResource : R18 分配设备
+InferenceService "0..1" -- "0..*" ResourceAllocation : R19 使用资源
+InferenceService "0..*" -- "1" ModelVersion : R20 发布模型
+ModelVersion "0..*" -- "1..*" ModelArtifact : R21 文件
+ExecutionRecord "0..1" -- "0..*" ModelArtifact : R22 产生
+ExternalModelConnection "1" -- "0..*" AssistantRequest : R23 调用渠道
+User "1" -- "0..*" AssistantRequest : R24 发起
+User "1" -- "0..*" AuditRecord : R25 操作主体
+AssistantRequest "0..*" -- "0..1" TrainingTask : R26 任务上下文
+ModelTemplate "1" -- "0..*" ModelVersion : R27 适配
+note bottom of TrainingTask : 已受理时配置快照数量为 1
+note bottom of ResourceAllocation : 执行所有者与推理服务所有者恰选其一
+@enduml

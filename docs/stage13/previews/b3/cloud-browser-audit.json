@@ -1,0 +1,467 @@
+{
+  "url": "https://47.93.115.188:5488",
+  "layouts": [
+    {
+      "route": "/home?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/models?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/projects?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/new?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/train/new?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=overview&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=metrics&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=logs&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=outputs&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/stats?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/settings?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/data?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/models?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/jobs?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/audit?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/annotation?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/annotation/ann_c3c8a24cc61a4f5e9b1b8fb573da975c?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/augmentation?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/data-operations?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/data-operations/dop_65b6433c4d114121901dec26e599ec41?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/dat_fbc7d3d4dd5547b6a38bf6b1b006364e/samples?version=dvr_804d39ed66414d578428c2b439e2a1db&workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/dat_07458b88fc5d44ae82db556107705d7b/samples?version=dvr_089e823881c94168be8e0b9cf89ee76e&workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1440,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/home?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/models?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/projects?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/new?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/train/new?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=overview&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=metrics&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=logs&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=outputs&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/stats?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/settings?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/data?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/models?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/jobs?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/audit?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/annotation?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/annotation/ann_c3c8a24cc61a4f5e9b1b8fb573da975c?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/augmentation?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/data-operations?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/data-operations/dop_65b6433c4d114121901dec26e599ec41?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/dat_fbc7d3d4dd5547b6a38bf6b1b006364e/samples?version=dvr_804d39ed66414d578428c2b439e2a1db&workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/dat_07458b88fc5d44ae82db556107705d7b/samples?version=dvr_089e823881c94168be8e0b9cf89ee76e&workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 1024,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/home?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/models?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/projects?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/new?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/train/new?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=overview&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=metrics&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=logs&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/runs/job_db847a8e9ad54ddfad8d1933938a3daa?tab=outputs&workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/stats?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/settings?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/data?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/models?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/jobs?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/admin/audit?workspace=wsp_5dda033c6b22409e892bcc19d29b06da",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/annotation?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/annotation/ann_c3c8a24cc61a4f5e9b1b8fb573da975c?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/augmentation?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/data-operations?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/data-operations/dop_65b6433c4d114121901dec26e599ec41?workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/dat_fbc7d3d4dd5547b6a38bf6b1b006364e/samples?version=dvr_804d39ed66414d578428c2b439e2a1db&workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    },
+    {
+      "route": "/datasets/dat_07458b88fc5d44ae82db556107705d7b/samples?version=dvr_089e823881c94168be8e0b9cf89ee76e&workspace=wsp_36be5031d33d4083b35faeb1e413e177",
+      "width": 390,
+      "overflow": false,
+      "minimumFont": 14
+    }
+  ],
+  "screenshots": [
+    "home-1440.png",
+    "models-1440.png",
+    "training-wizard-1440.png",
+    "training-metrics-1440.png",
+    "admin-statistics-1440.png",
+    "admin-settings-1440.png",
+    "annotation-1440.png",
+    "augmentation-1440.png",
+    "home-390.png",
+    "models-390.png",
+    "training-wizard-390.png",
+    "training-metrics-390.png",
+    "admin-statistics-390.png",
+    "admin-settings-390.png",
+    "annotation-390.png",
+    "augmentation-390.png"
+  ],
+  "errors": [],
+  "persisted": {
+    "job_preserved": true,
+    "actual_device": "cuda",
+    "accuracy": 0.5,
+    "worker_online": false,
+    "worker_connected": true,
+    "node_status": [
+      "暂停接收"
+    ]
+  },
+  "success": true
+}
