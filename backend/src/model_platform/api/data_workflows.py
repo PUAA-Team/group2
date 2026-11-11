@@ -24,7 +24,7 @@ def data_options(workspace_id: str, request: Request, actor: Actor, db: Db):
     workspace_access(db, actor, workspace_id, "datasets.read")
     versions = [{**serialize(version), "name": dataset.name, "task_type": dataset.task_type}
         for dataset, version in db.execute(select(Dataset, DatasetVersion).join(DatasetVersion,
-            DatasetVersion.dataset_id == Dataset.id).where(Dataset.workspace_id == workspace_id)
+            DatasetVersion.dataset_id == Dataset.id).where(Dataset.workspace_id == workspace_id, Dataset.archived.is_(False))
             .order_by(DatasetVersion.created_at.desc()).limit(500))]
     members = [{"id": user.id, "name": user.display_name} for user in db.scalars(select(User).join(
         Membership, Membership.user_id == User.id).where(Membership.workspace_id == workspace_id,

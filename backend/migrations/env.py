@@ -7,6 +7,8 @@ from model_platform import job_models  # noqa: F401
 from model_platform import administration_models  # noqa: F401
 from model_platform import data_models  # noqa: F401
 from model_platform import assistant_models  # noqa: F401
+from model_platform import governance_models  # noqa: F401
+from model_platform import template_models  # noqa: F401
 
 target_metadata = Base.metadata
 

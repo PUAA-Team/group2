@@ -1,13 +1,18 @@
-import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage13-3a";
-import { renderProjectCatalog, taskFilter } from "./catalog.js?v=stage13-3a";
-import { renderTrainingDetail } from "./job-detail.js?v=stage13-3a";
-import { renderWizard } from "./training-wizard.js?v=stage13-3a";
+import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage15-1";
+import { renderProjectCatalog, taskFilter } from "./catalog.js?v=stage15-1";
+import { renderTrainingDetail } from "./job-detail.js?v=stage15-1";
+import { renderWizard } from "./training-wizard.js?v=stage15-1";
+import { isResultPage, loadResults, renderResults, renderCallHistory, renderEvaluationReport } from "./results.js?v=stage15-1";
+import { reviewButton } from './governance.js?v=stage15-1';
+import { renderProjectDetail } from './projects.js?v=stage15-1';
+import { renderKeys } from './key-management.js?v=stage15-1';
+import { nodeOptions, syncResourceNodes } from "./resource-options.js?v=stage16-local";
 
 const routes = { "/runs": "train", "/admin/jobs": "train", "/evaluation": "evaluate", "/services": "service" };
 const titles = { train: "训练任务", evaluate: "模型评估", service: "在线服务" };
 export const JOB_STATUS = { draft: "草稿", queued: "排队中", preparing: "准备中", running: "运行中", ready: "运行中", stopping: "停止中", stopped: "已停止", cancelled: "已取消", succeeded: "已完成", failed: "失败" };
 const ended = ["cancelled", "stopped", "succeeded", "failed"];
-export const isWorkflowPage = path => !!routes[path] || path === "/train/new" || path === "/projects" || path === "/api-keys" || /^\/runs\/[^/]+$/.test(path);
+export const isWorkflowPage = path => isResultPage(path) || !!routes[path] || path === "/train/new" || path === "/projects" || path === "/api-keys" || /^\/(runs|projects)\/[^/]+$/.test(path);
 const formFields = ["name", "model_version_id", "dataset_version_id", "project_id", "device_kind", "node_id"];
 
 function inferenceFields(profile = {}) {
@@ -20,6 +25,7 @@ function inferenceFields(profile = {}) {
 export async function loadWorkflow(api, ctx, signal) {
   if (!ctx.workspace) return {};
   const base = `/workspaces/${ctx.workspace.id}`;
+  if (isResultPage(ctx.path)) return loadResults(api, ctx, signal);
   const query = `page=${ctx.page}&page_size=20&q=${encodeURIComponent(ctx.q)}`;
   const detailId = ctx.path.match(/^\/runs\/([^/]+)$/)?.[1];
   let data;
@@ -31,11 +37,26 @@ export async function loadWorkflow(api, ctx, signal) {
       events.push(...batch); if (batch.length < 200) break; after = batch.at(-1).seq;
     }
     data = { item: job, events };
+    if (job.kind === 'evaluate' && job.status === 'succeeded') data.evaluationSummary = (await api.request(`${base}/jobs/${job.id}/evaluation-summary`, { signal })).data;
+    if (job.kind === "service") {
+      const history = new URLSearchParams({ page: ctx.page || 1, page_size: 20 });
+      if (ctx.params.get("call_status")) history.set("status", ctx.params.get("call_status"));
+      const [calls, statistics] = await Promise.all([api.request(`${base}/jobs/${job.id}/call-history?${history}`, { signal }), api.request(`${base}/jobs/${job.id}/call-statistics`, { signal })]);
+      data.callHistory = calls; data.callStatistics = statistics.data;
+    }
+  } else if (ctx.path.startsWith('/projects/')) {
+    data = { project: (await api.request(`${base}/projects/${encodeURIComponent(ctx.path.split('/').at(-1))}`, { signal })).data };
   } else if (ctx.path === "/train/new") {
     const source = ctx.params.get("edit") || ctx.params.get("copy");
     data = source ? { sourceJob: (await api.request(`${base}/jobs/${encodeURIComponent(source)}`, { signal })).data } : {};
-  } else if (ctx.path === "/projects") data = await api.request(`${base}/project-catalog?${query}`, { signal });
-  else if (ctx.path === "/api-keys") data = await api.request(`${base}/service-keys`, { signal });
+    data.parameterTemplates = can(ctx, 'training.read') ? await api.all(`${base}/training-parameter-templates?status=all`, signal) : [];
+  } else if (ctx.path === "/projects") data = await api.request(`${base}/project-catalog?${query}&status=${encodeURIComponent(ctx.params.get('status') || 'all')}`, { signal });
+  else if (ctx.path === "/api-keys") {
+    const filters = new URLSearchParams({ status: ctx.params.get('key_status') || 'all' });
+    if (ctx.params.get('key_service')) filters.set('job_id', ctx.params.get('key_service'));
+    data = await api.request(`${base}/service-keys?${filters}`, { signal });
+    data.services = await api.all(`${base}/jobs?kind=service`, signal);
+  }
   else {
     const filters = new URLSearchParams();
     for (const key of ["status", "device_kind", "task_type", "sort"]) if (ctx.params?.get(key)) filters.set(key, ctx.params.get(key));
@@ -44,9 +65,10 @@ export async function loadWorkflow(api, ctx, signal) {
   const editable = ["training.write", "services.write"].some(action => can(ctx, action));
   if (editable) {
     data.options = can(ctx, "models.read") && can(ctx, "datasets.read") ? (await api.request(`${base}/job-options`, { signal })).data : { models: [], datasets: [] };
-    data.projects = can(ctx, "training.read") ? await api.all(`${base}/projects`, signal) : [];
+    data.projects = can(ctx, "training.read") ? await api.all(`${base}/projects?status=active`, signal) : [];
+    const projectId = ctx.path === '/train/new' ? data.sourceJob?.project_id || ctx.params.get('project') : null;
+    if (projectId && !data.projects.some(row => row.id === projectId)) data.projects.push((await api.request(`${base}/projects/${encodeURIComponent(projectId)}`, { signal })).data);
     data.nodes = can(ctx, "resources.read") ? await api.all(`${base}/resources`, signal) : [];
-    if (ctx.path === "/api-keys") data.services = await api.all(`${base}/jobs?kind=service`, signal);
   }
   return data;
 }
@@ -74,7 +96,7 @@ function detail(ctx) {
   const job = ctx.data.item, write = can(ctx, job.kind === "service" ? "services.write" : "training.write");
   const actions = (job.status === "draft" && write ? btn("编辑草稿", "workflow-edit", job.id) + btn("提交", "workflow-submit", job.id, "primary") : "") +
     (!ended.includes(job.status) && write ? btn(job.status === "draft" || job.status === "queued" ? "取消任务" : "停止", "workflow-stop", job.id, "secondary", job.status === "stopping") : "") +
-    (ended.includes(job.status) && write ? btn("重跑", "workflow-retry", job.id) : "");
+    (ended.includes(job.status) && write ? btn("重跑", "workflow-retry", job.id) : "") + reviewButton(ctx, job);
   const result = job.result || {}, events = ctx.data.events || [];
   const languageModel = job.snapshot?.task_type === "llm_sft";
   const source = ctx.data.options?.models.find(item => item.id === job.model_version_id);
@@ -90,7 +112,7 @@ function detail(ctx) {
   const predictionHtml = prediction?.label ? fieldsInfo([["分类结果", tag(prediction.label)]]) : prediction ? `<pre class="execution-output">${e(typeof prediction.text === "string" ? prediction.text : JSON.stringify(prediction, null, 2))}</pre>` : "";
   const invoke = job.kind === "service" && can(ctx, "services.invoke") ? `<div class="section-heading"><h2>调用测试</h2>${btn("发送请求", "workflow-invoke", job.id, "primary", job.status !== "ready")}</div>${predictionHtml}` : "";
   return `<div class="breadcrumb"><a href="#${job.kind === "train" ? "/runs" : job.kind === "service" ? "/services" : "/evaluation"}">${titles[job.kind]}</a><span>/</span>${e(job.name)}</div>` + pageHeader(job.name, "", actions) +
-    fieldsInfo(meta) + (job.queue_reason ? `<div class="notice">${e(job.queue_reason)}${ctx.access.quota.concurrent_jobs === 0 ? "；请先配置并发额度" : ""}</div>` : "") +
+    fieldsInfo(meta) + (job.queue_reason ? `<div class="notice">${e(job.queue_reason)}</div>` : "") +
     (job.error ? `<div class="notice notice-danger" role="alert">${e(job.error)}</div>` : "") + outcome + invoke +
     (job.kind === "train" ? `<div class="execution-charts ${languageModel ? "execution-single-chart" : ""}">${metricChart(events, ["loss", "val_loss"], "Loss")}${languageModel ? "" : metricChart(events, ["accuracy", "val_accuracy"], "准确率")}</div>${configuration}` : "") +
     `<div class="section-heading"><h2>运行日志</h2>${btn("刷新", "refresh")}</div><pre class="execution-log">${e(events.filter(item => item.type === "log").map(item => item.payload.message).join("\n") || "暂无日志" )}</pre>`;
@@ -100,29 +122,31 @@ export function renderWorkflow(ctx) {
   if (ctx.path === "/train/new") return renderWizard(ctx);
   const title = ctx.path === "/projects" ? "训练项目" : ctx.path === "/api-keys" ? "API KEY管理" : titles[routes[ctx.path] || ctx.data.item?.kind || "train"];
   if (!ctx.workspace) return pageHeader(title) + workspaceRequired(ctx);
-  if (ctx.data.item) return ctx.data.item.kind === "train" ? renderTrainingDetail(ctx, metricChart) : detail(ctx);
+  if (isResultPage(ctx.path)) return renderResults(ctx);
+  if (ctx.data.project) return renderProjectDetail(ctx);
+  if (ctx.data.item) return ctx.data.item.kind === "train" ? renderTrainingDetail(ctx, metricChart) : detail(ctx) + (ctx.data.item.kind === "service" ? renderCallHistory(ctx) : renderEvaluationReport(ctx) + (ctx.data.item.status === "succeeded" && can(ctx, "datasets.read") ? link("错误样本", `/evaluation/errors/${ctx.data.item.id}`) : ''));
   if (ctx.path === "/projects") return renderProjectCatalog(ctx);
-  if (ctx.path === "/api-keys") return pageHeader(title, "", can(ctx, "services.write") ? btn("创建密钥", "modal", "key-new", "primary") : "") +
-    (ctx.generatedKey ? `<div class="notice"><label for="one-time-key">新密钥（仅显示本次）</label><div class="heading-actions"><input id="one-time-key" class="input" readonly value="${e(ctx.generatedKey)}"/>${btn("复制", "workflow-copy-key")}${btn("关闭", "workflow-hide-key")}</div></div>` : "") +
-    table(["名称", "服务", "到期时间", "状态", "操作"], (ctx.data.data || []).map(item => [e(item.name), link(ctx.data.services?.find(service => service.id === item.job_id)?.name || item.job_id, `/runs/${item.job_id}`), date(item.expires_at), badge(item.revoked_at ? "已停用" : new Date(item.expires_at) <= new Date() ? "已停止" : "正常"), !item.revoked_at && can(ctx, "services.write") ? btn("撤销", "workflow-revoke-key", item.id) : "—"]));
+  if (ctx.path === "/api-keys") return renderKeys(ctx);
   const kind = routes[ctx.path] || "train", write = can(ctx, kind === "service" ? "services.write" : "training.write");
-  const rows = (ctx.data.data || []).map(item => [link(item.name, `/runs/${item.id}`), e(item.model_name || "—"), tag(TASKS[item.task_type] || "—"), badge(JOB_STATUS[item.status]), tag(item.device_kind === "cuda" ? "GPU" : "CPU"), ...metricValues(item.result).map(([, value]) => e(value)), date(item.created_at)]);
+  let rows = (ctx.data.data || []).map(item => [link(item.name, `/runs/${item.id}`), e(item.model_name || "—"), tag(TASKS[item.task_type] || "—"), badge(JOB_STATUS[item.status]), tag(item.device_kind === "cuda" ? "GPU" : "CPU"), ...metricValues(item.result).map(([, value]) => e(value)), date(item.created_at)]);
   const add = write ? btn(kind === "train" ? "新建训练" : kind === "evaluate" ? "创建评估" : "部署服务", "workflow-new", kind, "primary") : "";
   const filters = taskFilter(ctx) + `<select class="select filter-select" data-query-filter="status" aria-label="任务状态">${options([["", "全部状态"], ...Object.entries(JOB_STATUS)], ctx.params?.get("status") || "")}</select>`;
-  return pageHeader(title, "", add) + toolbar(ctx.q, filters, "搜索任务") + table(["名称", "模型", "任务类型", "状态", "资源", "准确率", "Macro F1", "Loss", "创建时间"], rows) + pager(ctx.data.pagination);
+  if (kind === "evaluate") rows = rows.map((row, index) => [`<input type="checkbox" name="ids" value="${e(ctx.data.data[index].id)}" aria-label="选择 ${e(ctx.data.data[index].name)}" ${ctx.data.data[index].status === "succeeded" ? "" : "disabled"}/>`, ...row]);
+  const results = table([...(kind === "evaluate" ? ["选择"] : []), "名称", "模型", "任务类型", "状态", "资源", "准确率", "Macro F1", "Loss", "创建时间"], rows);
+  return pageHeader(title, "", add) + toolbar(ctx.q, filters, "搜索任务") + (kind === "evaluate" ? `<form data-form="evaluation-compare"><div class="toolbar"><button type="submit" class="btn btn-secondary">对比所选评估</button></div>${results}</form>` : results) + pager(ctx.data.pagination);
 }
 
 export function workflowDialog(modal, ctx) {
   const item = modal.item || {}, choices = ctx.data.options || { models: [], datasets: [] };
-  if (modal.kind === "project-new") return { title: "新建项目", fields: input("项目名称", "name", "", 'required maxlength="100"'), submit: "创建" };
   if (modal.kind === "job-new" || modal.kind === "job-edit") {
     const kind = item.kind || "train";
     const models = choices.models.filter(model => kind === "train" || model.status === "available");
     const model = models.find(model => model.id === item.model_version_id) || models[0];
+    const deviceKind = item.device_kind || (model?.task_type === "llm_sft" ? "cuda" : "cpu");
     const config = { epochs: model?.task_type === "llm_sft" ? 1 : 5, batch_size: model?.task_type === "llm_sft" ? 1 : 8, learning_rate: model?.task_type === "llm_sft" ? 0.0002 : 0.01, validation_ratio: 0.2, seed: 42, max_length: 128, lora_rank: 4, ...(item.config || {}) };
     let fields = input("名称", "name", item.name || "", 'required maxlength="100"') +
       `<div class="live-field-grid">${select("模型版本", "model_version_id", options(models.map(m => [m.id, `${m.name} / ${m.version}`]), model?.id), "required data-job-model")}${kind === "service" ? "" : select("数据版本", "dataset_version_id", options(choices.datasets.filter(data => data.task_type === model?.task_type).map(data => [data.id, `${data.name} / v${data.number}`]), item.dataset_version_id), "required")}</div>` +
-      `<div class="live-field-grid">${select("设备", "device_kind", options([["cpu", "CPU"], ["cuda", "GPU"]], item.device_kind || (model?.task_type === "llm_sft" ? "cuda" : "cpu")))}${select("节点", "node_id", options([["", "自动选择"], ...(ctx.data.nodes || []).map(node => [node.id, node.name])], item.node_id || ""))}</div>`;
+      `<div class="live-field-grid">${select("设备", "device_kind", options([["cpu", "CPU"], ["cuda", "GPU"]], deviceKind), `data-resource-kind="${e(kind)}"`)}${select("节点", "node_id", nodeOptions(ctx.data.nodes || [], kind, deviceKind, item.node_id || ""))}</div>`;
     if (kind === "service") fields += `<div class="stack" data-inference-settings>${model?.trainer_id === "qwen-lora-v1" ? inferenceFields(config.inference || model.inference_suggestion) : ""}</div>`;
     if (kind === "train") fields += select("项目", "project_id", options([["", "未分组"], ...(ctx.data.projects || []).map(project => [project.id, project.name])], item.project_id || ctx.params?.get("project"))) +
       `<div class="section-heading"><h2>训练参数</h2></div><div class="live-field-grid">${[["epochs", "Epochs", 1, 100, 1], ["batch_size", "Batch size", 1, 64, 1], ["learning_rate", "Learning rate", 0.000001, 1, "any"], ["validation_ratio", "验证比例", 0.1, 0.5, 0.05], ["seed", "Seed", 0, 2147483647, 1], ["max_length", "最大长度", 32, 512, 1]].map(([key, title, min, max, step]) => input(title, key, config[key], `required type="number" min="${min}" max="${max}" step="${step}"`)).join("")}${select("LoRA rank", "lora_rank", options([[4, "4"], [8, "8"], [16, "16"]], config.lora_rank))}</div>`;
@@ -134,12 +158,12 @@ export function workflowDialog(modal, ctx) {
     (item.config?.inference?.mode === "label" ? `<div class="heading-actions">${item.config.inference.labels.map(tag).join("")}</div>` : "") + `<div class="field"><label for="call-text">输入内容</label><textarea id="call-text" class="textarea" name="text" required maxlength="4096" rows="5"></textarea></div>`, submit: "发送" };
   if (modal.kind === "key-new") return { title: "创建 API KEY", fields: input("名称", "name", "", 'required maxlength="100"') + select("服务", "job_id", options((ctx.data.services || []).map(job => [job.id, job.name])), "required") + input("有效天数", "days", 30, 'type="number" min="1" max="365" required'), submit: "创建" };
   if (modal.kind === "key-revoke") return { title: "撤销密钥", fields: fieldsInfo([["密钥名称", e(item.name)]]), submit: "撤销" };
+  if (modal.kind === "key-rotate") return { title: "轮换密钥", fields: fieldsInfo([["密钥名称", e(item.name)], ["到期时间", date(item.expires_at)]]) + '<div class="notice">确认后旧密钥立即失效，新密钥仅展示一次。</div>', submit: "确认轮换" };
   return null;
 }
 
 export async function saveWorkflow(api, modal, form, ctx) {
   const base = `/workspaces/${modal.workspaceId}`, item = modal.item || {};
-  if (modal.kind === "project-new") { await api.request(base + "/projects", { method: "POST", body: { name: form.get("name") } }); return {}; }
   if (["job-new", "job-edit"].includes(modal.kind)) {
     const payload = Object.fromEntries(formFields.map(key => [key, form.get(key) || null]));
     payload.kind = item.kind || "train"; payload.config = item.config || {};
@@ -166,6 +190,7 @@ export async function saveWorkflow(api, modal, form, ctx) {
   }
   if (modal.kind === "key-new") { ctx.generatedKey = (await api.request(base + "/service-keys", { method: "POST", body: { name: form.get("name"), job_id: form.get("job_id"), days: Number(form.get("days")) } })).data.key; return {}; }
   if (modal.kind === "key-revoke") { await api.request(base + `/service-keys/${item.id}/revoke`, { method: "POST" }); return {}; }
+  if (modal.kind === "key-rotate") { ctx.generatedKey = (await api.request(base + `/service-keys/${item.id}/rotate`, { method: "POST" })).data.key; return {}; }
   return null;
 }
 
@@ -184,6 +209,7 @@ export async function workflowAction(action, id, { api, ctx, openModal, render, 
   if (action === "workflow-deploy" || action === "workflow-evaluate") openModal("job-new", { kind: action === "workflow-deploy" ? "service" : "evaluate", model_version_id: id, dataset_version_id: job.dataset_version_id, device_kind: job.device_kind });
   if (action === "workflow-invoke") openModal("service-invoke", job);
   if (action === "workflow-revoke-key") openModal("key-revoke", ctx.data.data.find(item => item.id === id));
+  if (action === "workflow-rotate-key") openModal("key-rotate", ctx.data.data.find(item => item.id === id));
   if (action === "workflow-copy-key") { await navigator.clipboard.writeText(ctx.generatedKey); toast("已复制"); }
   if (action === "workflow-hide-key") { ctx.generatedKey = null; render(); }
   return true;
@@ -196,6 +222,7 @@ export function workflowModelChanged(form, ctx) {
   if (inference) inference.innerHTML = selected?.trainer_id === "qwen-lora-v1" ? inferenceFields(selected.inference_suggestion) : "";
   if (selected?.task_type === "llm_sft") {
     form.elements.device_kind.value = "cuda";
+    syncResourceNodes(form.elements.device_kind, ctx.data.nodes || []);
     for (const [key, value] of Object.entries({ epochs: 1, batch_size: 1, learning_rate: 0.0002 })) if (form.elements[key]) form.elements[key].value = value;
   }
 }

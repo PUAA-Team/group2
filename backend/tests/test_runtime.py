@@ -53,7 +53,8 @@ def test_request_id_and_runtime_openapi(app, admin):
            for method, operation in path.items() if method in {"get", "post", "patch"}]
     assert len(ids) == len(set(ids)) and len(ids) >= 33
     assert any(path.endswith("/jobs") for path in schema["paths"])
-    assert not any("/assistant-requests" in path for path in schema["paths"])
+    assert any("/assistant-requests" in path for path in schema["paths"])
+    assert any(path.endswith("/assistant-policy") for path in schema["paths"])
     assert schema["components"]["schemas"]["ModelCreate"]["additionalProperties"] is False
     assert "password_hash" not in schema["components"]["schemas"]["UserOut"]["properties"]
     assert "storage_key" not in schema["components"]["schemas"]["DatasetVersionOut"]["properties"]

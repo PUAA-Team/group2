@@ -3,12 +3,13 @@ from collections import Counter
 from sqlalchemy import select, update
 
 from ..data_models import AnnotationBatch, AnnotationResult
-from ..database import new_id
+from ..database import new_id, utcnow
 from ..errors import Problem
 from ..models import DatasetVersion, Membership, User, Workspace
 from .common import audit, commit, serialize
 from .data_samples import encode_rows, read_source, source
 from .datasets import store_versions
+from .asset_lifecycle import ensure_active
 
 
 def find_batch(db, workspace_id, batch_id):
@@ -44,6 +45,7 @@ def batch_view(db, batch):
 
 def create_batch(db, settings, actor, workspace_id, payload):
     dataset, version = source(db, workspace_id, payload.version_id)
+    ensure_active(dataset)
     if payload.assigned_to:
         member = db.get(Membership, (workspace_id, payload.assigned_to))
         user = db.get(User, payload.assigned_to)
@@ -82,8 +84,11 @@ def save_result(db, actor, batch, index, payload):
     if index not in batch.sample_indices:
         raise Problem(404, "NOT_FOUND", "样本不属于此标注批次")
     dataset, _ = source(db, batch.workspace_id, batch.version_id)
+    ensure_active(dataset)
     if dataset.task_type != "llm_sft" and payload.value not in batch.labels:
         raise Problem(422, "VALIDATION_ERROR", "标注值不在标签集合中")
+    if payload.edits and dataset.task_type != "llm_sft":
+        raise Problem(422, "VALIDATION_ERROR", "只有指令标注可以修改输入与指令")
     result = db.scalar(select(AnnotationResult).where(AnnotationResult.batch_id == batch.id,
         AnnotationResult.sample_index == index))
     if (result.revision if result else 0) != payload.revision:
@@ -96,9 +101,57 @@ def save_result(db, actor, batch, index, payload):
         result.revision += 1
     result.value, result.state = payload.value, "submitted" if payload.submit else "draft"
     result.edited_by, result.reviewed_by = actor.id, None
+    result.edits = dict(payload.edits)
+    result.origin = origin_with_edits(result.origin, payload.edits, actor.id)
     audit(db, actor, "annotations.submit" if payload.submit else "annotations.save", batch.id, batch.workspace_id)
     commit(db)
     return serialize(result)
+
+
+def origin_with_edits(origin, edits, actor_id):
+    """记录人工修订过的字段及来源，保留此前的智能采纳来源。"""
+    data = {key: value for key, value in (origin or {}).items() if key != "edits"}
+    if edits:
+        data["edits"] = {"fields": sorted(edits), "actor_id": actor_id, "at": utcnow().isoformat()}
+    return data
+
+
+def apply_candidates(db, actor, batch, candidates, revisions, origin):
+    """把智能候选写入标注草稿；沿用人工提交、复核和发布流程。"""
+    lock_batch(db, batch)
+    if batch.assigned_to and batch.assigned_to != actor.id and not reviewer(db, actor, batch):
+        raise Problem(403, "FORBIDDEN", "此批次已分配给其他成员")
+    for candidate in candidates:
+        if candidate["index"] not in batch.sample_indices:
+            raise Problem(404, "NOT_FOUND", "样本不属于此标注批次")
+    dataset, _ = source(db, batch.workspace_id, batch.version_id)
+    ensure_active(dataset)
+    if dataset.task_type != "llm_sft" and any(candidate["value"] not in batch.labels for candidate in candidates):
+        raise Problem(422, "VALIDATION_ERROR", "标注值不在标签集合中")
+    for candidate in candidates:
+        index = candidate["index"]
+        result = db.scalar(select(AnnotationResult).where(AnnotationResult.batch_id == batch.id,
+            AnnotationResult.sample_index == index))
+        if result is not None and result.state == "approved":
+            raise Problem(409, "ALREADY_REVIEWED", "已审核样本不能被智能候选覆盖")
+        # 采纳时固定样本revision，预览之后被人改过就要求重新核对。
+        if (result.revision if result else 0) != revisions.get(str(index), 0):
+            raise Problem(409, "STALE_SAMPLE", "样本已更新，请重新生成预览")
+        if result is None:
+            result = AnnotationResult(id=new_id("anr"), batch_id=batch.id, sample_index=index,
+                value=candidate["value"], state="draft", edited_by=actor.id)
+            db.add(result)
+        else:
+            result.revision += 1
+            result.value = candidate["value"]
+        result.state, result.edited_by, result.reviewed_by = "draft", actor.id, None
+        result.origin = {**origin, **({"edits": (result.origin or {})["edits"]}
+            if (result.origin or {}).get("edits") else {}),
+            "reason": candidate.get("reason", ""), "applied_at": utcnow().isoformat()}
+    audit(db, actor, "assistants.annotation_apply", batch.id, batch.workspace_id)
+    # 由调用方将候选、采纳记录和请求状态一次提交。
+    db.flush()
+    return batch_view(db, batch)
 
 
 def review_results(db, actor, batch, payload):
@@ -137,6 +190,10 @@ def publish_batch(db, settings, actor, batch):
     field = "output" if dataset.task_type == "llm_sft" else "label"
     for result in results:
         rows[result.sample_index][field] = result.value
+        if dataset.task_type == "llm_sft":
+            # 指令标注的输入与指令修订随输出一起发布到新版本。
+            for key, value in (result.edits or {}).items():
+                rows[result.sample_index][key] = value
     filename, output = encode_rows(dataset.task_type, rows, content)
     provenance = {**version.provenance, "operation": "annotation", "batch_id": batch.id, "reviewed_samples": len(results)}
 

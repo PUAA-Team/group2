@@ -1,4 +1,5 @@
 import ipaddress
+import asyncio
 import json
 import os
 import re
@@ -94,7 +95,7 @@ async def completion(settings, connection, messages, *, max_tokens=512):
     except OSError:
         raise Problem(503, "CREDENTIAL_NOT_READY", "模型连接凭据不可读") from None
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(30, connect=10), trust_env=False, follow_redirects=False) as client:
+        async with asyncio.timeout(30), httpx.AsyncClient(timeout=httpx.Timeout(30, connect=10), trust_env=False, follow_redirects=False) as client:
             async with client.stream("POST", connection.endpoint + "/chat/completions", headers={"Authorization": "Bearer " + secret},
                                      json={"model": connection.model, "messages": messages, "max_tokens": max_tokens, "temperature": 0}) as response:
                 if response.status_code != 200:
@@ -114,7 +115,7 @@ async def completion(settings, connection, messages, *, max_tokens=512):
                 if not isinstance(text, str) or not text.strip():
                     raise ValueError("invalid content")
                 return text, result.get("usage", {})
-    except httpx.TimeoutException:
+    except (httpx.TimeoutException, TimeoutError):
         raise Problem(504, "PROVIDER_TIMEOUT", "模型服务响应超时") from None
     except httpx.HTTPError:
         raise Problem(502, "PROVIDER_UNAVAILABLE", "模型服务连接失败") from None

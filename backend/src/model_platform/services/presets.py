@@ -53,11 +53,13 @@ async def seed_presets(db, settings, actor, workspace_id, selected):
         if not model:
             model = ModelAsset(id=new_id("mdl"), workspace_id=workspace_id, name=name, task_type=kind, trainer_id=trainer, source_ref=BUILTINS[trainer], description="教学预置")
             db.add(model); db.flush()
+            audit(db, actor, 'models.create', model.id, workspace_id)
             db.add(ModelVersion(id=new_id("mvr"), model_id=model.id, version="base-v1", source_ref=BUILTINS[trainer], created_by=actor.id))
         dataset = db.scalar(select(Dataset).where(Dataset.workspace_id == workspace_id, Dataset.name == data_name))
         if not dataset:
             dataset = Dataset(id=new_id("dat"), workspace_id=workspace_id, name=data_name, task_type=kind, description="程序生成的教学样本，用于验证完整流程")
             db.add(dataset); db.flush()
+            audit(db, actor, 'datasets.create', dataset.id, workspace_id)
         if not db.scalar(select(DatasetVersion.id).where(DatasetVersion.dataset_id == dataset.id)):
             filename, content = preset_content(kind)
             await store_version(db, settings, actor, dataset, UploadFile(io.BytesIO(content), filename=filename))

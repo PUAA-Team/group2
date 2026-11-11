@@ -73,7 +73,8 @@ def list_versions(workspace_id: str, model_id: str, request: Request, actor: Act
 def create_version(workspace_id: str, model_id: str, payload: ModelVersionCreate,
                    request: Request, actor: Actor, db: Db):
     workspace_access(db, actor, workspace_id, "models.write")
-    find_asset(db, ModelAsset, workspace_id, model_id)
+    from ..services.asset_lifecycle import lock_active
+    lock_active(db, find_asset(db, ModelAsset, workspace_id, model_id))
     version = ModelVersion(id=new_id("mvr"), model_id=model_id, created_by=actor.id, **payload.model_dump())
     db.add(version)
     audit(db, actor, "model_versions.create", version.id, workspace_id)

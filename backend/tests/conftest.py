@@ -7,6 +7,9 @@ from model_platform.cli import bootstrap_admin, migrate
 from model_platform.config import Settings
 from model_platform.main import create_app
 from model_platform.permissions import ACTIONS
+from model_platform.database import new_id
+from model_platform.models import User, UserGroup
+from sqlalchemy import select
 
 PASSWORD = "test-only-password-2026"
 
@@ -22,6 +25,14 @@ def app(settings):
     migrate(settings)
     bootstrap_admin(settings, "owner", "测试管理员", PASSWORD)
     application = create_app(settings)
+    # 文件写入夹具显式提供额度；不修改冷启动和新账号的零额度规则。
+    with application.state.sessions() as db:
+        group = UserGroup(id=new_id('grp'), name='测试文件额度',
+            allow_actions=sorted(ACTIONS - {'users.manage', 'groups.manage', 'settings.manage'}),
+            deny_actions=[], quota={'gpu_count': 0, 'concurrent_jobs': 0, 'storage_gib': 50})
+        db.add(group); db.flush()
+        owner = db.scalar(select(User).where(User.account == 'owner'))
+        owner.group_id = group.id; db.commit()
     yield application
     application.state.engine.dispose()
 

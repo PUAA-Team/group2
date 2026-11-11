@@ -8,6 +8,7 @@ from ..errors import Problem
 from .common import audit, commit, serialize
 from .data_samples import read_source, source
 from .datasets import store_versions
+from .asset_lifecycle import ensure_active
 
 
 def find_operation(db, workspace_id, operation_id):
@@ -27,6 +28,7 @@ def operation_view(operation):
 
 def create_operation(db, actor, workspace_id, payload):
     dataset, version = source(db, workspace_id, payload.version_id)
+    ensure_active(dataset)
     if payload.kind == "augment":
         allowed = {"image_classification": {"flip", "brightness", "noise"}, "text_classification": {"punctuation"}}
         if not payload.options.methods or set(payload.options.methods) - allowed.get(dataset.task_type, set()):

@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from .database import Base
+from .database import Base, utcnow
 from .models import Revision, Timestamp
 
 
@@ -14,6 +14,8 @@ class Project(Timestamp, Revision, Base):
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
     name: Mapped[str] = mapped_column(String(100))
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    description: Mapped[str] = mapped_column(Text, default='')
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class Job(Timestamp, Revision, Base):
@@ -52,6 +54,7 @@ class Execution(Timestamp, Base):
     lease_until: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finish_digest: Mapped[str | None] = mapped_column(String(64))
+    group_id: Mapped[str | None] = mapped_column(String(40), index=True)
 
 
 class ExecutionEvent(Timestamp, Base):
@@ -72,9 +75,12 @@ class ServiceCall(Timestamp, Base):
     status: Mapped[str] = mapped_column(String(16), default="pending")
     input: Mapped[dict] = mapped_column(JSON)
     result: Mapped[dict] = mapped_column(JSON, default=dict)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    elapsed_ms: Mapped[int | None] = mapped_column(Integer)
+    service_key_id: Mapped[str | None] = mapped_column(ForeignKey('service_keys.id'), index=True)
 
 
-class ServiceKey(Timestamp, Base):
+class ServiceKey(Timestamp, Revision, Base):
     __tablename__ = "service_keys"
     id: Mapped[str] = mapped_column(String(40), primary_key=True)
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
@@ -84,3 +90,4 @@ class ServiceKey(Timestamp, Base):
     token_digest: Mapped[str] = mapped_column(String(64), unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    usage_started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

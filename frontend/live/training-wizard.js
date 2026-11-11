@@ -1,4 +1,5 @@
-import { btn, can, card, e, fieldsInfo, input, options, pageHeader, select, tag, TASKS, workspaceRequired } from "./components.js?v=stage13-3a";
+import { btn, can, card, e, fieldsInfo, input, options, pageHeader, select, tag, TASKS, workspaceRequired } from "./components.js?v=stage15-1";
+import { nodeOptions } from "./resource-options.js?v=stage16-local";
 
 const steps = ["任务与模型", "数据集", "参数与资源", "核对提交"];
 const numbers = ["epochs", "batch_size", "learning_rate", "validation_ratio", "seed", "max_length", "lora_rank"];
@@ -24,12 +25,13 @@ export function ensureDraft(ctx) {
 
 export function captureDraft(draft, form) {
   const before = JSON.stringify(draft.values);
-  for (const [key, value] of form.entries()) if (key !== "submit_now") draft.values[key] = numbers.includes(key) || ["priority", "min_memory_mb"].includes(key) ? Number(value) : String(value);
+  for (const [key, value] of form.entries()) if (!["submit_now", "parameter_template"].includes(key)) draft.values[key] = numbers.includes(key) || ["priority", "min_memory_mb"].includes(key) ? Number(value) : String(value);
   if (JSON.stringify(draft.values) !== before) draft.dirty = true;
   return draft;
 }
 
 export function updateTask(draft, choices, task, selected) {
+  draft.templateId = '';
   const model = choices.models.find(item => item.id === selected && item.task_type === task) || choices.models.find(item => item.task_type === task);
   const changed = task !== draft.values.task_type;
   Object.assign(draft.values, { task_type: task, model_version_id: model?.id || "", dataset_version_id: "" });
@@ -51,20 +53,30 @@ export function renderWizard(ctx) {
     select("模型版本", "model_version_id", options(choices.models.filter(item => item.task_type === v.task_type).map(item => [item.id, `${item.name} / ${item.version}`]), v.model_version_id), "required data-wizard-model") + (model ? `<div class="console-selection">${tag(TASKS[v.task_type])}${tag(model.trainer_id === "qwen-lora-v1" ? "LoRA" : model.source_ref?.startsWith("artifact://") ? "继续训练" : "基础训练")}${tag(model.version)}</div>` : '<div class="notice">请先登记兼容的模型版本。</div>');
   if (draft.step === 1) fields = select("数据集版本", "dataset_version_id", options([["", "请选择数据版本"], ...compatible.map(item => [item.id, `${item.name} / v${item.number} / ${item.sample_count} 条`])], v.dataset_version_id), "required data-wizard-dataset") +
     `<div class="heading-actions">${btn("样本预览", "wizard-preview", "", "secondary", !v.dataset_version_id)}<a class="entity-link" href="#/datasets/new">导入数据集</a></div>` + (draft.preview ? `<pre class="template-preview">${e(JSON.stringify(draft.preview.samples, null, 2))}</pre>` : "") + (!compatible.length ? '<div class="notice">当前任务尚无可训练的数据版本。</div>' : "");
-  if (draft.step === 2) fields = parameterFields(v, v.task_type === "llm_sft") + `<div class="section-heading"><h2>计算资源</h2></div><div class="live-field-grid">${select("设备", "device_kind", options(v.task_type === "llm_sft" ? [["cuda", "GPU"]] : [["cpu", "CPU"], ["cuda", "GPU"]], v.device_kind), "required")}${select("计算节点", "node_id", options([["", "自动选择"], ...(ctx.data.nodes || []).map(node => [node.id, node.name])], v.node_id))}${input("最低显存 / MiB", "min_memory_mb", v.min_memory_mb, 'type="number" min="0" max="1048576" required')}${input("优先级", "priority", v.priority, 'type="number" min="0" max="10" required')}</div>`;
+  if (draft.step === 2) {
+    const templates = (ctx.data.parameterTemplates || []).filter(item => !item.archived && item.task_type === v.task_type && item.trainer_id === model?.trainer_id);
+    fields = `<div class="live-field-grid">${select('参数模板', 'parameter_template', options([['', '选择模板'], ...templates.map(item => [item.id, item.name])], draft.templateId), 'data-parameter-template')}<div class="heading-actions">${btn('应用', 'param-apply', '', 'secondary', !draft.templateId)}${btn('另存模板', 'param-new', '', 'secondary', !model)}${btn('管理模板', 'param-manage')}</div></div>` +
+      parameterFields(v, v.task_type === 'llm_sft') + `<div class="section-heading"><h2>计算资源</h2></div><div class="live-field-grid">${select('设备', 'device_kind', options(v.task_type === 'llm_sft' ? [['cuda', 'GPU']] : [['cpu', 'CPU'], ['cuda', 'GPU']], v.device_kind), 'required data-resource-kind="train"')}${select('计算节点', 'node_id', nodeOptions(ctx.data.nodes || [], 'train', v.device_kind, v.node_id))}${input('最低显存 / MiB', 'min_memory_mb', v.min_memory_mb, 'type="number" min="0" max="1048576" required')}${input('优先级', 'priority', v.priority, 'type="number" min="0" max="10" required')}</div>`;
+  }
   if (draft.step === 3) {
     const dataset = compatible.find(item => item.id === v.dataset_version_id);
     fields = fieldsInfo([["任务名称", e(v.name)], ["任务类型", tag(TASKS[v.task_type])], ["模型", e(model ? `${model.name} / ${model.version}` : "—")], ["数据集", e(dataset ? `${dataset.name} / v${dataset.number}` : "—")], ["设备", tag(v.device_kind === "cuda" ? "GPU" : "CPU")], ["节点", e(ctx.data.nodes?.find(node => node.id === v.node_id)?.name || "自动选择")], ...numbers.filter(key => v.task_type === "llm_sft" || !["max_length", "lora_rank"].includes(key)).map(key => [key, e(v[key])])]);
   }
-  return `<div class="breadcrumb"><a href="#/runs">训练任务</a><span>/</span><span>${draft.editId ? "编辑草稿" : "新建训练"}</span></div>` + pageHeader(draft.editId ? "编辑训练草稿" : "新建训练") +
+  const archivedProject = (ctx.data.projects || []).find(item => item.id === v.project_id)?.archived;
+  return `<div class="breadcrumb"><a href="#/runs">训练任务</a><span>/</span><span>${draft.editId ? "编辑草稿" : "新建训练"}</span></div>` + pageHeader(draft.editId ? "编辑训练草稿" : "新建训练") + (archivedProject ? '<div class="notice">项目已归档，请先恢复项目或选择其他项目。</div>' : '') +
     `<ol class="console-stepper">${steps.map((name, index) => `<li class="${index === draft.step ? "active" : index < draft.step ? "complete" : ""}" ${index === draft.step ? 'aria-current="step"' : ""}><span>${index + 1}</span><strong>${name}</strong></li>`).join("")}</ol>` +
-    `<form data-form="training-wizard" class="console-wizard-form"><div class="notice notice-danger" data-wizard-error role="alert" ${draft.error ? "" : "hidden"}>${e(draft.error || "")}</div>${card(`<div class="card-header"><h2>${steps[draft.step]}</h2></div><div class="stack">${fields}</div>`, "console-form-panel")}<div class="console-wizard-footer"><a class="btn btn-secondary" href="#/runs">返回列表</a><div class="heading-actions">${draft.step ? btn("上一步", "wizard-back") : ""}${draft.step < 3 ? btn("下一步", "wizard-next", "", "primary") : '<button class="btn btn-secondary" type="submit" name="intent" value="draft">保存草稿</button><button class="btn btn-primary" type="submit" name="intent" value="submit">提交训练</button>'}</div></div></form>`;
+    `<form data-form="training-wizard" class="console-wizard-form"><div class="notice notice-danger" data-wizard-error role="alert" ${draft.error ? "" : "hidden"}>${e(draft.error || "")}</div>${card(`<div class="card-header"><h2>${steps[draft.step]}</h2>${draft.step === 2 && can(ctx, "assistants.use") ? btn("智能参数", "assistant-parameters-new") : ""}</div><div class="stack">${fields}</div>`, "console-form-panel")}<div class="console-wizard-footer"><a class="btn btn-secondary" href="#/runs">返回列表</a><div class="heading-actions">${draft.step ? btn("上一步", "wizard-back") : ""}${draft.step < 3 ? btn("下一步", "wizard-next", "", "primary") : '<button class="btn btn-secondary" type="submit" name="intent" value="draft">保存草稿</button><button class="btn btn-primary" type="submit" name="intent" value="submit">提交训练</button>'}</div></div></form>`;
+}
+
+export function jobPayload(v) {
+  // 训练提交与智能参数共用同一份任务载荷形状。
+  return { name: v.name, kind: "train", project_id: v.project_id || null, model_version_id: v.model_version_id, dataset_version_id: v.dataset_version_id,
+    device_kind: v.device_kind, node_id: v.node_id || null, min_memory_mb: Number(v.min_memory_mb), priority: Number(v.priority), config: Object.fromEntries(numbers.map(key => [key, Number(v[key])])) };
 }
 
 export async function persistTraining(api, ctx, submitNow) {
   const draft = ctx.wizard, v = draft.values, base = `/workspaces/${draft.workspaceId}`;
-  const payload = { name: v.name, kind: "train", project_id: v.project_id || null, model_version_id: v.model_version_id, dataset_version_id: v.dataset_version_id,
-    device_kind: v.device_kind, node_id: v.node_id || null, min_memory_mb: Number(v.min_memory_mb), priority: Number(v.priority), config: Object.fromEntries(numbers.map(key => [key, Number(v[key])])) };
+  const payload = jobPayload(v);
   let job = draft.created;
   if (!job) {
     job = (await api.request(`${base}/jobs${draft.editId ? `/${draft.editId}` : ""}`, { method: draft.editId ? "PATCH" : "POST", revision: draft.revision, body: payload })).data;

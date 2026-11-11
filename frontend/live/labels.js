@@ -1,4 +1,8 @@
+export const devicePurposes = { shared: '共享', train_eval: '训练与评估', inference: '推理专用' };
+
 const actions = {
+  'requests.failure': '操作失败', 'datasets.archive': '归档数据集', 'datasets.restore': '恢复数据集', 'models.archive': '归档模型', 'models.restore': '恢复模型',
+  'groups.budget.update': '配置共享预算', 'resources.device_policy.update': '配置设备授权', 'resources.execution.reconcile': '执行核查结案', 'service_keys.rotate': '轮换API密钥',
   "auth.login": "登录", "auth.logout": "退出登录", "auth.register": "邀请注册", "users.profile": "修改个人资料", "users.password": "修改密码",
   "users.create": "新增用户", "users.update": "配置用户", "groups.create": "新增用户组", "groups.update": "配置用户组", "invitations.create": "创建注册邀请",
   "workspaces.create": "创建空间", "workspaces.update": "修改空间", "members.update": "调整空间成员", "members.remove": "移除空间成员",
@@ -7,4 +11,7 @@ const actions = {
   "resources.enrollment.create": "生成接入命令", "resources.enrollment.revoke": "撤销接入码", "resources.register": "计算节点接入", "resources.update": "配置节点", "resources.probe": "探测硬件", "resources.revoke": "撤销节点", "resources.local.stop": "停止本机Worker",
   "settings.update": "修改系统设置", "model_connections.create": "新增模型连接", "model_connections.update": "配置模型连接", "model_connections.test": "测试模型连接", "service_keys.create": "创建API密钥", "service_keys.revoke": "撤销API密钥",
 };
-export const actionLabel = action => actions[action] || action;
+export function actionLabel(action) {
+  const [, from, to] = /^resources\.device_purpose\.(shared|train_eval|inference)\.(shared|train_eval|inference)$/.exec(action) || [];
+  return from ? `设备用途：${devicePurposes[from]} → ${devicePurposes[to]}` : actions[action] || action;
+}

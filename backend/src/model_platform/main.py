@@ -16,7 +16,10 @@ from .database import make_engine, make_session_factory
 from .errors import Problem, install_handlers, response
 from .outputs import Envelope, ErrorEnvelope
 from .web import attach_web
-from .api import data_workflows
+from .api import data_workflows, assistant, results, governance
+from .api import parameter_templates
+from .api import projects
+from .api import reports
 
 
 class RequestBoundary:
@@ -55,6 +58,8 @@ class RequestBoundary:
                     "request_failed id=%s type=%s", request_id, type(exc).__name__)
                 if response_started:
                     raise RuntimeError("响应发送中断，请按请求编号排查") from None
+                from .failure_audit import record_failure
+                record_failure(Request(scope), 'INTERNAL_ERROR')
                 await reject(500, "INTERNAL_ERROR", "服务处理失败")
 
         if scope["method"] not in {"GET", "HEAD", "OPTIONS"}:
@@ -107,6 +112,12 @@ def create_app(settings: Settings | None = None):
     for router in (setup.router, auth.router, admin.router, workspaces.router, models.router, datasets.router, resources.router, worker.router, jobs.router, executions.router, inference.router, console.router, administration.router, accounts.router):
         app.include_router(router)
     app.include_router(data_workflows.router)
+    app.include_router(assistant.router)
+    app.include_router(governance.router)
+    app.include_router(results.router)
+    app.include_router(parameter_templates.router)
+    app.include_router(projects.router)
+    app.include_router(reports.router)
 
     @app.get("/healthz", tags=["运行检查"], response_model=Envelope[dict[str, str]])
     def health(request: Request):

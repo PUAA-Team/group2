@@ -1,13 +1,23 @@
 import math
 from typing import Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import AwareDatetime, Field, field_validator, model_validator
 
 from .schemas import Input
 
 
 class ProjectInput(Input):
     name: str = Field(min_length=1, max_length=100)
+    description: str = Field(default='', max_length=2000)
+
+
+class ProjectPatch(Input):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    description: str | None = Field(default=None, max_length=2000)
+
+
+class ProjectArchive(Input):
+    archived: bool
 
 
 class InferenceConfig(Input):
@@ -79,7 +89,13 @@ class FinishInput(Input):
     status: Literal["succeeded", "failed", "stopped"]
     result: dict = Field(default_factory=dict)
     error: str | None = Field(default=None, max_length=2000)
-    _bounded = field_validator("result")(EventInput.bounded.__func__)
+    @field_validator("result")
+    @classmethod
+    def bounded_result(cls, value):
+        import json
+        if len(json.dumps(value, allow_nan=False).encode("utf-8")) > 65536:
+            raise ValueError("结果不能超过64KiB")
+        return value
 
 
 class ClaimInput(Input):
@@ -101,10 +117,14 @@ class CallInput(Input):
 class CallResult(Input):
     status: Literal["succeeded", "failed"]
     result: dict
-    _bounded = field_validator("result")(EventInput.bounded.__func__)
+    _bounded = field_validator("result")(FinishInput.bounded_result.__func__)
 
 
 class KeyInput(Input):
     name: str = Field(min_length=1, max_length=100)
     job_id: str
     days: int = Field(default=30, ge=1, le=365)
+
+
+class KeyExpiry(Input):
+    expires_at: AwareDatetime

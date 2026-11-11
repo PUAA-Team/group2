@@ -6,7 +6,10 @@ import subprocess
 import time
 
 from .journal import read_json, write_json
+from .client import WorkerError
 from .transfers import download, upload
+
+EXECUTION_CONTRACT_VERSION = 1
 
 
 def alive(pid):
@@ -25,6 +28,21 @@ def alive(pid):
             return bool(kernel.GetExitCodeProcess(handle, ctypes.byref(code)) and code.value == 259)
         finally:
             kernel.CloseHandle(handle)
+    # Linux的僵尸进程仍可通过kill(pid, 0)，先回收已退出的直接子进程。
+    try:
+        waited, _ = os.waitpid(pid, os.WNOHANG)
+        if waited == pid:
+            return False
+    except ChildProcessError:
+        # Agent重启后的原子进程不再属于本进程，检查可读取的真实退出状态。
+        stat = Path(f'/proc/{pid}/stat')
+        try:
+            if stat.read_text().rpartition(') ')[2].split()[0] in {'Z', 'X'}:
+                return False
+        except (OSError, IndexError):
+            pass
+    except OSError:
+        pass
     try:
         os.kill(pid, 0); return True
     except ProcessLookupError:
@@ -91,8 +109,11 @@ class Executor:
                 else:
                     try:
                         self.prepare(path, journal)
-                    except (ValueError, OSError) as error:
-                        write_json(path / "result.json", {"status": "failed", "result": {}, "error": str(error)[:1000]})
+                    except (ValueError, OSError, WorkerError) as error:
+                        if isinstance(error, WorkerError) and error.code not in {'FILE_NOT_READY', 'MODEL_NOT_READY'}:
+                            raise
+                        write_json(path / "result.json", {"status": "failed", "result": {'failure_stage': 'input_transfer',
+                            'failure_code': error.code if isinstance(error, WorkerError) else 'INPUT_ERROR'}, "error": str(error)[:1000]})
                         journal["phase"] = "completed"; write_json(path / "journal.json", journal)
             if journal["phase"] in {"launching", "uncertain"}:
                 # 此状态表示启动回执未落盘；需人工核查，保持租约和设备占用。
@@ -124,6 +145,16 @@ class Executor:
                 if alive(journal.get("pid")):
                     continue
                 if result["status"] == "succeeded" and journal["assignment"]["kind"] == "train":
-                    upload(self.client, eid, path / "artifact.zip")
+                    try:
+                        upload(self.client, eid, path / "artifact.zip")
+                    except WorkerError as error:
+                        if error.code not in {'STORAGE_LIMIT', 'GROUP_STORAGE_LIMIT', 'INVALID_ARTIFACT', 'FILE_TOO_LARGE'}:
+                            raise
+                        result = {'status': 'failed', 'result': {'failure_stage': 'artifact_upload'},
+                                  'error': '模型产物未被控制端接收：' + str(error)[:800]}
+                        write_json(path / 'result.json', result)
+                    except ValueError as error:
+                        result = {'status': 'failed', 'result': {'failure_stage': 'artifact_upload'}, 'error': str(error)[:1000]}
+                        write_json(path / 'result.json', result)
                 self.client.request(prefix + "/finish", result)
                 journal["acknowledged"] = True; write_json(path / "journal.json", journal); self.active.pop(eid)

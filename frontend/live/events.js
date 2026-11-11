@@ -1,13 +1,20 @@
-import { errorMessage } from "./api.js?v=stage13-3a";
-import { QUOTAS, options } from "./components.js?v=stage13-3a";
-import { addExamples, CSV_TEMPLATE, JSONL_TEMPLATE } from "./examples.js?v=stage13-3a";
-import { computeAction, saveCompute } from "./compute.js?v=stage13-3a";
-import { workflowAction, saveWorkflow, workflowModelChanged, workflowOutputModeChanged } from "./workflows.js?v=stage13-3a";
-import { pageAction, pageChanged, syncImport } from "./page-events.js?v=stage13-3a";
-import { captureDraft, ensureDraft, persistTraining } from "./training-wizard.js?v=stage13-3a";
-import { persistImport } from "./dataset-import.js?v=stage13-3a";
-import { administrationAction, saveAdministration } from "./administration.js?v=stage13-3a";
-import { captureAnnotation, dataAction, saveAnnotation, saveDataWorkflow, syncProcessing } from "./data-actions.js?v=stage13-3a";
+import { errorMessage } from "./api.js?v=stage15-1";
+import { QUOTAS, options } from "./components.js?v=stage15-1";
+import { addExamples, CSV_TEMPLATE, JSONL_TEMPLATE } from "./examples.js?v=stage15-1";
+import { computeAction, saveCompute } from "./compute.js?v=stage15-1";
+import { workflowAction, saveWorkflow, workflowModelChanged, workflowOutputModeChanged } from "./workflows.js?v=stage15-1";
+import { pageAction, pageChanged, syncImport } from "./page-events.js?v=stage15-1";
+import { captureDraft, ensureDraft, persistTraining } from "./training-wizard.js?v=stage15-1";
+import { persistImport } from "./dataset-import.js?v=stage15-1";
+import { administrationAction, saveAdministration } from "./administration.js?v=stage15-1";
+import { captureAnnotation, dataAction, saveAnnotation, saveDataWorkflow, syncProcessing } from "./data-actions.js?v=stage15-1";
+import { assistantAction, saveAssistant } from "./assistant.js?v=stage15-1";
+import { governanceAction, saveGovernance } from './governance.js?v=stage15-1';
+import { parameterTemplateAction, saveParameterTemplate } from './parameter-templates.js?v=stage15-1';
+import { projectAction, saveProject } from './projects.js?v=stage15-1';
+import { keyAction, saveKey } from './key-management.js?v=stage15-1';
+import { queryAction, saveQuery } from './query-controls.js?v=stage15-1';
+import { syncResourceNodes } from './resource-options.js?v=stage16-local';
 
 function showError(selector, error) {
   const target = document.querySelector(selector);
@@ -38,7 +45,12 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
     const { action, id, group } = button.dataset;
     try {
       if (await pageAction(action, ctx, api, render)) return;
+      if (await projectAction(action, { ctx, openModal })) return;
+      if (await keyAction(action, id, { ctx, openModal, toast })) return;
+      if (await queryAction(action, { ctx, openModal, navigate })) return;
+      if (await parameterTemplateAction(action, id, { api, ctx, openModal, render, toast, form: button.form })) return;
       if (await dataAction(action, id, { api, ctx, openModal, load, toast })) return;
+      if (await assistantAction(action, id, { api, ctx, openModal, load, toast, form: button.form })) return;
       if (action === "admin-test-connection") {
         const caption = button.textContent;
         button.disabled = true; button.textContent = "正在测试…";
@@ -48,12 +60,13 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
       }
       if (await administrationAction(action, id, { api, ctx, openModal, render, load, toast })) return;
       if (await computeAction(action, id, { api, ctx, openModal, toast, load })) return;
+      if (await governanceAction(action, id, { api, ctx, openModal })) return;
       if (await workflowAction(action, id, { api, ctx, openModal, toast, load, render, navigate })) return;
       if (action === "toggle-password") { const field = document.getElementById("live-password"); field.type = field.type === "password" ? "text" : "password"; button.setAttribute("aria-label", field.type === "text" ? "隐藏密码" : "显示密码"); }
       if (action === "toggle-nav") { ctx.ui.navOpen[group] = !ctx.ui.navOpen[group]; render(); persist(); }
       if (action === "collapse-sidebar") { ctx.ui.sidebarCollapsed = !ctx.ui.sidebarCollapsed; render(); persist(); }
       if (action === "open-menu" || action === "close-menu") { ctx.ui.menuOpen = action === "open-menu"; document.getElementById("shell")?.classList.toggle("menu-open", ctx.ui.menuOpen); }
-      if (action === "logout") { await api.request("/auth/logout", { method: "POST" }); api.csrf = ""; ctx.session = null; ctx.ui.modal = null; ctx.resourceConnection = null; ctx.generatedKey = null; ctx.generatedInvite = null; ctx.pendingCall = null; ctx.callResult = null; ctx.wizard = null; ctx.importDraft = null; ctx.annotationDrafts = null; ctx.dataChoices = null; navigate("/login"); }
+      if (action === "logout") { await api.request("/auth/logout", { method: "POST" }); api.csrf = ""; ctx.session = null; ctx.ui.modal = null; ctx.resourceConnection = null; ctx.generatedKey = null; ctx.generatedInvite = null; ctx.pendingCall = null; ctx.callResult = null; ctx.wizard = null; ctx.importDraft = null; ctx.annotationDrafts = null; ctx.dataChoices = null; ctx.assistantOptions = null; navigate("/login"); }
       if (action === "refresh") await load();
       if (action === "go") navigate(id);
       if (action === "modal") openModal(id, ["model-version", "dataset-version"].includes(id) ? ctx.data.item : undefined);
@@ -81,6 +94,7 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
     pageChanged(event.target, ctx, render);
     if (event.target.matches("[data-query-filter]")) changedQuery({ [event.target.dataset.queryFilter]: event.target.value, page: 1 });
     if (event.target.matches("[data-job-model]")) workflowModelChanged(event.target.form, ctx);
+    if (event.target.matches("[data-resource-kind]")) syncResourceNodes(event.target, ctx.data.nodes || []);
     if (event.target.matches("[data-inference-mode]")) workflowOutputModeChanged(event.target.form);
     if (event.target.matches("[data-enroll-platform]")) {
       const form = event.target.form, mode = event.target.value;
@@ -108,6 +122,12 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
     const data = new FormData(form), type = form.dataset.form;
     if (type === "search") { changedQuery({ q: data.get("q"), page: 1 }); return; }
     if (type === "logs-search") { changedQuery({ log_q: data.get("log_q") }); return; }
+    if (type === "evaluation-compare") {
+      const ids = data.getAll("ids");
+      if (ids.length < 2 || ids.length > 6) { toast("请选择2～6个已完成评估"); return; }
+      const query = new URLSearchParams(); ids.forEach(id => query.append("ids", id));
+      navigate(`/evaluation/compare?${query}`); return;
+    }
     if (type === "training-wizard") {
       const draft = ensureDraft(ctx); captureDraft(draft, data);
       if (draft.step < 3) { draft.step++; render(); return; }
@@ -143,7 +163,7 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
       const base = `/workspaces/${modal.workspaceId}`;
       const kind = ctx.kind;
       let destination = "";
-      const feature = await saveDataWorkflow(api, modal, data, ctx) || await saveAdministration(api, modal, data, ctx) || await saveCompute(api, modal, data, ctx) || await saveWorkflow(api, modal, data, ctx);
+      const feature = await saveProject(api, modal, data) || await saveKey(api, modal, data) || await saveQuery(api, modal, data) || await saveParameterTemplate(api, modal, data, ctx) || await saveGovernance(api, modal, data, ctx) || await saveAssistant(api, modal, data, ctx) || await saveDataWorkflow(api, modal, data, ctx) || await saveAdministration(api, modal, data, ctx) || await saveCompute(api, modal, data, ctx) || await saveWorkflow(api, modal, data, ctx);
       if (feature) destination = feature.destination || "";
       else switch (modal.kind) {
         case "workspace-new": {

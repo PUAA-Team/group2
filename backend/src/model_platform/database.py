@@ -38,4 +38,5 @@ def make_session_factory(engine):
 
 def get_db(request: Request):
     with request.app.state.sessions() as db:
+        request.state.db = db
         yield db

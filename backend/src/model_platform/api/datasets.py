@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, File, Query, Request, Response, UploadFile
+from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile
 from sqlalchemy import select
 
 from ..database import new_id
@@ -75,10 +75,11 @@ def list_versions(workspace_id: str, dataset_id: str, request: Request, actor: A
 
 @router.post(base + "/{dataset_id}/versions", status_code=201, response_model=Envelope[DatasetVersionOut])
 async def upload_version(workspace_id: str, dataset_id: str, request: Request, actor: Actor, db: Db,
-                         file: Annotated[UploadFile, File()]):
+                         file: Annotated[UploadFile, File()], column_mapping: Annotated[str | None, Form(max_length=16384)] = None):
     workspace_access(db, actor, workspace_id, "datasets.write")
     dataset = find_asset(db, Dataset, workspace_id, dataset_id)
-    version = await store_version(db, request.app.state.settings, actor, dataset, file)
+    from ..services.dataset_mapping import decode_mapping
+    version = await store_version(db, request.app.state.settings, actor, dataset, file, decode_mapping(column_mapping))
     return response(request, serialize(version))
 
 

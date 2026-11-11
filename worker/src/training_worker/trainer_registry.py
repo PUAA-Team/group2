@@ -2,7 +2,7 @@ import importlib.util
 
 
 def supported_trainers():
-    if not importlib.util.find_spec("torch") or not importlib.util.find_spec("safetensors"):
+    if not all(importlib.util.find_spec(name) for name in ("torch", "safetensors", "numpy")):
         return []
     result = ["text-classifier-v1"]
     if importlib.util.find_spec("PIL"):

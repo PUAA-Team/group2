@@ -27,7 +27,7 @@ def registration(code, key, **changes):
     value = {"protocol_version": 1, "join_code": code, "installation_id": "00000000-0000-0000-0000-000000000001",
              "machine_id": "a" * 64, "credential_digest": hashlib.sha256(key.encode()).hexdigest(), "slots": 2,
              "inventory": {"hostname": "test-machine", "platform": "Windows", "cpu_count": 8, "memory_mb": 16000,
-                           "runtime": {"torch_version": "test", "cuda_available": True},
+                           "runtime": {"torch_version": "test", "cuda_available": True, "execution_contract_version": 1},
                            "devices": [{"uuid": "cpu-test", "kind": "cpu", "name": "CPU", "memory_mb": 16000},
                                        {"uuid": "GPU-test", "kind": "cuda", "name": "RTX test", "memory_mb": 8000, "utilization": 20, "used_memory_mb": 400, "driver": "test"}]}}
     value.update(changes)

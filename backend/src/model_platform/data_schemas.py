@@ -1,8 +1,10 @@
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from .schemas import Input
+
+EDIT_FIELDS = {"input", "instruction"}
 
 
 class AnnotationInput(Input):
@@ -24,6 +26,17 @@ class ResultInput(Input):
     value: str = Field(min_length=1, max_length=16000)
     revision: int = Field(ge=0)
     submit: bool = False
+    # 指令标注可顺带修订输入与指令；其它任务类型拒绝该字段。
+    edits: dict[str, str] = Field(default_factory=dict)
+
+    @field_validator("edits")
+    @classmethod
+    def known_edits(cls, value):
+        if set(value) - EDIT_FIELDS:
+            raise ValueError("仅支持修改输入与指令")
+        if any(len(text) > 16000 or (key == "instruction" and not text.strip()) for key, text in value.items()):
+            raise ValueError("指令不能为空，字段内容不超过16000字")
+        return value
 
 
 class ReviewInput(Input):

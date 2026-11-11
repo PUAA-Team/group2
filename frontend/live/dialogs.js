@@ -1,8 +1,14 @@
-import { ACTIONS, btn, description, e, input, options, QUOTAS, select, taskOptions } from "./components.js?v=stage13-3a";
-import { computeDialog } from "./compute.js?v=stage13-3a";
-import { workflowDialog } from "./workflows.js?v=stage13-3a";
-import { administrationDialog } from "./administration.js?v=stage13-3a";
-import { dataDialog } from "./data-workflows.js?v=stage13-3a";
+import { ACTIONS, btn, description, e, input, options, QUOTAS, select, taskOptions } from "./components.js?v=stage15-1";
+import { computeDialog } from "./compute.js?v=stage15-1";
+import { workflowDialog } from "./workflows.js?v=stage15-1";
+import { administrationDialog } from "./administration.js?v=stage15-1";
+import { dataDialog } from "./data-workflows.js?v=stage15-1";
+import { assistantDialog } from "./assistant.js?v=stage15-1";
+import { governanceDialog } from './governance.js?v=stage15-1';
+import { parameterTemplateDialog } from './parameter-templates.js?v=stage15-1';
+import { projectDialog } from './projects.js?v=stage15-1';
+import { keyDialog } from './key-management.js?v=stage15-1';
+import { queryDialog } from './query-controls.js?v=stage15-1';
 
 function policyFields(item = {}, personal = false) {
   const checks = (name, label) => `<fieldset class="live-check-field"><legend>${label}</legend><div class="live-checks">${ACTIONS.map(([key, text]) => `<label><input type="checkbox" name="${name}" value="${key}" ${(item[name] || []).includes(key) ? "checked" : ""}/>${e(text)}</label>`).join("")}</div></fieldset>`;
@@ -13,7 +19,7 @@ function policyFields(item = {}, personal = false) {
 export function renderDialog(modal, ctx) {
   if (!modal) return "";
   const item = modal.item || {};
-  let { title = "", fields = "", submit = "保存", wide = false, readOnly = false } = dataDialog(modal, ctx) || administrationDialog(modal, ctx) || computeDialog(modal, ctx) || workflowDialog(modal, ctx) || {};
+  let { title = "", fields = "", submit = "保存", wide = false, readOnly = false } = projectDialog(modal) || keyDialog(modal) || queryDialog(modal) || parameterTemplateDialog(modal, ctx) || governanceDialog(modal, ctx) || assistantDialog(modal, ctx) || dataDialog(modal, ctx) || administrationDialog(modal, ctx) || computeDialog(modal, ctx) || workflowDialog(modal, ctx) || {};
   if (modal.kind === "workspace-new") { title = "创建工作空间"; fields = input("空间名称", "name", "", 'required maxlength="100"'); submit = "创建"; }
   if (["model-new", "dataset-new"].includes(modal.kind)) {
     const model = modal.kind === "model-new";

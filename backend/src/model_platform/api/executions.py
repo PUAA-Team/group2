@@ -54,7 +54,7 @@ async def artifact(execution_id: str, request: Request, node: Worker, db: Db, fi
 
 @router.post("/executions/{execution_id}/finish")
 def finish(execution_id: str, payload: FinishInput, request: Request, node: Worker, db: Db):
-    return response(request, executions.finish(db, node, execution_id, payload))
+    return response(request, executions.finish(db, node, execution_id, payload, request.app.state.settings))
 
 
 @router.post("/executions/{execution_id}/calls/{call_id}")

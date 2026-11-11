@@ -1,5 +1,5 @@
-import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage13-3a";
-import { renderAnnotation } from "./annotation-view.js?v=stage13-3a";
+import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage15-1";
+import { renderAnnotation } from "./annotation-view.js?v=stage15-1";
 
 export const DATA_STATES = { open: "进行中", draft: "草稿", submitted: "待审核", approved: "已通过", rejected: "已退回", queued: "排队中", running: "运行中", review: "待发布", published: "已发布", failed: "失败", cancelled: "已取消" };
 export const DATA_KINDS = { clean: "数据清洗", split: "数据划分", augment: "数据增强" };

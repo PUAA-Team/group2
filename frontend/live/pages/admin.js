@@ -1,9 +1,9 @@
-import { badge, btn, date, e, options, pageHeader, pager, table, tag, toolbar } from "../components.js?v=stage13-3a";
+import { badge, btn, date, e, options, pageHeader, pager, table, tag, toolbar } from "../components.js?v=stage15-1";
 
 export function renderUsers(ctx) {
   const groups = ctx.tab === "groups";
   const rows = (ctx.data.data || []).map(item => groups
-    ? [e(item.name), tag(`${item.allow_actions.length} 项允许`), tag(`${item.deny_actions.length} 项禁用`), e(`GPU ${item.quota.gpu_count || 0} / 并发 ${item.quota.concurrent_jobs || 0}`), `<div class="live-row-actions">${btn("配置", "edit-group", item.id)}${btn("成员", "admin-group-members", item.id)}</div>`]
+    ? [e(item.name), tag(`${item.allow_actions.length} 项允许`), tag(`${item.deny_actions.length} 项禁用`), e(`GPU ${item.quota.gpu_count || 0} / 并发 ${item.quota.concurrent_jobs || 0}`), `<div class="live-row-actions">${btn("配置", "edit-group", item.id)}${btn("成员", "admin-group-members", item.id)}${btn('共享预算', 'gov-group-budget', item.id)}</div>`]
     : [e(item.display_name), e(item.account), tag(item.is_admin ? "管理员" : "成员"), e(ctx.groups.find(g => g.id === item.group_id)?.name || (item.group_id ? "受限用户组" : "未分组")), badge(item.active ? "启用" : "停用"), `<div class="live-row-actions">${btn("配置", "edit-user", item.id)}${btn("有效权限", "admin-user-access", item.id)}${btn("重置密码", "admin-reset-password", item.id)}${btn(item.active ? "停用" : "启用", "toggle-user", item.id)}</div>`]);
   const invite = ctx.generatedInvite ? `<div class="notice"><label for="invite-url">邀请链接（仅显示本次）</label><div class="heading-actions"><input id="invite-url" class="input" readonly value="${e(ctx.generatedInvite)}"/>${btn("复制", "admin-copy-invite")}${btn("关闭", "admin-hide-invite")}</div></div>` : "";
   const filters = groups ? "" : `<select class="select filter-select" data-query-filter="group_id" aria-label="用户组筛选">${options([["", "全部用户组"], ...ctx.groups.map(group => [group.id, group.name])], ctx.params?.get("group_id") || "")}</select><select class="select filter-select" data-query-filter="user_status" aria-label="用户状态">${options([["", "全部状态"], ["active", "启用"], ["disabled", "停用"]], ctx.params?.get("user_status") || "")}</select>`;

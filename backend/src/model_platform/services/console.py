@@ -50,9 +50,11 @@ def category_condition(category):
     return None
 
 
-def model_catalog(db, actor, workspace_id, q, task_type, category, page, page_size):
+def model_catalog(db, actor, workspace_id, q, task_type, category, page, page_size, status='all'):
     workspace_access(db, actor, workspace_id, "models.read")
     query = select(ModelAsset).where(ModelAsset.workspace_id == workspace_id)
+    if status != 'all':
+        query = query.where(ModelAsset.archived.is_(status == 'archived'))
     if task_type:
         query = query.where(ModelAsset.task_type == task_type)
     condition = category_condition(category)
@@ -77,9 +79,14 @@ def model_catalog(db, actor, workspace_id, q, task_type, category, page, page_si
     return rows, pagination
 
 
-def dataset_catalog(db, actor, workspace_id, q, task_type, page, page_size):
+def dataset_catalog(db, actor, workspace_id, q, task_type, page, page_size, status='all', version_status=None):
     workspace_access(db, actor, workspace_id, "datasets.read")
     query = select(Dataset).where(Dataset.workspace_id == workspace_id)
+    if status != 'all':
+        query = query.where(Dataset.archived.is_(status == 'archived'))
+    if version_status:
+        latest_status = select(DatasetVersion.status).where(DatasetVersion.dataset_id == Dataset.id).order_by(DatasetVersion.number.desc()).limit(1).scalar_subquery()
+        query = query.where(latest_status.is_(None) if version_status == 'unversioned' else latest_status == version_status)
     if task_type:
         query = query.where(Dataset.task_type == task_type)
     rows, pagination = page_data(db, search_query(query, q, Dataset.name).order_by(Dataset.created_at.desc()), page, page_size)
@@ -89,9 +96,16 @@ def dataset_catalog(db, actor, workspace_id, q, task_type, page, page_size):
     return [{**row, "latest_version": latest.get(row["id"])} for row in rows], pagination
 
 
-def project_catalog(db, actor, workspace_id, q, page, page_size):
+def project_catalog(db, actor, workspace_id, q, page, page_size, status='all'):
     workspace_access(db, actor, workspace_id, "training.read")
-    rows, pagination = page_data(db, search_query(select(Project).where(Project.workspace_id == workspace_id), q, Project.name).order_by(Project.created_at.desc()), page, page_size)
+    query = select(Project).where(Project.workspace_id == workspace_id)
+    if status != 'all':
+        query = query.where(Project.archived.is_(status == 'archived'))
+    rows, pagination = page_data(db, search_query(query, q, Project.name).order_by(Project.created_at.desc()), page, page_size)
+    return project_rows(db, rows), pagination
+
+
+def project_rows(db, rows):
     groups = {row["id"]: [] for row in rows}
     for job in db.scalars(select(Job).where(Job.project_id.in_(groups), Job.kind == "train").order_by(Job.created_at.desc(), Job.id.desc())):
         groups[job.project_id].append(job)
@@ -101,4 +115,4 @@ def project_catalog(db, actor, workspace_id, q, page, page_size):
         row.update(job_count=len(jobs), active_count=sum(item.status in {"queued", "preparing", "running", "stopping"} for item in jobs),
                    latest_job=job_summary(db, jobs[0]) if jobs else None,
                    best_accuracy=max((item.result["accuracy"] for item in completed), default=None))
-    return rows, pagination
+    return rows

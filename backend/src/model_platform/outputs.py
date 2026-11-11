@@ -113,6 +113,7 @@ class DatasetOut(Entity):
     task_type: str
     description: str
     revision: int
+    archived: bool = False
 
 
 class ModelOut(DatasetOut):
@@ -160,3 +161,5 @@ class AuditOut(Entity):
     action: str
     target_id: str
     result: str
+    error_code: str | None = None
+    request_id: str | None = None

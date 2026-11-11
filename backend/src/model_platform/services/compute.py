@@ -122,6 +122,8 @@ def heartbeat(db, node, payload, settings):
             hardware = f"cpu:{node.machine_id}" if reported.kind == "cpu" else f"nvidia:{reported.uuid}"
             if hardware in by_hardware:
                 by_hardware[hardware].metrics = {"utilization": reported.utilization, "used_memory_mb": reported.used_memory_mb, "driver": reported.driver}
+        from .monitoring import save_sample
+        save_sample(db, node, list(by_hardware.values()))
     commit(db)
     return {**register_receipt(node, settings), "probe_request_id": node.probe_request_id, "controls": []}
 
@@ -135,7 +137,10 @@ def get_visible_node(db, actor, node_id, action):
 
 
 def node_busy(db, node):
-    return bool(node.active_executions or db.scalar(select(ComputeDevice.id).where(ComputeDevice.node_id == node.id, ComputeDevice.reserved_execution_id.is_not(None)).limit(1)))
+    from ..job_models import Execution
+    finished = set(db.scalars(select(Execution.id).where(Execution.id.in_(node.active_executions), Execution.finished_at.is_not(None))))
+    reported = set(node.active_executions) - finished
+    return bool(reported or db.scalar(select(ComputeDevice.id).where(ComputeDevice.node_id == node.id, ComputeDevice.reserved_execution_id.is_not(None)).limit(1)))
 
 
 def lock_node(db, node):

@@ -9,19 +9,26 @@ from ..models import AuditEvent, Dataset, DatasetVersion, Membership, ModelAsset
 from ..permissions import effective_policy
 from .common import page_data, search_query, serialize
 from .console import job_summary
+from .governance_statistics import asset_bytes, resource_totals
+from .catalog_filters import filter_catalog
 
 
-def global_catalog(db, kind, q, space, status, job_kind, page, page_size, allowed_kinds):
+def global_catalog(db, kind, q, space, status, job_kind, page, page_size, allowed_kinds, filters=None, task_type=None):
     model = {"datasets": Dataset, "models": ModelAsset, "jobs": Job, "audit": AuditEvent}[kind]
     query = select(model)
     if space:
         query = query.where(model.workspace_id == space)
+    query = filter_catalog(query, model, kind, filters)
+    if task_type and kind in {'datasets', 'models'}:
+        query = query.where(model.task_type == task_type)
     if kind == "jobs":
         query = query.where(Job.kind.in_(allowed_kinds))
         if status:
             query = query.where(Job.status == status)
         if job_kind:
             query = query.where(Job.kind == job_kind)
+    if kind in {'datasets', 'models'} and status in {'active', 'archived'}:
+        query = query.where(model.archived.is_(status == 'archived'))
     if kind == "audit" and status:
         query = query.where(AuditEvent.result == status)
     column = AuditEvent.action if kind == "audit" else model.name
@@ -31,10 +38,14 @@ def global_catalog(db, kind, q, space, status, job_kind, page, page_size, allowe
             row.update(job_summary(db, db.get(Job, row["id"])))
             row.pop("artifact_key", None)
         workspace = db.get(Workspace, row["workspace_id"]) if row.get("workspace_id") else None
-        owner_id = row.get("actor_id") or row.get("created_by") or (workspace.owner_id if workspace else None)
+        owner_id = row.get("actor_id") or row.get("created_by")
+        if kind in {'datasets', 'models'}:
+            owner_id = db.scalar(select(AuditEvent.actor_id).where(AuditEvent.target_id == row['id'],
+                AuditEvent.action == kind + '.create').order_by(AuditEvent.created_at, AuditEvent.id).limit(1))
         owner = db.get(User, owner_id) if owner_id else None
         row.update(workspace_name=workspace.name if workspace else "全平台", actor_name=owner.display_name if owner else "—")
         if kind in {"datasets", "models"}:
+            row['storage_bytes'] = asset_bytes(db, kind, row['id'])
             version_type = DatasetVersion if kind == "datasets" else ModelVersion
             key = version_type.dataset_id if kind == "datasets" else version_type.model_id
             latest = db.scalar(select(version_type).where(key == row["id"]).order_by(version_type.created_at.desc(), version_type.id.desc()).limit(1))
@@ -71,4 +82,6 @@ def statistics(db, actor, space=None):
             trend[day][job.kind] += 1
         distribution[job.workspace_id] += 1
     spaces = [{"id": item.id, "name": item.name, "jobs": distribution[item.id]} for item in db.scalars(select(Workspace).where(Workspace.id == space) if space else select(Workspace))]
-    return {"counts": counts, "states": dict(states), "trend": list(trend.values()), "workspaces": spaces, "timezone": "Asia/Shanghai"}
+    failures = Counter(job.result.get('failure_stage') if isinstance(job.result.get('failure_stage'), str) else 'unreported' for job in jobs if job.status == 'failed')
+    return {"counts": counts, "states": dict(states), "trend": list(trend.values()), "workspaces": spaces, "timezone": "Asia/Shanghai",
+        'resources': resource_totals(db, actions, space, kinds), 'failure_stages': dict(failures)}

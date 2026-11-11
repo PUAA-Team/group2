@@ -1,4 +1,6 @@
-import { badge, btn, can, card, date, e, fieldsInfo, input, link, options, pageHeader, pager, select, table, tag, toolbar } from "./components.js?v=stage13-3a";
+import { badge, btn, can, card, date, e, fieldsInfo, input, link, options, pageHeader, pager, select, table, tag, toolbar } from "./components.js?v=stage15-1";
+import { historyHtml } from './governance.js?v=stage15-1';
+import { devicePurposes } from './labels.js?v=stage15-1';
 
 export const isComputePage = path => ["/monitor", "/admin/resources"].includes(path);
 
@@ -14,7 +16,9 @@ export async function loadCompute(api, ctx, signal) {
   const connection = ctx.resourceConnection;
   let receipt;
   if (connection?.id) receipt = (await api.request(`/resources/enrollments/${connection.id}`, { signal })).data;
-  return { ...nodes, runtime: runtime?.data, detail, connectionReceipt: receipt };
+  const device = ctx.params.get('device') || detail?.devices[0]?.id;
+  const history = detail && device ? (await api.request(`/resources/nodes/${detail.id}/history?device_id=${encodeURIComponent(device)}&hours=${encodeURIComponent(ctx.params.get('hours') || 24)}`, { signal })).data : null;
+  return { ...nodes, runtime: runtime?.data, detail, connectionReceipt: receipt, history };
 }
 
 const nodeRoute = (ctx, node) => `${ctx.path}?node=${encodeURIComponent(node.id)}`;
@@ -34,8 +38,8 @@ export function renderCompute(ctx) {
     manage ? btn("配置", "node-config", node.id) + btn("探测", "node-probe", node.id) : "—",
   ])) + pager(ctx.data.pagination, "个节点");
   else content = nodes.length ? nodes.map(node => `<div class="section-heading"><h2><a class="entity-link" href="#${e(nodeRoute(ctx, node))}">${e(node.name)}</a></h2>${badge(node.status)}</div>` +
-    table(["设备", "类型", "显存 / 内存", "利用率", "状态", "运行时"], node.devices.filter(device => device.present || device.reserved_execution_id).map(device => [
-      e(device.name), tag(device.kind === "cuda" ? "GPU" : "CPU"), device.memory_mb ? `${device.memory_mb} MiB` : "—",
+    table(["设备", "类型", "用途", "显存 / 内存", "利用率", "状态", "运行时"], node.devices.filter(device => device.present || device.reserved_execution_id).map(device => [
+      e(device.name), tag(device.kind === "cuda" ? "GPU" : "CPU"), tag(devicePurposes[device.purpose] || devicePurposes.shared), device.memory_mb ? `${device.memory_mb} MiB` : "—",
       device.metrics.utilization === null || device.metrics.utilization === undefined ? "—" : `${e(device.metrics.utilization)}%`, badge(device.status),
       tag(device.kind === "cuda" ? node.inventory.runtime.cuda_available ? "CUDA 就绪" : "CUDA 未就绪" : node.inventory.runtime.torch_version ? "PyTorch" : "待配置"),
     ]))).join("") + pager(ctx.data.pagination, "个节点") : `<div class="empty-state"><h3>尚未接入计算节点</h3>${actions}</div>`;
@@ -45,14 +49,16 @@ export function renderCompute(ctx) {
 }
 
 function renderNode(ctx, node, manage) {
-  const actions = manage ? btn("配置", "node-config", node.id) + btn("重新探测", "node-probe", node.id) + btn(node.enabled ? "暂停接收" : "恢复接收", "node-toggle", node.id) + btn("撤销接入", "node-revoke", node.id, "danger") : "";
+  const actions = manage ? btn("配置", "node-config", node.id) + '<a class="btn btn-secondary" href="/api/worker/v1/bundle" download="worker.pyz">下载 Worker</a>' + btn("重新探测", "node-probe", node.id) + btn(node.enabled ? "暂停接收" : "恢复接收", "node-toggle", node.id) + btn("撤销接入", "node-revoke", node.id, "danger") : "";
   const runtime = node.inventory.runtime;
   return `<div class="breadcrumb"><a href="#${ctx.path}">计算节点</a><span>/</span><span>${e(node.name)}</span></div>` + pageHeader(node.name, "", actions) +
     `<div class="live-detail-meta">${badge(node.status)}${node.probe_request_id ? tag("探测处理中") : ""}</div>` +
     fieldsInfo([["主机", e(node.inventory.hostname)], ["系统", e(node.inventory.platform)], ["CPU 线程", e(node.inventory.cpu_count)],
       ["内存", node.inventory.memory_mb ? `${node.inventory.memory_mb} MiB` : "—"], ["最近心跳", date(node.last_seen_at)], ["最近探测", date(node.last_inventory_at)],
-      ["PyTorch", e(runtime.torch_version || "未安装")], ["CUDA", e(runtime.cuda_version || "—")], ["执行槽位", e(node.slots)], ["工作空间", e(ctx.workspaces.find(space => space.id === node.workspace_id)?.name || "—")]]) +
-    `<div class="section-heading"><h2>设备清单</h2></div>` + table(["设备", "标识", "显存 / 内存", "状态"], node.devices.map(device => [e(device.name), `<span class="live-break">${e(device.hardware_id)}</span>`, `${device.memory_mb} MiB`, badge(device.status)])) +
+      ["PyTorch", e(runtime.torch_version || "未安装")], ["CUDA", e(runtime.cuda_version || "—")], ['Worker 状态', tag(runtime.execution_contract_version >= 1 ? '已就绪' : '需升级')], ["执行槽位", e(node.slots)], ["工作空间", e(ctx.workspaces.find(space => space.id === node.workspace_id)?.name || "—")]]) +
+    `<div class="section-heading"><h2>设备清单</h2></div>` + table(["设备", "标识", "用途", "显存 / 内存", "状态", "操作"], node.devices.map(device => [e(device.name), `<span class="live-break">${e(device.hardware_id)}</span>`, tag(devicePurposes[device.purpose] || devicePurposes.shared), `${device.memory_mb} MiB`, badge(device.status),
+      ctx.session.user.is_admin && manage ? btn('配置策略', 'gov-device-policy', device.id) + (device.reserved_execution_id ? btn('执行核查', 'gov-review', device.reserved_execution_id) : '') : '—'])) +
+    `<div class="heading-actions console-section-actions"><select class="select" data-query-filter="device" aria-label="监控设备">${options(node.devices.map(device => [device.id, device.name]), ctx.data.history?.device_id)}</select><select class="select" data-query-filter="hours" aria-label="监控时段">${options([[1, '近1小时'], [6, '近6小时'], [24, '近24小时'], [168, '近7天']], ctx.params.get('hours') || 24)}</select></div>` + historyHtml(ctx.data.history, node.devices.find(device => device.id === ctx.data.history?.device_id)?.kind) +
     (node.inventory.errors?.length ? `<div class="section-heading"><h2>探测结果</h2></div><div class="live-permissions">${node.inventory.errors.map(tag).join("")}</div>` : "");
 }
 

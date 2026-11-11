@@ -24,6 +24,8 @@ try:
     sys.path.insert(0,sys.argv[1])
     try:
         from training_worker.trainer_registry import supported_trainers
+        from training_worker.executor import EXECUTION_CONTRACT_VERSION
+        out['execution_contract_version']=EXECUTION_CONTRACT_VERSION
         out['trainers']=supported_trainers()
         try:
             from training_worker.inference_contract import prepare_request
@@ -56,7 +58,9 @@ def memory_mb():
 
 
 def devices(fingerprint):
-    result = [{"uuid": fingerprint, "kind": "cpu", "name": platform.processor() or "CPU", "memory_mb": memory_mb(), "utilization": None, "used_memory_mb": None, "driver": None}]
+    from .system_metrics import sample
+    utilization, used = sample()
+    result = [{"uuid": fingerprint, "kind": "cpu", "name": platform.processor() or "CPU", "memory_mb": memory_mb(), "utilization": utilization, "used_memory_mb": used, "driver": None}]
     errors = []
     executable = shutil.which("nvidia-smi")
     if not executable:

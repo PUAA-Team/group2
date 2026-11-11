@@ -8,11 +8,12 @@ from ..compute_models import ComputeDevice
 from ..database import new_id, utcnow
 from ..errors import Problem
 from ..job_models import Execution, ExecutionEvent, Job, ServiceCall
-from ..models import DatasetVersion, ModelVersion
+from ..models import DatasetVersion, ModelVersion, User
 from .artifact_files import validate_artifact
 from .common import audit, commit
 from .dataset_files import controlled_path
 from .jobs import source_job
+from .call_lifecycle import finish_call
 
 
 def owned_execution(db, node, execution_id, *, lock=False):
@@ -91,24 +92,37 @@ def store_artifact(db, settings, node, execution_id, content):
             raise Problem(409, "ARTIFACT_CONFLICT", "该执行已上传不同的产物")
         return {"sha256": sha}
     key = f"{job.workspace_id}/artifacts/{execution.id}.zip"
+    from .budgets import charge_objects
+    actor = db.get(User, job.created_by)
+    charge_objects(db, actor, [{'id': 'artifact:' + job.id, 'workspace_id': job.workspace_id,
+        'kind': 'artifact', 'object_id': job.id, 'storage_key': key, 'size_bytes': len(content)}])
     path = controlled_path(settings, key); path.parent.mkdir(parents=True, exist_ok=True)
     staged = path.with_suffix(".upload")
     # 只有当前受控执行能写入此文件；完整落盘后提交引用。
-    with staged.open("wb") as stream:
-        stream.write(content)
-    staged.replace(path)
-    job.artifact_key, job.artifact_sha256, job.artifact_bytes = key, sha, len(content)
-    commit(db)
+    try:
+        with staged.open("wb") as stream:
+            stream.write(content)
+        staged.replace(path)
+        job.artifact_key, job.artifact_sha256, job.artifact_bytes = key, sha, len(content)
+        commit(db)
+    except Exception:
+        db.rollback()
+        staged.unlink(missing_ok=True)
+        path.unlink(missing_ok=True)
+        raise
     return {"sha256": sha}
 
 
-def finish(db, node, execution_id, payload):
+def finish(db, node, execution_id, payload, settings=None):
     execution, job = owned_execution(db, node, execution_id, lock=True)
     fingerprint = hashlib.sha256(json.dumps(payload.model_dump(mode="json"), sort_keys=True).encode()).hexdigest()
     if execution.finished_at:
         if execution.finish_digest != fingerprint:
             raise Problem(409, "FINISH_CONFLICT", "完成结果与已确认记录不同")
         return {"accepted": True, "status": job.status}
+    if "error_samples" in payload.result:
+        from .evaluation_errors import validate_errors
+        validate_errors(db, settings, job, payload.result)
     status = "stopped" if job.status == "stopping" else payload.status
     if status == "succeeded" and job.kind == "train" and not job.artifact_sha256:
         raise Problem(409, "ARTIFACT_REQUIRED", "成功训练需要先回传模型产物")
@@ -125,6 +139,6 @@ def finish(db, node, execution_id, payload):
     db.execute(update(ComputeDevice).where(ComputeDevice.id == execution.device_id, ComputeDevice.reserved_execution_id == execution.id).values(reserved_execution_id=None))
     if job.kind == "service":
         for call in db.scalars(select(ServiceCall).where(ServiceCall.job_id == job.id, ServiceCall.status == "pending")):
-            call.status, call.result = "failed", {"error": "服务已结束"}
+            finish_call(call, "failed", {"error": "服务已结束"})
     commit(db)
     return {"accepted": True, "status": job.status}

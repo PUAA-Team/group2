@@ -4,6 +4,7 @@ import random
 import time
 
 from .journal import read_json, write_json
+from .result_limits import MAX_RESULT_BYTES, result_bytes
 
 
 class Stopped(Exception):
@@ -47,6 +48,8 @@ def serve(model, runtime):
                 continue
             try:
                 result = {"status": "succeeded", "result": model.predict(read_json(path))}
+                if result_bytes(result['result']) > MAX_RESULT_BYTES:
+                    raise ValueError('推理输出超过64KiB，请缩短输出后重试')
             except Stopped:
                 raise
             except Exception as error:
@@ -57,8 +60,10 @@ def serve(model, runtime):
 
 def run_job(spec_path):
     spec = read_json(spec_path); root = spec_path.parent
+    stage = 'preparing'
     try:
         runtime = Runtime(spec); runtime.emit("started", {}); runtime.check_stop()
+        stage = 'model_loading'
         if spec["snapshot"]["trainer_id"] == "qwen-lora-v1":
             from .qwen import Qwen
             model = Qwen(spec, runtime)
@@ -66,7 +71,9 @@ def run_job(spec_path):
             from .classification import Classifier
             model = Classifier(spec, runtime)
         if spec["kind"] == "service":
+            stage = 'inference'
             serve(model, runtime)
+        stage = 'training' if spec['kind'] == 'train' else 'evaluation'
         metrics = model.train() if spec["kind"] == "train" else model.evaluate()
         runtime.check_stop()
         result = {"status": "succeeded", "result": metrics}
@@ -77,5 +84,6 @@ def run_job(spec_path):
         # 完整错误仅保留执行节点日志；页面回传受控信息。
         traceback.print_exc()
         message = str(error)[:1000] if isinstance(error, ValueError) else ("GPU 显存不足" if "out of memory" in str(error).lower() else type(error).__name__)
-        result = {"status": "failed", "result": {}, "error": message}
+        code = 'OUT_OF_MEMORY' if 'out of memory' in str(error).lower() else 'RUNTIME_ERROR'
+        result = {"status": "failed", "result": {'failure_stage': stage, 'failure_code': code}, "error": message}
     write_json(root / "result.json", result)

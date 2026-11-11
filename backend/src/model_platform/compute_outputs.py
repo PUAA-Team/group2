@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from .compute_schemas import InventoryInput
+from .governance_schemas import DevicePurpose
 from .outputs import Entity, Output
 
 
@@ -14,6 +15,8 @@ class DeviceOut(Entity):
     metrics: dict
     reserved_execution_id: str | None
     status: str
+    purpose: DevicePurpose = "shared"
+    selectable: bool | None = None
 
 
 class NodeOut(Entity):

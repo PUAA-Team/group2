@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, File, Form, Request, UploadFile
 from fastapi.responses import StreamingResponse
@@ -23,21 +23,24 @@ def workspace_overview(workspace_id: str, request: Request, actor: Actor, db: Db
 
 @router.get("/model-catalog")
 def models(workspace_id: str, request: Request, actor: Actor, db: Db, q: Search = "", task_type: TaskType | None = None,
-           category: Literal["all", "prebuilt", "network", "trained"] = "all", page: Page = 1, page_size: PageSize = 20):
-    rows, pagination = model_catalog(db, actor, workspace_id, q, task_type, category, page, page_size)
+           category: Literal["all", "prebuilt", "network", "trained"] = "all", page: Page = 1, page_size: PageSize = 20,
+           status: Literal['all', 'active', 'archived'] = 'all'):
+    rows, pagination = model_catalog(db, actor, workspace_id, q, task_type, category, page, page_size, status)
     return response(request, rows, pagination=pagination)
 
 
 @router.get("/dataset-catalog")
 def datasets(workspace_id: str, request: Request, actor: Actor, db: Db, q: Search = "", task_type: TaskType | None = None,
-             page: Page = 1, page_size: PageSize = 20):
-    rows, pagination = dataset_catalog(db, actor, workspace_id, q, task_type, page, page_size)
+             page: Page = 1, page_size: PageSize = 20, status: Literal['all', 'active', 'archived'] = 'all',
+             version_status: Literal['available', 'needs_annotation', 'unversioned'] | None = None):
+    rows, pagination = dataset_catalog(db, actor, workspace_id, q, task_type, page, page_size, status, version_status)
     return response(request, rows, pagination=pagination)
 
 
 @router.get("/project-catalog")
-def projects(workspace_id: str, request: Request, actor: Actor, db: Db, q: Search = "", page: Page = 1, page_size: PageSize = 20):
-    rows, pagination = project_catalog(db, actor, workspace_id, q, page, page_size)
+def projects(workspace_id: str, request: Request, actor: Actor, db: Db, q: Search = "", page: Page = 1, page_size: PageSize = 20,
+             status: Literal['all', 'active', 'archived'] = 'all'):
+    rows, pagination = project_catalog(db, actor, workspace_id, q, page, page_size, status)
     return response(request, rows, pagination=pagination)
 
 
@@ -55,7 +58,8 @@ def download_logs(workspace_id: str, job_id: str, actor: Actor, db: Db):
     return StreamingResponse(content(), media_type="text/plain; charset=utf-8", headers={"Content-Disposition": f'attachment; filename="{job.id}.log"'})
 @router.post("/dataset-previews")
 async def preview_upload(workspace_id: str, request: Request, actor: Actor, db: Db,
-                         task_type: TaskType = Form(), file: UploadFile = File()):
+                         task_type: TaskType = Form(), file: UploadFile = File(),
+                         column_mapping: Annotated[str | None, Form(max_length=16384)] = None):
     workspace_access(db, actor, workspace_id, "datasets.write")
     settings = request.app.state.settings
     from ..services.platform_settings import dataset_limits
@@ -63,5 +67,22 @@ async def preview_upload(workspace_id: str, request: Request, actor: Actor, db: 
     content = await file.read(settings.max_upload_bytes + 1)
     if len(content) > settings.max_upload_bytes:
         raise Problem(413, "FILE_TOO_LARGE", "文件超过大小限制")
-    rows, metadata = parse_samples(content, task_type, file.filename, settings.max_samples)
-    return response(request, {**metadata, "samples": rows[:50], "filename": file.filename})
+    from ..services.dataset_mapping import decode_mapping, normalize_upload
+    filename, normalized, provenance, rows, metadata = normalize_upload(content, task_type, file.filename,
+        settings.max_samples, decode_mapping(column_mapping))
+    if len(normalized) > settings.max_upload_bytes:
+        raise Problem(413, "FILE_TOO_LARGE", "标准化文件超过大小限制")
+    return response(request, {**metadata, "samples": rows[:50], "filename": filename, "provenance": provenance})
+
+
+@router.post('/dataset-column-inspection')
+async def inspect_upload(workspace_id: str, request: Request, actor: Actor, db: Db,
+                         task_type: TaskType = Form(), file: UploadFile = File()):
+    from ..services.dataset_mapping import inspect_columns
+    from ..services.platform_settings import dataset_limits
+    workspace_access(db, actor, workspace_id, 'datasets.write')
+    settings = dataset_limits(db, request.app.state.settings)
+    content = await file.read(settings.max_upload_bytes + 1)
+    if len(content) > settings.max_upload_bytes:
+        raise Problem(413, 'FILE_TOO_LARGE', '文件超过大小限制')
+    return response(request, inspect_columns(content, task_type, file.filename, settings.max_samples))

@@ -76,6 +76,7 @@ class ModelAsset(Timestamp, Revision, Base):
     trainer_id: Mapped[str] = mapped_column(String(64))
     source_ref: Mapped[str] = mapped_column(String(1000))
     description: Mapped[str] = mapped_column(Text, default="")
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class ModelVersion(Timestamp, Base):
@@ -97,6 +98,7 @@ class Dataset(Timestamp, Revision, Base):
     name: Mapped[str] = mapped_column(String(100))
     task_type: Mapped[str] = mapped_column(String(32))
     description: Mapped[str] = mapped_column(Text, default="")
+    archived: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
 class DatasetVersion(Timestamp, Base):
@@ -124,3 +126,5 @@ class AuditEvent(Timestamp, Base):
     action: Mapped[str] = mapped_column(String(64))
     target_id: Mapped[str] = mapped_column(String(40))
     result: Mapped[str] = mapped_column(String(24), default="success")
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    request_id: Mapped[str | None] = mapped_column(String(32))

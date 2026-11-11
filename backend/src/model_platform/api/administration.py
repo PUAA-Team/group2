@@ -11,9 +11,20 @@ from ..services.administration_queries import global_catalog, statistics
 from ..services.common import page_data
 from ..services.model_connections import connection_view, save_connection, test_connection
 from ..services.platform_settings import config_view, platform_config, save_config
+from ..services.admin_workflows import workflow_catalog
 from .deps import Actor, Db, Expected, Page, PageSize, Search
+from .catalog_filters import Filters
+from ..schemas import TaskType
 
 router = APIRouter(prefix="/api/v1", tags=["平台管理"])
+
+
+@router.get('/admin/workflow-catalog/{kind}')
+def workflow_jobs(kind: Literal['operations', 'assistants'], request: Request, actor: Actor, db: Db, filters: Filters,
+                  space: Search = '', status: Search = '', q: Search = '', page: Page = 1, page_size: PageSize = 20):
+    require_admin(db, actor, 'datasets.read' if kind == 'operations' else 'assistants.use')
+    items, pagination = workflow_catalog(db, kind, space, status, q, page, page_size, filters)
+    return response(request, items, pagination=pagination)
 
 
 @router.get("/platform-info")
@@ -66,14 +77,14 @@ def global_statistics(request: Request, actor: Actor, db: Db, space: Search = ""
 
 
 @router.get("/admin/asset-catalog/{kind}")
-def management_catalog(kind: Literal["datasets", "models", "jobs", "audit"], request: Request, actor: Actor, db: Db,
+def management_catalog(kind: Literal["datasets", "models", "jobs", "audit"], request: Request, actor: Actor, db: Db, filters: Filters,
                        page: Page = 1, page_size: PageSize = 20, q: Search = "", space: Search = "", status: Search = "",
-                       job_kind: Literal["train", "evaluate", "service"] | None = None):
+                       job_kind: Literal["train", "evaluate", "service"] | None = None, task_type: TaskType | None = None):
     actions, _ = effective_policy(db, actor)
     permission = {"datasets": "datasets.read", "models": "models.read", "audit": "audit.read", "jobs": "services.read" if job_kind == "service" or "training.read" not in actions else "training.read"}[kind]
     if kind == "jobs" and job_kind in {"train", "evaluate"}:
         permission = "training.read"
     require_admin(db, actor, permission)
     allowed_kinds = (["train", "evaluate"] if "training.read" in actions else []) + (["service"] if "services.read" in actions else [])
-    rows, pagination = global_catalog(db, kind, q, space, status, job_kind, page, page_size, allowed_kinds)
+    rows, pagination = global_catalog(db, kind, q, space, status, job_kind, page, page_size, allowed_kinds, filters, task_type)
     return response(request, rows, pagination=pagination)

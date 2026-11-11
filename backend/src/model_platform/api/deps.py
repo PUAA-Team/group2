@@ -28,6 +28,7 @@ def current_user(request: Request, db: Db,
     user = db.get(User, token.user_id) if token else None
     if token is None or aware(token.expires_at) <= utcnow() or user is None or not user.active:
         raise Problem(401, "UNAUTHENTICATED", "请重新登录")
+    request.state.actor_id = user.id
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
         if not hmac.compare_digest(csrf_header or "", csrf_token(raw)):
             raise Problem(403, "CSRF_FAILED", "请求校验失败，请刷新后重试")

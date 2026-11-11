@@ -1,4 +1,5 @@
-import { badge, btn, can, card, date, e, fieldsInfo, pageHeader, table, tag, TASKS } from "./components.js?v=stage13-3a";
+import { badge, btn, can, card, date, e, fieldsInfo, pageHeader, table, tag, TASKS } from "./components.js?v=stage15-1";
+import { reviewButton } from './governance.js?v=stage15-1';
 
 const statusNames = { draft: "草稿", queued: "排队中", preparing: "准备中", running: "运行中", stopping: "停止中", stopped: "已停止", cancelled: "已取消", succeeded: "已完成", failed: "失败" };
 const parameterNames = { epochs: "Epochs", batch_size: "Batch size", learning_rate: "Learning rate", validation_ratio: "验证比例", seed: "Seed", max_length: "最大长度", lora_rank: "LoRA rank" };
@@ -13,7 +14,7 @@ export function renderTrainingDetail(ctx, metricChart) {
   const actions = (write ? `<a class="btn btn-secondary" href="#/train/new?copy=${e(job.id)}">复制配置</a>` : "") +
     (write && job.status === "draft" ? btn("编辑草稿", "workflow-edit", job.id) + btn("提交", "workflow-submit", job.id, "primary") : "") +
     (write && !final && job.status !== "draft" ? btn(job.status === "queued" ? "取消任务" : "停止", "workflow-stop", job.id, "secondary", job.status === "stopping") : "") +
-    (write && final ? btn("重跑", "workflow-retry", job.id) : "");
+    (write && final ? btn("重跑", "workflow-retry", job.id) : "") + reviewButton(ctx, job);
   const outcomes = [["准确率", result.accuracy == null ? "—" : `${(result.accuracy * 100).toFixed(1)}%`], ["Macro F1", result.macro_f1 == null ? "—" : result.macro_f1.toFixed(3)], ["Loss", result.validation_loss == null && result.loss == null ? "—" : Number(result.validation_loss ?? result.loss).toFixed(4)]];
   let panel;
   if (tab === "metrics") panel = `<div class="execution-charts ${llm ? "execution-single-chart" : ""}">${metricChart(events, ["loss", "val_loss"], "训练损失")}${llm ? "" : metricChart(events, ["accuracy", "val_accuracy"], "准确率")}</div>` +
@@ -21,9 +22,9 @@ export function renderTrainingDetail(ctx, metricChart) {
   else if (tab === "logs") {
     const search = ctx.params?.get("log_q") || "";
     const logs = events.filter(event => event.type === "log").map(event => event.payload.message || "").filter(message => !search || message.toLowerCase().includes(search.toLowerCase()));
-    panel = `<div class="toolbar"><form class="toolbar-left" data-form="logs-search"><input class="input" type="search" name="log_q" aria-label="搜索日志" placeholder="搜索日志" value="${e(search)}"/><button class="btn btn-secondary" type="submit">搜索</button></form><div class="heading-actions"><a class="btn btn-secondary" href="/api/v1/workspaces/${e(ctx.workspace.id)}/jobs/${e(job.id)}/logs">下载完整日志</a>${btn("刷新", "refresh")}</div></div><pre class="execution-log console-log">${e(logs.join("\n") || "暂无匹配日志")}</pre>`;
+    panel = `<div class="toolbar"><form class="toolbar-left" data-form="logs-search"><input class="input" type="search" name="log_q" aria-label="搜索日志" placeholder="搜索日志" value="${e(search)}"/><button class="btn btn-secondary" type="submit">搜索</button></form><div class="heading-actions"><a class="btn btn-secondary" href="/api/v1/workspaces/${e(ctx.workspace.id)}/jobs/${e(job.id)}/logs">下载完整日志</a>${can(ctx, "assistants.use") ? btn("智能解释", "assistant-logs-new", job.id) : ""}${btn("刷新", "refresh")}</div></div><pre class="execution-log console-log">${e(logs.join("\n") || "暂无匹配日志")}</pre>`;
   } else if (tab === "outputs") {
-    const controls = (job.artifact_sha256 ? `<a class="btn btn-secondary" href="/api/v1/workspaces/${e(ctx.workspace.id)}/jobs/${e(job.id)}/artifact">下载产物</a>` : "") +
+    const controls = (job.status === "succeeded" && job.artifact_sha256 ? `<a class="btn btn-secondary" href="/api/v1/workspaces/${e(ctx.workspace.id)}/jobs/${e(job.id)}/artifact">下载产物</a>` : "") +
       (job.output_model_version_id && write ? btn("创建评估", "workflow-evaluate", job.output_model_version_id) : "") +
       (job.output_model_version_id && can(ctx, "services.write") ? btn("部署服务", "workflow-deploy", job.output_model_version_id, "primary") : "");
     panel = job.status === "succeeded" ? card(`<div class="card-header"><h2>模型产物</h2><div class="heading-actions">${controls}</div></div>${fieldsInfo([["模型版本", e(job.output_model_version_id || "—")], ["文件大小", job.artifact_bytes == null ? "—" : `${(job.artifact_bytes / 1024).toFixed(1)} KiB`], ["SHA256", `<span class="live-break">${e(job.artifact_sha256 || "—")}</span>`]])}`) : '<div class="empty-state"><h3>暂无模型产物</h3></div>';

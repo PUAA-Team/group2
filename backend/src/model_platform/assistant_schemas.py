@@ -65,6 +65,13 @@ class AssistantApply(Input):
     indices: list[int] = Field(default_factory=list, max_length=20)
     name: str | None = Field(default=None, min_length=1, max_length=100)
 
+    @field_validator("fields")
+    @classmethod
+    def known_parameters(cls, values):
+        if set(values) - PARAMETERS:
+            raise ValueError("包含未知训练参数")
+        return values
+
 
 class AnnotationSuggestion(Input):
     index: int = Field(ge=0)
@@ -102,7 +109,7 @@ class ParameterOutput(Input):
 class LogCause(Input):
     reason: str = Field(min_length=1, max_length=1000)
     evidence: list[int] = Field(default_factory=list, max_length=20)
-    steps: list[str] = Field(default_factory=list, max_length=6)
+    steps: list[str] = Field(min_length=1, max_length=6)
 
     @field_validator("steps")
     @classmethod

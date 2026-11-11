@@ -37,26 +37,29 @@ def job_options(workspace_id: str, request: Request, actor: Actor, db: Db):
     workspace_access(db, actor, workspace_id, "models.read")
     workspace_access(db, actor, workspace_id, "datasets.read")
     models = []
-    for version, model in db.execute(select(ModelVersion, ModelAsset).join(ModelAsset).where(ModelAsset.workspace_id == workspace_id).order_by(ModelVersion.created_at.desc()).limit(500)):
+    for version, model in db.execute(select(ModelVersion, ModelAsset).join(ModelAsset).where(ModelAsset.workspace_id == workspace_id, ModelAsset.archived.is_(False)).order_by(ModelVersion.created_at.desc()).limit(500)):
         item = {**serialize(version), "name": model.name, "task_type": model.task_type, "trainer_id": model.trainer_id}
         if model.trainer_id == "qwen-lora-v1" and version.status == "available":
             item["inference_suggestion"] = inference_suggestion(db, request.app.state.settings, workspace_id, version)
         models.append(item)
-    datasets = [{**serialize(version), "name": dataset.name, "task_type": dataset.task_type} for version, dataset in db.execute(select(DatasetVersion, Dataset).join(Dataset).where(Dataset.workspace_id == workspace_id, DatasetVersion.status == "available").order_by(DatasetVersion.created_at.desc()).limit(500))]
+    datasets = [{**serialize(version), "name": dataset.name, "task_type": dataset.task_type} for version, dataset in db.execute(select(DatasetVersion, Dataset).join(Dataset).where(Dataset.workspace_id == workspace_id, Dataset.archived.is_(False), DatasetVersion.status == "available").order_by(DatasetVersion.created_at.desc()).limit(500))]
     return response(request, {"models": models, "datasets": datasets})
 
 
 @router.get("/projects")
-def projects(workspace_id: str, request: Request, actor: Actor, db: Db, page: Page = 1, page_size: PageSize = 20, q: Search = ""):
+def projects(workspace_id: str, request: Request, actor: Actor, db: Db, page: Page = 1, page_size: PageSize = 20, q: Search = "", status: Literal['all', 'active', 'archived'] = 'all'):
     workspace_access(db, actor, workspace_id, "training.read")
-    data, pagination = page_data(db, search_query(select(Project).where(Project.workspace_id == workspace_id), q, Project.name), page, page_size)
+    query = select(Project).where(Project.workspace_id == workspace_id)
+    if status != 'all':
+        query = query.where(Project.archived.is_(status == 'archived'))
+    data, pagination = page_data(db, search_query(query, q, Project.name), page, page_size)
     return response(request, data, pagination=pagination)
 
 
 @router.post("/projects", status_code=201)
 def new_project(workspace_id: str, payload: ProjectInput, request: Request, actor: Actor, db: Db):
     workspace_access(db, actor, workspace_id, "training.write")
-    item = Project(id=new_id("prj"), workspace_id=workspace_id, name=payload.name, created_by=actor.id)
+    item = Project(id=new_id("prj"), workspace_id=workspace_id, **payload.model_dump(), created_by=actor.id)
     db.add(item); audit(db, actor, "projects.create", item.id, workspace_id); commit(db)
     return response(request, serialize(item))
 
@@ -87,7 +90,7 @@ def new_job(workspace_id: str, payload: JobInput, request: Request, actor: Actor
 
 @router.get("/jobs/{job_id}")
 def detail(workspace_id: str, job_id: str, request: Request, actor: Actor, db: Db):
-    return response(request, job_view(db, get_job(db, actor, workspace_id, job_id)))
+    return response(request, job_view(db, get_job(db, actor, workspace_id, job_id), request.app.state.settings))
 
 
 @router.patch("/jobs/{job_id}")
@@ -105,7 +108,8 @@ def edit_job(workspace_id: str, job_id: str, payload: JobInput, request: Request
 @router.post("/jobs/{job_id}/submit")
 def submit(workspace_id: str, job_id: str, request: Request, actor: Actor, db: Db, expected: Expected):
     job = get_job(db, actor, workspace_id, job_id, True)
-    return response(request, job_view(db, submit_job(db, request.app.state.settings, actor, job, expected)))
+    settings = request.app.state.settings
+    return response(request, job_view(db, submit_job(db, settings, actor, job, expected), settings))
 
 
 @router.post("/jobs/{job_id}/stop")

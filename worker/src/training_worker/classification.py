@@ -9,6 +9,7 @@ import torch
 from torch import nn
 
 from .training_data import image_input, read_rows, scores, split_rows
+from .result_limits import evaluation_result
 
 
 def network(manifest):
@@ -96,7 +97,10 @@ class Classifier:
         with torch.no_grad():
             for start in range(0, len(rows), 32):
                 self.runtime.check_stop(); predicted.extend(self.model(x[start:start + 32].to(self.device)).argmax(-1).cpu().tolist())
-        return {**scores(self.manifest["labels"], y.tolist(), predicted), "device": str(self.device)}
+        labels = self.manifest["labels"]
+        errors = [{"index": index, "actual": labels[actual], "predicted": labels[guess]}
+                  for index, (actual, guess) in enumerate(zip(y.tolist(), predicted)) if actual != guess]
+        return evaluation_result({**scores(labels, y.tolist(), predicted), "device": str(self.device)}, errors)
 
     def predict(self, payload):
         row = {"label": self.manifest["labels"][0]}

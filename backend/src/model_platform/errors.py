@@ -20,6 +20,8 @@ def response(request: Request, data, *, pagination=None):
 def install_handlers(app):
     @app.exception_handler(Problem)
     async def problem_handler(request, exc):
+        from .failure_audit import record_failure
+        record_failure(request, exc.code)
         return JSONResponse(status_code=exc.status, content={"error": {
             "code": exc.code, "message": exc.message, "details": exc.details},
             "request_id": request.state.request_id})

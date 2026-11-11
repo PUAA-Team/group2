@@ -1,4 +1,4 @@
-import { ACTIONS, badge, btn, can, card, date, e, fieldsInfo, link, pageHeader, pager, QUOTAS, table, tag, TASKS, workspaceRequired } from "../components.js?v=stage13-3a";
+import { ACTIONS, badge, btn, can, card, date, e, fieldsInfo, link, pageHeader, pager, QUOTAS, table, tag, TASKS, workspaceRequired } from "../components.js?v=stage15-1";
 
 export function renderHome(ctx) {
   if (!ctx.workspace) return pageHeader("工作台") + workspaceRequired(ctx);
@@ -23,9 +23,16 @@ export function renderSpace(ctx) {
   const memberSection = can(ctx, "members.manage") ? `<div class="section-heading"><h2>空间成员</h2>${btn("添加成员", "modal", "member", "primary")}</div>` +
     table(["成员", "账号", "空间角色", "操作"], (members?.data || []).map(member => [e(member.display_name), e(member.account), tag(member.role === "viewer" ? "查看者" : "编辑者"),
       ctx.workspace.owner_id === member.user_id ? tag("所有者") : `<div class="live-row-actions">${btn("修改角色", "edit-member", member.user_id)}${btn("移除", "admin-remove-member", member.user_id)}</div>`])) + pager(members?.pagination) : "";
-  return pageHeader("用户空间", "", btn("个人资料", "modal", "profile") + btn("修改密码", "modal", "password-own") + create + (can(ctx, "members.manage") ? btn("修改空间", "modal", "workspace-edit") : "")) + spaces +
+  return pageHeader("用户空间", "", (can(ctx, "assistants.use") ? `<a class="btn btn-secondary" href="#/assistants">智能辅助</a>` : "") + (can(ctx, "members.manage") && can(ctx, "assistants.use") ? btn("智能辅助授权", "assistant-policy") : "") + btn("个人资料", "modal", "profile") + btn("修改密码", "modal", "password-own") + create + (can(ctx, "members.manage") ? btn("修改空间", "modal", "workspace-edit") : "")) + spaces +
     `<div class="section-heading"><h2>我的权限</h2></div><div class="permission-grid live-permissions">${ACTIONS.filter(([key]) => ctx.access.actions.includes(key)).map(([, label]) => tag(label)).join("") || tag("暂无权限")}</div>` +
-    `<div class="section-heading"><h2>资源上限</h2></div>` + fieldsInfo(QUOTAS.map(([key, label]) => [label, e(ctx.access.quota[key] ?? 0)])) + memberSection;
+    `<div class="section-heading"><h2>资源上限</h2></div>` + fieldsInfo(QUOTAS.map(([key, label]) => [label, e(ctx.access.quota[key] ?? 0)])) +
+    (ctx.data.storage ? `<div class="section-heading"><h2>文件存储</h2></div>` + fieldsInfo([
+      ['我的文件', `${(ctx.data.storage.personal_bytes / 1048576).toFixed(2)} MiB`],
+      ['当前空间', `${(ctx.data.storage.workspace_bytes / 1048576).toFixed(2)} MiB`],
+      ['数据版本', `${((ctx.data.storage.categories.dataset || 0) / 1048576).toFixed(2)} MiB`],
+      ['模型产物', `${((ctx.data.storage.categories.artifact || 0) / 1048576).toFixed(2)} MiB`],
+      ['处理候选', `${((ctx.data.storage.categories.candidate || 0) / 1048576).toFixed(2)} MiB`],
+      ['未归属文件', `${(ctx.data.storage.unattributed_bytes / 1048576).toFixed(2)} MiB`]]) : '') + memberSection;
 }
 
 const pending = {

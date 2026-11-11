@@ -22,6 +22,7 @@ class RuntimeInput(Input):
     cuda_available: bool = False
     trainers: list[Literal["text-classifier-v1", "image-classifier-v1", "qwen-lora-v1"]] = Field(default_factory=list, max_length=3)
     inference_contract_version: Literal[0, 1] = 0
+    execution_contract_version: Literal[0, 1] = 0
     packages: dict[str, str] = Field(default_factory=dict)
     error: str | None = Field(default=None, max_length=200)
 

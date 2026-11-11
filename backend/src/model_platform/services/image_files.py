@@ -9,23 +9,26 @@ from PIL import Image, UnidentifiedImageError
 from ..errors import Problem
 
 
+def validate_archive(archive, max_samples):
+    infos = archive.infolist()
+    if len(infos) > max_samples + 20:
+        raise ValueError("文件数量超过限制")
+    names, total = set(), 0
+    for item in infos:
+        name, path = item.filename, PurePosixPath(item.filename)
+        if name in names or path.is_absolute() or ".." in path.parts or "\\" in name or ":" in name or (item.external_attr >> 16) & 0o170000 == 0o120000 or item.flag_bits & 1:
+            raise ValueError("压缩包路径或加密无效")
+        names.add(name)
+        total += item.file_size
+        if item.file_size > 8 * 1024 * 1024 or total > 64 * 1024 * 1024 or item.file_size > max(1024 * 1024, item.compress_size * 200):
+            raise ValueError("图片或解压大小超过限制")
+    return names
+
+
 def image_rows(content, max_samples):
     try:
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
-            infos = archive.infolist()
-            if len(infos) > max_samples + 20:
-                raise ValueError("文件数量超过限制")
-            names = set()
-            total = 0
-            for item in infos:
-                name = item.filename
-                path = PurePosixPath(name)
-                if name in names or path.is_absolute() or ".." in path.parts or "\\" in name or ":" in name or (item.external_attr >> 16) & 0o170000 == 0o120000:
-                    raise ValueError("压缩包路径无效")
-                names.add(name)
-                total += item.file_size
-                if item.file_size > 8 * 1024 * 1024 or total > 64 * 1024 * 1024 or item.file_size > max(1024 * 1024, item.compress_size * 200):
-                    raise ValueError("图片或解压大小超过限制")
+            names = validate_archive(archive, max_samples)
             reader = csv.DictReader(io.StringIO(archive.read("labels.csv").decode("utf-8-sig")), strict=True)
             if reader.fieldnames != ["filename", "label"]:
                 raise ValueError("labels.csv 需要 filename,label 两列")

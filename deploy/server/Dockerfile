@@ -30,6 +30,10 @@ COPY worker/src /app/worker/src
 COPY deploy/server/entrypoint.py /app/deploy/server/entrypoint.py
 COPY scripts/seed_application_presets.py /app/scripts/seed_application_presets.py
 
+# Windows/SCP来源可能保留仅属主可读的模式；公开源码统一可读，运行数据另行挂载。
+RUN find /app -type d -exec chmod 755 {} + \
+    && find /app -type f -exec chmod 644 {} +
+
 USER 10001:10001
 EXPOSE 8000
 ENTRYPOINT ["python", "-B", "/app/deploy/server/entrypoint.py"]

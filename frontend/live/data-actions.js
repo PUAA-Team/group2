@@ -1,4 +1,4 @@
-import { annotationKey } from "./annotation-view.js?v=stage13-3a";
+import { annotationKey } from "./annotation-view.js?v=stage15-1";
 
 export function syncProcessing(form, ctx) {
   if (!form?.elements.namedItem("kind")) return;
@@ -70,7 +70,7 @@ export async function saveDataWorkflow(api, modal, form, ctx) {
 export async function saveAnnotation(api, ctx, form, submit) {
   const index = Number(form.dataset.sampleIndex);
   await api.request(`/workspaces/${ctx.workspace.id}/annotation-batches/${ctx.data.id}/results/${index}`, { method: "POST", body: {
-    value: new FormData(form).get("value"), revision: Number(form.dataset.revision), submit } });
+    edits: Object.fromEntries(["instruction", "input"].filter(key => form.elements.namedItem(key)).map(key => [key, form.elements.namedItem(key).value])), value: new FormData(form).get("value"), revision: Number(form.dataset.revision), submit } });
   if (ctx.annotationDrafts) delete ctx.annotationDrafts[annotationKey(ctx, index)];
 }
 
@@ -78,5 +78,5 @@ export function captureAnnotation(target, ctx) {
   const form = target.closest('[data-form="annotation-result"]');
   if (!form) return;
   ctx.annotationDrafts ||= {};
-  ctx.annotationDrafts[annotationKey(ctx, Number(form.dataset.sampleIndex))] = { value: form.elements.namedItem("value").value, revision: Number(form.dataset.revision) };
+  ctx.annotationDrafts[annotationKey(ctx, Number(form.dataset.sampleIndex))] = { edits: Object.fromEntries(["instruction", "input"].filter(key => form.elements.namedItem(key)).map(key => [key, form.elements.namedItem(key).value])), value: form.elements.namedItem("value").value, revision: Number(form.dataset.revision) };
 }

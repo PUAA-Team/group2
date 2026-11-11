@@ -5,21 +5,26 @@ from ..errors import Problem
 from ..models import DatasetVersion
 from .common import audit, commit, revision_update
 from .dataset_files import controlled_path, parse_samples
+from .asset_lifecycle import ensure_active
+from .budgets import charge_objects
 
 
-async def store_version(db, settings, actor, dataset, upload):
+async def store_version(db, settings, actor, dataset, upload, column_mapping=None):
     from .platform_settings import dataset_limits
     settings = dataset_limits(db, settings)
     content = await upload.read(settings.max_upload_bytes + 1)
     if len(content) > settings.max_upload_bytes:
         raise Problem(413, "FILE_TOO_LARGE", "文件超过大小限制")
-    return store_versions(db, settings, actor, dataset, [(upload.filename, content, {})])[0]
+    from .dataset_mapping import normalize_upload
+    filename, content, provenance, _, _ = normalize_upload(content, dataset.task_type, upload.filename, settings.max_samples, column_mapping)
+    return store_versions(db, settings, actor, dataset, [(filename, content, provenance)])[0]
 
 
 def store_versions(db, settings, actor, dataset, files, *, parent=None, finalize=None):
     """多个派生版本及业务发布记录共用一次提交，失败仅清理本次文件。"""
     from .platform_settings import dataset_limits
     settings = dataset_limits(db, settings)
+    ensure_active(dataset)
     if parent is not None and parent.dataset_id != dataset.id:
         raise Problem(409, "CONFLICT", "来源版本不属于当前数据集")
     prepared = []
@@ -36,6 +41,8 @@ def store_versions(db, settings, actor, dataset, files, *, parent=None, finalize
         for offset, (filename, content, provenance, metadata) in enumerate(prepared):
             version_id = new_id("dvr")
             storage_key = f"{dataset.workspace_id}/{dataset.id}/{version_id}.{metadata['format']}"
+            charge_objects(db, actor, [{'id': 'dataset:' + version_id, 'workspace_id': dataset.workspace_id,
+                'kind': 'dataset', 'object_id': version_id, 'storage_key': storage_key, 'size_bytes': len(content)}])
             path = controlled_path(settings, storage_key)
             staged = path.with_suffix(".upload")
             path.parent.mkdir(parents=True, exist_ok=True)
