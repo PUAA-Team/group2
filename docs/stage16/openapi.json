@@ -2772,6 +2772,16 @@
             }
           },
           {
+            "name": "include_summary",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Summary"
+            }
+          },
+          {
             "name": "X-CSRF-Token",
             "in": "header",
             "required": false,
@@ -2794,7 +2804,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageEnvelope_NodeOut_"
+                  "$ref": "#/components/schemas/NodePage"
                 }
               }
             }
@@ -2920,6 +2930,16 @@
             }
           },
           {
+            "name": "include_summary",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Summary"
+            }
+          },
+          {
             "name": "X-CSRF-Token",
             "in": "header",
             "required": false,
@@ -2942,7 +2962,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageEnvelope_NodeOut_"
+                  "$ref": "#/components/schemas/NodePage"
                 }
               }
             }
@@ -14518,6 +14538,30 @@
         ],
         "title": "DatasetVersionOut"
       },
+      "DeviceCounts": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "occupied": {
+            "type": "integer",
+            "title": "Occupied"
+          },
+          "disconnected_occupied": {
+            "type": "integer",
+            "title": "Disconnected Occupied"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total",
+          "occupied",
+          "disconnected_occupied"
+        ],
+        "title": "DeviceCounts"
+      },
       "DeviceInput": {
         "properties": {
           "uuid": {
@@ -16301,6 +16345,25 @@
         ],
         "title": "ModelVersionOut"
       },
+      "NodeCounts": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "online": {
+            "type": "integer",
+            "title": "Online"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total",
+          "online"
+        ],
+        "title": "NodeCounts"
+      },
       "NodeOut": {
         "properties": {
           "id": {
@@ -16433,6 +16496,42 @@
           "devices"
         ],
         "title": "NodeOut"
+      },
+      "NodePage": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/NodeOut"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResourceSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "request_id",
+          "pagination"
+        ],
+        "title": "NodePage"
       },
       "NodePatch": {
         "properties": {
@@ -16702,32 +16801,6 @@
           "pagination"
         ],
         "title": "PageEnvelope[ModelVersionOut]"
-      },
-      "PageEnvelope_NodeOut_": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/NodeOut"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "request_id": {
-            "type": "string",
-            "title": "Request Id"
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/Pagination"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "data",
-          "request_id",
-          "pagination"
-        ],
-        "title": "PageEnvelope[NodeOut]"
       },
       "PageEnvelope_UserOut_": {
         "properties": {
@@ -17134,6 +17207,27 @@
           "outcome"
         ],
         "title": "ReconcileInput"
+      },
+      "ResourceSummary": {
+        "properties": {
+          "nodes": {
+            "$ref": "#/components/schemas/NodeCounts"
+          },
+          "cpu": {
+            "$ref": "#/components/schemas/DeviceCounts"
+          },
+          "cuda": {
+            "$ref": "#/components/schemas/DeviceCounts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nodes",
+          "cpu",
+          "cuda"
+        ],
+        "title": "ResourceSummary"
       },
       "ResultInput": {
         "properties": {

@@ -1,6 +1,7 @@
 from sqlalchemy import select
 
 from ..compute_models import ComputeDevice, ComputeNode
+from ..database import aware, utcnow
 from ..errors import Problem
 from ..governance_models import DevicePolicy
 from ..governance_schemas import DevicePolicyInput
@@ -16,6 +17,15 @@ def device_policy(db, device_id):
 
 def purpose_matches(purpose, job_kind):
     return purpose == "shared" or purpose == ("inference" if job_kind == "service" else "train_eval")
+
+
+def node_is_online(node, settings, now=None):
+    return bool(node.last_seen_at and ((now or utcnow()) - aware(node.last_seen_at)).total_seconds()
+                <= settings.node_timeout_seconds)
+
+
+def node_accepts_tasks(node, settings, now=None):
+    return node.approved and node.enabled and not node.revoked and node_is_online(node, settings, now)
 
 
 def device_fits(job, device, runtime):
@@ -36,9 +46,8 @@ def policy_allows(rule, actor):
     return not (users or groups) or actor.id in users or actor.group_id in groups
 
 
-def device_allowed(db, actor, device, job_kind):
-    rule = device_policy(db, device.id)
-    return purpose_matches(rule["purpose"], job_kind) and policy_allows(rule, actor)
+def device_allowed(rule, actor, job_kind):
+    return purpose_matches(rule.get("purpose", "shared"), job_kind) and policy_allows(rule, actor)
 
 
 def configured_devices(db, workspace_id, actor, *, device_kind=None, node_id=None):

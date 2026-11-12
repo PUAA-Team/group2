@@ -1,20 +1,54 @@
 from datetime import timedelta
 
-from sqlalchemy import func, select, update
+from sqlalchemy import and_, func, or_, select, update
 
 from ..compute_models import ComputeDevice
 from ..administration_models import PlatformSetting
-from ..database import aware, new_id, utcnow
+from ..database import new_id, utcnow
 from ..errors import Problem
+from ..governance_models import DevicePolicy
 from ..job_models import Execution, Job, Project
 from ..models import User
-from ..permissions import effective_policy, workspace_access
+from ..permissions import workspace_access
 from .common import commit
 from .compute import lock_node
-from .jobs import ACTIVE, action_for
+from .jobs import ACTIVE, action_for, personal_capacity_available
 from .budgets import allocation_allowed
-from .resource_policies import device_allowed, device_fits, runtime_fits
+from .resource_policies import device_allowed, device_fits, node_accepts_tasks, purpose_matches, runtime_fits
 from .asset_lifecycle import ensure_active, lock_active
+
+CLAIM_BATCH = 64
+QUEUE_KINDS = ("train", "evaluate", "service")
+
+
+def candidates_for_node(db, node, runtime, devices):
+    trainers = runtime.get("trainers", ())
+    if not trainers:
+        return
+    capacities = {}
+    for device, rule in devices:
+        for kind in QUEUE_KINDS:
+            if purpose_matches(rule.get("purpose", "shared"), kind):
+                key = kind, device.kind
+                capacities[key] = max(capacities.get(key, 0), device.memory_mb)
+    if not capacities:
+        return
+    possible = [and_(Job.kind == kind, Job.device_kind == device_kind, Job.min_memory_mb <= memory)
+                for (kind, device_kind), memory in capacities.items()]
+    query = (select(Job).where(Job.workspace_id == node.workspace_id, Job.status == "queued",
+             or_(Job.node_id.is_(None), Job.node_id == node.id),
+             Job.snapshot["trainer_id"].as_string().in_(trainers), or_(*possible))
+             .order_by(Job.priority.desc(), Job.created_at, Job.id).limit(CLAIM_BATCH))
+    page = query
+    while True:
+        batch = db.scalars(page).all()
+        yield from batch
+        if len(batch) < CLAIM_BATCH:
+            return
+        last = batch[-1]
+        page = query.where(or_(Job.priority < last.priority,
+            and_(Job.priority == last.priority, Job.created_at > last.created_at),
+            and_(Job.priority == last.priority, Job.created_at == last.created_at, Job.id > last.id)))
 
 
 def assignment(db, execution):
@@ -31,7 +65,7 @@ def claim(db, node, settings, known):
     for execution in outstanding:
         if execution.id not in known:
             return {**assignment(db, execution), "redelivered": True}
-    if not node.approved or not node.enabled or not node.last_seen_at or (utcnow() - aware(node.last_seen_at)).total_seconds() > settings.node_timeout_seconds or len(outstanding) >= node.slots:
+    if not node_accepts_tasks(node, settings) or len(outstanding) >= node.slots:
         return None
     if node.inventory.get('runtime', {}).get('execution_contract_version', 0) < 1:
         return None
@@ -42,10 +76,14 @@ def claim(db, node, settings, known):
         db.commit()
         return None
     runtime = node.inventory.get("runtime", {})
-    devices = db.scalars(select(ComputeDevice).where(ComputeDevice.node_id == node.id, ComputeDevice.present.is_(True), ComputeDevice.reserved_execution_id.is_(None)).order_by(ComputeDevice.id)).all()
-    candidates = db.scalars(select(Job).where(Job.workspace_id == node.workspace_id, Job.status == "queued").order_by(Job.priority.desc(), Job.created_at, Job.id).limit(200)).all()
-    for job in candidates:
-        if not runtime_fits(job, runtime) or job.node_id and job.node_id != node.id:
+    rows = db.execute(select(ComputeDevice, DevicePolicy.value)
+        .outerjoin(DevicePolicy, DevicePolicy.id == ComputeDevice.id)
+        .where(ComputeDevice.node_id == node.id, ComputeDevice.present.is_(True),
+               ComputeDevice.reserved_execution_id.is_(None)).order_by(ComputeDevice.id))
+    devices = [(item, rule or {}) for item, rule in rows if (rule or {}).get("enabled", True)
+               and (item.kind != "cuda" or runtime.get("cuda_available"))]
+    for job in candidates_for_node(db, node, runtime, devices):
+        if not runtime_fits(job, runtime):
             continue
         # 同一用户跨节点领取串行核验，避免两个节点同时突破并发额度。
         db.execute(update(User).where(User.id == job.created_by).values(revision=User.revision).execution_options(synchronize_session=False))
@@ -70,15 +108,9 @@ def claim(db, node, settings, known):
                 ensure_active(db.get(Dataset, data_version.dataset_id))
         except Problem:
             continue
-        device = next((item for item in devices if device_fits(job, item, runtime)
-                       and device_allowed(db, actor, item, job.kind)), None)
-        if device is None:
-            continue
-        _, quota = effective_policy(db, actor)
-        active = select(Job).where(Job.created_by == actor.id, Job.status.in_(ACTIVE))
-        count = db.scalar(select(func.count()).select_from(active.subquery()))
-        gpu = db.scalar(select(func.count()).select_from(active.where(Job.device_kind == "cuda").subquery()))
-        if count >= quota["concurrent_jobs"] or device.kind == "cuda" and gpu >= quota["gpu_count"]:
+        device = next((item for item, rule in devices if device_fits(job, item, runtime)
+                       and device_allowed(rule, actor, job.kind)), None)
+        if device is None or not personal_capacity_available(db, actor, job.device_kind):
             continue
         result = db.execute(update(Job).where(Job.id == job.id, Job.status == "queued").values(status="preparing", revision=Job.revision + 1).execution_options(synchronize_session=False))
         if not result.rowcount:

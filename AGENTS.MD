@@ -3,7 +3,7 @@
 - 2026-11-11：旧云服务器已停止。当前在本机开发，测试使用 D 盘独立运行目录；不访问旧服务器，不默认启用本机 GPU、旧 Worker 或外部模型。下方云端地址和暂停记录属于历史交接。
 - 新批次使用独立开发分支。阶段测试成功后提交可复现源码和必要的开发文档，不合并到 `main`。软件工程 Word 文档（`.docx`、`.doc`）仅按文件审核并纳入每份最终版，草稿、副本和导出件保留在本地；开发过程的 Markdown、API 和运行索引照常维护。
 
-- 后续实现开工先读 `docs/stage15/实施进度与交接.md`、`docs/stage14/实施进度与交接.md`、`docs/stage13/实施进度与交接.md`、`docs/stage12/运行与验收.md`、`docs/stage7/实施进度与交接.md`、`docs/stage8/运行与验收.md` 和 `docs/后续功能待办.md`，再读各阶段设计与 API；仅以实际代码、测试与交接记录判定完成。stage5/6为先前阶段快照。
+- 后续实现开工先读 `docs/stage16/ReadMe.md`、`docs/stage15/实施进度与交接.md`、`docs/stage14/实施进度与交接.md`、`docs/stage13/实施进度与交接.md`、`docs/stage12/运行与验收.md`、`docs/stage7/实施进度与交接.md`、`docs/stage8/运行与验收.md` 和 `docs/后续功能待办.md`，再读各阶段设计与 API；仅以实际代码、测试与交接记录判定完成。stage5/6为先前阶段快照。
 - 一期：文本分类、图像分类、Qwen LoRA、页面模型/数据维护及智能标注/参数/日志；Agent 和高级扩展入口后续做。
 - 后端新增在 `backend`，控制平面 FastAPI 模块化单体，Worker 独立；现有 8765 原型不覆盖。架构、数据、API 和规范先更新再编码。
 - 本机已批准 D 盘独立环境与基础依赖，SQLite 先联调、正式 PostgreSQL；运行目录 `D:/model-training-demo/backend-runtime`，不改系统 PATH、既有 Anaconda 或安装数据库服务。

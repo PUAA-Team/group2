@@ -4,7 +4,7 @@ import json
 from sqlalchemy import func, select, update
 
 from ..compute_models import ComputeNode
-from ..database import aware, new_id, utcnow
+from ..database import new_id, utcnow
 from ..errors import Problem
 from ..job_models import Execution, Job, Project
 from ..job_schemas import JobInput
@@ -15,7 +15,7 @@ from .dataset_files import controlled_path, parse_samples
 from .asset_lifecycle import ensure_active, lock_active
 from .budgets import allocation_allowed
 from .platform_settings import platform_config
-from .resource_policies import configured_devices, device_fits, purpose_matches, runtime_fits
+from .resource_policies import configured_devices, device_fits, node_accepts_tasks, purpose_matches, runtime_fits
 
 ACTIVE = {"preparing", "running", "ready", "stopping"}
 TERMINAL = {"succeeded", "failed", "stopped", "cancelled"}
@@ -132,6 +132,13 @@ def stop_job(db, actor, job):
     return job
 
 
+def personal_capacity_available(db, owner, device_kind):
+    _, quota = effective_policy(db, owner)
+    own = select(func.count()).select_from(Job).where(Job.status.in_(ACTIVE), Job.created_by == owner.id)
+    return (db.scalar(own) < quota["concurrent_jobs"]
+            and (device_kind != "cuda" or db.scalar(own.where(Job.device_kind == "cuda")) < quota["gpu_count"]))
+
+
 def queue_reason(db, job, settings):
     if job.status != "queued":
         return None, None
@@ -157,26 +164,34 @@ def queue_reason(db, job, settings):
     if configured and not matching:
         return "no_matching_purpose", "等待用途匹配的设备"
     now = utcnow()
+    reason = "等待可见且规格匹配的设备"
+    progress = 0
+    slots_used = {}
     for node, device in matching:
         runtime = node.inventory.get("runtime", {})
-        if (not node.enabled or not node.last_seen_at
-                or (now - aware(node.last_seen_at)).total_seconds() > settings.node_timeout_seconds
-                or runtime.get("execution_contract_version", 0) < 1 or device.reserved_execution_id
-                or not runtime_fits(job, runtime) or not device_fits(job, device, runtime)):
+        if not device_fits(job, device, runtime):
             continue
-        slots_used = db.scalar(select(func.count()).select_from(Execution).where(
-            Execution.node_id == node.id, Execution.finished_at.is_(None)))
-        if slots_used < node.slots:
-            break
+        if not node_accepts_tasks(node, settings, now):
+            if progress < 1:
+                progress, reason = 1, "等待节点上线或恢复接收任务"
+            continue
+        if runtime.get("execution_contract_version", 0) < 1 or not runtime_fits(job, runtime):
+            if progress < 2:
+                progress, reason = 2, "等待兼容的 Worker 运行环境"
+            continue
+        if device.reserved_execution_id is None:
+            if node.id not in slots_used:
+                slots_used[node.id] = db.scalar(select(func.count()).select_from(Execution).where(
+                    Execution.node_id == node.id, Execution.finished_at.is_(None)))
+            if slots_used[node.id] < node.slots:
+                break
+        if progress < 3:
+            progress, reason = 3, "等待设备或节点槽位释放"
     else:
-        return "no_available_device", "等待可用设备"
+        return "no_available_device", reason
     active = select(func.count()).select_from(Job).where(Job.status.in_(ACTIVE))
-    own = active.where(Job.created_by == owner.id)
-    _, quota = effective_policy(db, owner)
     if (db.scalar(active) >= platform_config(db).global_concurrent_jobs
-            or db.scalar(own) >= quota["concurrent_jobs"]
-            or (job.device_kind == "cuda"
-                and db.scalar(own.where(Job.device_kind == "cuda")) >= quota["gpu_count"])
+            or not personal_capacity_available(db, owner, job.device_kind)
             or not allocation_allowed(db, owner, job.device_kind, lock=False)):
         return "quota_full", "等待执行额度"
     return "waiting", "等待可用资源或执行额度"

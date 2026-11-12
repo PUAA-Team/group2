@@ -4,15 +4,15 @@ from fastapi import APIRouter, Request, Response
 from sqlalchemy import func, select
 
 from ..compute_models import ComputeNode, Enrollment
-from ..compute_outputs import EnrollmentOut, EnrollmentStatus, NodeOut
+from ..compute_outputs import EnrollmentOut, EnrollmentStatus, NodeOut, NodePage
 from ..compute_schemas import EnrollmentInput, LocalWorkerInput, NodePatch
 from ..database import aware, new_id, utcnow
 from ..errors import Problem, response
-from ..outputs import Envelope, PageEnvelope
+from ..outputs import Envelope
 from ..permissions import require_admin, workspace_access
 from ..services.common import audit, commit, search_query
 from ..services.compute import create_enrollment, get_visible_node, lock_node, node_busy, update_node
-from ..services.compute_views import node_view
+from ..services.compute_views import node_view, resource_summary
 from ..services.local_worker import configured_runtimes, local_allowed, start_local_worker, stop_local_worker
 from ..services.resource_policies import configured_devices, purpose_matches
 from .deps import Actor, Db, Expected, Page, PageSize, Search
@@ -26,18 +26,22 @@ def list_nodes(db, settings, query, page, page_size, *, actor=None):
     return [node_view(db, node, settings, actor=actor) for node in nodes], {"page": page, "page_size": page_size, "total": total}
 
 
-@router.get("/admin/nodes", response_model=PageEnvelope[NodeOut])
-def admin_nodes(request: Request, actor: Actor, db: Db, page: Page = 1, page_size: PageSize = 20, q: Search = ""):
+@router.get("/admin/nodes", response_model=NodePage)
+def admin_nodes(request: Request, actor: Actor, db: Db, page: Page = 1, page_size: PageSize = 20, q: Search = "",
+                include_summary: bool = False):
     require_admin(db, actor, "resources.read")
     data, pagination = list_nodes(db, request.app.state.settings, search_query(select(ComputeNode), q, ComputeNode.name), page, page_size)
-    return response(request, data, pagination=pagination)
+    result = response(request, data, pagination=pagination)
+    if include_summary:
+        result["summary"] = resource_summary(db, request.app.state.settings)
+    return result
 
 
-@router.get("/workspaces/{workspace_id}/resources", response_model=PageEnvelope[NodeOut])
+@router.get("/workspaces/{workspace_id}/resources", response_model=NodePage)
 def workspace_nodes(workspace_id: str, request: Request, actor: Actor, db: Db,
                     page: Page = 1, page_size: PageSize = 20, q: Search = "",
                     job_kind: Literal["train", "evaluate", "service"] | None = None,
-                    device_kind: Literal["cpu", "cuda"] | None = None):
+                    device_kind: Literal["cpu", "cuda"] | None = None, include_summary: bool = False):
     workspace_access(db, actor, workspace_id, "resources.read")
     query = search_query(select(ComputeNode).where(ComputeNode.workspace_id == workspace_id), q, ComputeNode.name)
     if job_kind or device_kind:
@@ -45,7 +49,10 @@ def workspace_nodes(workspace_id: str, request: Request, actor: Actor, db: Db,
         query = query.where(ComputeNode.id.in_({node.id for node, _, purpose in candidates
                                               if job_kind is None or purpose_matches(purpose, job_kind)}))
     data, pagination = list_nodes(db, request.app.state.settings, query, page, page_size, actor=actor)
-    return response(request, data, pagination=pagination)
+    result = response(request, data, pagination=pagination)
+    if include_summary:
+        result["summary"] = resource_summary(db, request.app.state.settings, workspace_id)
+    return result
 
 
 @router.post("/admin/enrollments", status_code=201, response_model=Envelope[EnrollmentOut])

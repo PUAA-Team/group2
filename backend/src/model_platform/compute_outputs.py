@@ -2,7 +2,7 @@ from datetime import datetime
 
 from .compute_schemas import InventoryInput
 from .governance_schemas import DevicePurpose
-from .outputs import Entity, Output
+from .outputs import Entity, Output, PageEnvelope
 
 
 class DeviceOut(Entity):
@@ -37,6 +37,27 @@ class NodeOut(Entity):
     status: str
     online: bool
     devices: list[DeviceOut]
+
+
+class NodeCounts(Output):
+    total: int
+    online: int
+
+
+class DeviceCounts(Output):
+    total: int
+    occupied: int
+    disconnected_occupied: int
+
+
+class ResourceSummary(Output):
+    nodes: NodeCounts
+    cpu: DeviceCounts
+    cuda: DeviceCounts
+
+
+class NodePage(PageEnvelope[NodeOut]):
+    summary: ResourceSummary | None = None
 
 
 class EnrollmentOut(Output):

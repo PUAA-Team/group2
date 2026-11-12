@@ -9,7 +9,7 @@ export async function loadCompute(api, ctx, signal) {
   if (!admin && !ctx.workspace) return { data: [] };
   const base = admin ? "/admin/nodes" : `/workspaces/${ctx.workspace.id}/resources`;
   const [nodes, runtime] = await Promise.all([
-    api.request(`${base}?page=${ctx.page}&page_size=20&q=${encodeURIComponent(ctx.q)}`, { signal }),
+    api.request(`${base}?page=${ctx.page}&page_size=20&q=${encodeURIComponent(ctx.q)}&include_summary=true`, { signal }),
     ctx.session.user.is_admin && ctx.session.access.actions.includes("resources.manage") ? api.request("/admin/worker-runtimes", { signal }) : null,
   ]);
   const detail = ctx.params.get("node") ? (await api.request(`/resources/nodes/${encodeURIComponent(ctx.params.get("node"))}`, { signal })).data : null;
@@ -22,6 +22,13 @@ export async function loadCompute(api, ctx, signal) {
 }
 
 const nodeRoute = (ctx, node) => `${ctx.path}?node=${encodeURIComponent(node.id)}`;
+function summaryTags(summary) {
+  if (!summary) return "";
+  const { nodes, cpu, cuda } = summary;
+  const disconnected = cpu.disconnected_occupied + cuda.disconnected_occupied;
+  return `<div class="live-detail-meta" role="group" aria-label="资源汇总">${tag(`在线节点 ${nodes.online} / ${nodes.total}`)}${tag(`CPU 占用 ${cpu.occupied} / ${cpu.total}`)}${tag(`GPU 占用 ${cuda.occupied} / ${cuda.total}`)}${disconnected ? tag(`失联占用 ${disconnected}`) : ""}</div>`;
+}
+
 export function renderCompute(ctx) {
   const admin = ctx.path === "/admin/resources";
   const tab = ctx.params.get("tab") || "devices";
@@ -45,7 +52,7 @@ export function renderCompute(ctx) {
     ]))).join("") + pager(ctx.data.pagination, "个节点") : `<div class="empty-state"><h3>尚未接入计算节点</h3>${actions}</div>`;
   return pageHeader(admin ? "资源管理" : "资源监控", "", actions) +
     `<div class="tabs">${[["devices", "设备"], ["nodes", "计算节点"], ["connect", "接入新节点"]].map(([key, label]) => `<a class="tab ${tab === key ? "active" : ""}" href="#${ctx.path}?tab=${key}">${label}</a>`).join("")}</div>` +
-    (tab === "connect" ? "" : toolbar(ctx.q, "", "搜索节点")) + content;
+    (tab === "connect" ? "" : summaryTags(ctx.data.summary) + toolbar(ctx.q, "", "搜索节点")) + content;
 }
 
 function renderNode(ctx, node, manage) {
