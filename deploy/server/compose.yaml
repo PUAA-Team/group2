@@ -1,7 +1,7 @@
 name: model-platform
 
 x-control: &control
-  image: model-platform-control:${RELEASE_ID:?set RELEASE_ID}
+  image: ${CONTROL_IMAGE:-model-platform-control}:${RELEASE_ID:?set RELEASE_ID}
   build:
     context: ../..
     dockerfile: deploy/server/Dockerfile
@@ -9,6 +9,7 @@ x-control: &control
     MT_DATABASE_PASSWORD: ${MT_DATABASE_PASSWORD:?set application database password}
     MT_ALLOWED_ORIGINS: ${MT_PUBLIC_ORIGIN:?set public origin}
     MT_SECURE_COOKIE: ${MT_SECURE_COOKIE:?set cookie policy}
+    MT_ALLOW_BROWSER_SETUP: ${MT_ALLOW_BROWSER_SETUP:-0}
   volumes:
     - ${RUNTIME_DIR:?set runtime directory}/app:/runtime
   read_only: true
