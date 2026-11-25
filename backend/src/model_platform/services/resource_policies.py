@@ -50,18 +50,31 @@ def device_allowed(rule, actor, job_kind):
     return purpose_matches(rule.get("purpose", "shared"), job_kind) and policy_allows(rule, actor)
 
 
-def configured_devices(db, workspace_id, actor, *, device_kind=None, node_id=None):
+def configured_devices(db, workspace_id=None, actor=None, *, device_kind=None, node_id=None, purpose=None):
     query = (select(ComputeNode, ComputeDevice, DevicePolicy.value)
              .join(ComputeDevice, ComputeDevice.node_id == ComputeNode.id)
              .outerjoin(DevicePolicy, DevicePolicy.id == ComputeDevice.id)
-             .where(ComputeNode.workspace_id == workspace_id, ComputeNode.approved.is_(True),
-                    ComputeNode.revoked.is_(False), ComputeDevice.present.is_(True)))
+             .where(ComputeNode.approved.is_(True), ComputeNode.revoked.is_(False), ComputeDevice.present.is_(True)))
+    if workspace_id is not None:
+        query = query.where(ComputeNode.workspace_id == workspace_id)
     if device_kind is not None:
         query = query.where(ComputeDevice.kind == device_kind)
     if node_id is not None:
         query = query.where(ComputeNode.id == node_id)
-    return [(node, device, (rule or {}).get("purpose", "shared"))
-            for node, device, rule in db.execute(query) if policy_allows(rule or {}, actor)]
+    result = []
+    for node, device, rule in db.execute(query):
+        effective_purpose = (rule or {}).get("purpose", "shared")
+        if purpose is not None and effective_purpose != purpose:
+            continue
+        if actor is not None and not policy_allows(rule or {}, actor):
+            continue
+        result.append((node, device, effective_purpose))
+    return result
+
+
+def matching_node_ids(db, *, workspace_id=None, actor=None, device_kind=None, purpose=None, job_kind=None):
+    candidates = configured_devices(db, workspace_id, actor, device_kind=device_kind, purpose=purpose)
+    return {node.id for node, _, item_purpose in candidates if job_kind is None or purpose_matches(item_purpose, job_kind)}
 
 
 def save_device_policy(db, actor, node, device, payload):

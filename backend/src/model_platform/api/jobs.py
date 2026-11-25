@@ -7,14 +7,14 @@ from sqlalchemy import select
 from ..database import new_id
 from ..errors import Problem, response
 from ..job_models import Execution, ExecutionEvent, Job, Project
-from ..job_schemas import JobInput, ProjectInput
+from ..job_schemas import JobInput, JobPriorityInput, ProjectInput
 from ..models import Dataset, DatasetVersion, ModelAsset, ModelVersion
 from ..permissions import workspace_access
 from ..schemas import Input, TaskType
 from pydantic import Field
 from ..services.common import audit, commit, find_asset, page_data, revision_update, search_query, serialize
 from ..services.dataset_files import controlled_path
-from ..services.jobs import TERMINAL, action_for, create_job, get_job, inputs, job_view, stop_job, submit_job
+from ..services.jobs import TERMINAL, action_for, create_job, get_job, inputs, job_view, stop_job, submit_job, update_job_priority
 from ..services.presets import seed_presets
 from ..services.inference_contracts import inference_suggestion
 from ..services.console import job_summary
@@ -115,6 +115,12 @@ def submit(workspace_id: str, job_id: str, request: Request, actor: Actor, db: D
 @router.post("/jobs/{job_id}/stop")
 def stop(workspace_id: str, job_id: str, request: Request, actor: Actor, db: Db):
     return response(request, job_view(db, stop_job(db, actor, get_job(db, actor, workspace_id, job_id, True))))
+
+
+@router.patch("/jobs/{job_id}/priority")
+def change_priority(workspace_id: str, job_id: str, payload: JobPriorityInput, request: Request, actor: Actor, db: Db, expected: Expected):
+    job = update_job_priority(db, actor, workspace_id, job_id, payload.priority, expected)
+    return response(request, job_view(db, job, request.app.state.settings))
 
 
 @router.post("/jobs/{job_id}/retry", status_code=201)

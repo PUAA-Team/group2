@@ -132,6 +132,18 @@ def stop_job(db, actor, job):
     return job
 
 
+def update_job_priority(db, actor, workspace_id, job_id, priority, expected):
+    job = find_asset(db, Job, workspace_id, job_id)
+    workspace_access(db, actor, workspace_id, "resources.manage")
+    if job.status != "queued":
+        raise Problem(409, "INVALID_STATE", "只有排队中的任务可以调整优先级")
+    old = job.priority
+    revision_update(db, job, {"priority": priority}, expected)
+    audit(db, actor, f"jobs.priority.{old}.{priority}", job.id, workspace_id)
+    commit(db)
+    return job
+
+
 def personal_capacity_available(db, owner, device_kind):
     _, quota = effective_policy(db, owner)
     own = select(func.count()).select_from(Job).where(Job.status.in_(ACTIVE), Job.created_by == owner.id)

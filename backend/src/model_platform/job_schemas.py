@@ -71,6 +71,10 @@ class JobInput(Input):
         return self
 
 
+class JobPriorityInput(Input):
+    priority: int = Field(ge=0, le=10)
+
+
 class EventInput(Input):
     seq: int = Field(ge=1)
     type: Literal["log", "metric", "started", "ready"]

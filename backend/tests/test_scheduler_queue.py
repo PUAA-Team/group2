@@ -6,10 +6,11 @@ from threading import Barrier
 from fastapi.testclient import TestClient
 from sqlalchemy import insert, select
 
-from conftest import create_user, login
+from conftest import create_group, create_user, login
 from model_platform.compute_models import ComputeDevice, ComputeNode
 from model_platform.database import utcnow
 from model_platform.job_models import Job
+from test_compute import enrollment, registration
 from test_device_purposes import attach, claim, data
 from test_jobs import prepare, submit
 
@@ -139,3 +140,56 @@ def test_queue_detail_distinguishes_hardware_runtime_and_busy(app, admin, worksp
         waiting = submit(admin, base, payload)
         assert waiting["queue_reason_code"] == "no_available_device"
         assert waiting["queue_reason"] == "等待设备或节点槽位释放"
+
+
+def test_queued_job_priority_update_and_permissions(app, admin, workspace):
+    base, payload = prepare(app, admin, workspace)
+    group = create_group(admin, name="普通训练组", allow_actions=["models.read", "datasets.read", "training.read", "training.write", "resources.read"])
+    member = create_user(admin, account="member_prio", group_id=group["id"])
+    assert admin.post(f"/api/v1/workspaces/{workspace}/members", json={"account": member["account"], "role": "editor"}).status_code == 200
+    draft = data(admin.post(base + "/jobs", json={**payload, "name": "草稿任务"}), 201)
+    assert admin.patch(base + f"/jobs/{draft['id']}/priority", json={"priority": 5}, headers={"If-Match": str(draft["revision"])}).status_code == 409
+    low = submit(admin, base, {**payload, "name": "先提交任务", "priority": 1})
+    high = submit(admin, base, {**payload, "name": "后提交待提权", "priority": 0})
+    with TestClient(app) as member_client:
+        login(member_client, member["account"])
+        assert member_client.patch(base + f"/jobs/{high['id']}/priority", json={"priority": 9}, headers={"If-Match": str(high["revision"])}).status_code == 403
+    assert admin.patch(base + f"/jobs/{high['id']}/priority", json={"priority": 9}, headers={"If-Match": "999"}).status_code == 412
+    updated = data(admin.patch(base + f"/jobs/{high['id']}/priority", json={"priority": 9}, headers={"If-Match": str(high["revision"])}))
+    assert updated["priority"] == 9
+    assert updated["revision"] == high["revision"] + 1
+    with ExitStack() as stack:
+        worker, _, _ = attach(app, admin, workspace, stack, "优先级节点")
+        assert claim(worker)["job_id"] == high["id"]
+    from model_platform.models import AuditEvent
+    with app.state.sessions() as db:
+        audit_actions = list(db.scalars(select(AuditEvent.action).where(AuditEvent.target_id == high["id"])))
+    assert "jobs.priority.0.9" in audit_actions
+
+
+def test_resources_filter_by_device_kind_and_purpose_keeps_summary(app, admin, workspace):
+    import secrets
+    from uuid import uuid4
+    with ExitStack() as stack:
+        _, cpu_node, cpu_policy = attach(app, admin, workspace, stack, "训练CPU节点")
+        _, code = enrollment(admin, workspace, name="推理GPU节点")
+        key = secrets.token_urlsafe(32)
+        reg = registration(code, key, installation_id=str(uuid4()), machine_id=secrets.token_hex(32))
+        reg["inventory"]["devices"] = [
+            reg["inventory"]["devices"][0],
+            {"uuid": "gpu-0", "kind": "cuda", "name": "RTX 4060", "memory_mb": 8192},
+        ]
+        gpu_worker = stack.enter_context(TestClient(app))
+        gpu_node = data(gpu_worker.post("/api/worker/v1/register", json=reg))["node_id"]
+        devices = data(admin.get(f"/api/v1/resources/nodes/{gpu_node}"))["devices"]
+        gpu_dev = next(d["id"] for d in devices if d["kind"] == "cuda")
+        data(admin.post(cpu_policy, json={"revision": 0, "purpose": "train_eval"}))
+        data(admin.post(f"/api/v1/resources/devices/{gpu_dev}/policy", json={"revision": 0, "purpose": "inference"}))
+        ws_gpu = admin.get(f"/api/v1/workspaces/{workspace}/resources?device_kind=cuda&purpose=inference&include_summary=true").json()
+        assert [item["id"] for item in ws_gpu["data"]] == [gpu_node]
+        assert ws_gpu["summary"]["cpu"]["total"] == 2
+        assert ws_gpu["summary"]["cuda"]["total"] == 1
+        admin_cpu = admin.get("/api/v1/admin/nodes?device_kind=cpu&purpose=train_eval&include_summary=true").json()
+        assert [item["id"] for item in admin_cpu["data"]] == [cpu_node]
+        assert admin_cpu["summary"]["nodes"]["total"] == 2
+        assert admin.get("/api/v1/admin/nodes?device_kind=cuda&purpose=train_eval").json()["data"] == []

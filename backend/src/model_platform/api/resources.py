@@ -8,13 +8,14 @@ from ..compute_outputs import EnrollmentOut, EnrollmentStatus, NodeOut, NodePage
 from ..compute_schemas import EnrollmentInput, LocalWorkerInput, NodePatch
 from ..database import aware, new_id, utcnow
 from ..errors import Problem, response
+from ..governance_schemas import DevicePurpose
 from ..outputs import Envelope
 from ..permissions import require_admin, workspace_access
 from ..services.common import audit, commit, search_query
 from ..services.compute import create_enrollment, get_visible_node, lock_node, node_busy, update_node
 from ..services.compute_views import node_view, resource_summary
 from ..services.local_worker import configured_runtimes, local_allowed, start_local_worker, stop_local_worker
-from ..services.resource_policies import configured_devices, purpose_matches
+from ..services.resource_policies import matching_node_ids
 from .deps import Actor, Db, Expected, Page, PageSize, Search
 
 router = APIRouter(prefix="/api/v1", tags=["计算资源"])
@@ -28,9 +29,13 @@ def list_nodes(db, settings, query, page, page_size, *, actor=None):
 
 @router.get("/admin/nodes", response_model=NodePage)
 def admin_nodes(request: Request, actor: Actor, db: Db, page: Page = 1, page_size: PageSize = 20, q: Search = "",
+                device_kind: Literal["cpu", "cuda"] | None = None, purpose: DevicePurpose | None = None,
                 include_summary: bool = False):
     require_admin(db, actor, "resources.read")
-    data, pagination = list_nodes(db, request.app.state.settings, search_query(select(ComputeNode), q, ComputeNode.name), page, page_size)
+    query = search_query(select(ComputeNode), q, ComputeNode.name)
+    if device_kind or purpose:
+        query = query.where(ComputeNode.id.in_(matching_node_ids(db, device_kind=device_kind, purpose=purpose)))
+    data, pagination = list_nodes(db, request.app.state.settings, query, page, page_size)
     result = response(request, data, pagination=pagination)
     if include_summary:
         result["summary"] = resource_summary(db, request.app.state.settings)
@@ -41,13 +46,13 @@ def admin_nodes(request: Request, actor: Actor, db: Db, page: Page = 1, page_siz
 def workspace_nodes(workspace_id: str, request: Request, actor: Actor, db: Db,
                     page: Page = 1, page_size: PageSize = 20, q: Search = "",
                     job_kind: Literal["train", "evaluate", "service"] | None = None,
-                    device_kind: Literal["cpu", "cuda"] | None = None, include_summary: bool = False):
+                    device_kind: Literal["cpu", "cuda"] | None = None,
+                    purpose: DevicePurpose | None = None, include_summary: bool = False):
     workspace_access(db, actor, workspace_id, "resources.read")
     query = search_query(select(ComputeNode).where(ComputeNode.workspace_id == workspace_id), q, ComputeNode.name)
-    if job_kind or device_kind:
-        candidates = configured_devices(db, workspace_id, actor, device_kind=device_kind)
-        query = query.where(ComputeNode.id.in_({node.id for node, _, purpose in candidates
-                                              if job_kind is None or purpose_matches(purpose, job_kind)}))
+    if job_kind or device_kind or purpose:
+        query = query.where(ComputeNode.id.in_(matching_node_ids(
+            db, workspace_id=workspace_id, actor=actor, device_kind=device_kind, purpose=purpose, job_kind=job_kind)))
     data, pagination = list_nodes(db, request.app.state.settings, query, page, page_size, actor=actor)
     result = response(request, data, pagination=pagination)
     if include_summary:

@@ -95,6 +95,7 @@ export function metricChart(events, names, title) {
 function detail(ctx) {
   const job = ctx.data.item, write = can(ctx, job.kind === "service" ? "services.write" : "training.write");
   const actions = (job.status === "draft" && write ? btn("编辑草稿", "workflow-edit", job.id) + btn("提交", "workflow-submit", job.id, "primary") : "") +
+    (job.status === "queued" && can(ctx, "resources.manage") ? btn("调整优先级", "workflow-priority", job.id) : "") +
     (!ended.includes(job.status) && write ? btn(job.status === "draft" || job.status === "queued" ? "取消任务" : "停止", "workflow-stop", job.id, "secondary", job.status === "stopping") : "") +
     (ended.includes(job.status) && write ? btn("重跑", "workflow-retry", job.id) : "") + reviewButton(ctx, job);
   const result = job.result || {}, events = ctx.data.events || [];
@@ -103,7 +104,7 @@ function detail(ctx) {
   const dataset = ctx.data.options?.datasets.find(item => item.id === job.dataset_version_id);
   const meta = [["状态", badge(JOB_STATUS[job.status])], ["任务类型", tag(TASKS[job.snapshot?.task_type || source?.task_type] || "待提交")],
     ["模型版本", e(source ? `${source.name} / ${source.version}` : job.model_version_id)], ["数据版本", e(dataset ? `${dataset.name} / v${dataset.number}` : job.dataset_version_id || "—")],
-    ["执行设备", tag(job.device_kind === "cuda" ? "GPU" : "CPU")], ["创建时间", e(date(job.created_at))]];
+    ["执行设备", tag(job.device_kind === "cuda" ? "GPU" : "CPU")], ["优先级", e(job.priority ?? 0)], ["创建时间", e(date(job.created_at))]];
   if (job.kind === "service" && (job.snapshot?.trainer_id === "qwen-lora-v1" || source?.trainer_id === "qwen-lora-v1")) meta.push(["输出方式", tag(job.config.inference?.mode === "label" ? "标签分类" : "自由生成")], ...(job.config.inference?.mode === "label" ? [["输出标签", job.config.inference.labels.map(tag).join(" ")]] : []));
   const configuration = `<div class="section-heading"><h2>训练配置</h2></div>` + fieldsInfo([["Epochs", e(job.config.epochs)], ["Batch size", e(job.config.batch_size)], ["Learning rate", e(job.config.learning_rate)], ["验证比例", e(job.config.validation_ratio)], ["Seed", e(job.config.seed)], ...(job.snapshot?.trainer_id === "qwen-lora-v1" ? [["最大长度", e(job.config.max_length)], ["LoRA rank", e(job.config.lora_rank)]] : [])]);
   const outcome = job.status === "succeeded" ? `<div class="section-heading"><h2>执行结果</h2><div class="heading-actions">${job.artifact_sha256 ? `<a class="btn btn-secondary" href="/api/v1/workspaces/${e(ctx.workspace.id)}/jobs/${e(job.id)}/artifact">下载产物</a>` : ""}${job.output_model_version_id && can(ctx, "training.write") ? btn("创建评估", "workflow-evaluate", job.output_model_version_id) : ""}${job.output_model_version_id && can(ctx, "services.write") ? btn("部署服务", "workflow-deploy", job.output_model_version_id, "primary") : ""}</div></div>` + fieldsInfo([...metricValues(result).map(([key, value]) => [key, e(value)]), ...["samples", "training_samples", "validation_samples", "response_tokens", "perplexity"].filter(key => result[key] !== undefined).map(key => [({ samples: "样本数", training_samples: "训练样本", validation_samples: "验证样本", response_tokens: "响应 Token", perplexity: "困惑度" })[key], e(Number(result[key]).toFixed(key === "perplexity" ? 3 : 0))])]) +
@@ -154,6 +155,7 @@ export function workflowDialog(modal, ctx) {
     return { title: modal.kind === "job-edit" ? "编辑草稿" : kind === "train" ? "新建训练" : kind === "evaluate" ? "创建评估" : "部署服务", fields, wide: true, submit: "保存" };
   }
   if (modal.kind === "job-stop") return { title: "停止任务", fields: fieldsInfo([["任务", e(item.name)], ["当前状态", e(JOB_STATUS[item.status])]]), submit: "确认" };
+  if (modal.kind === "job-priority") return { title: "调整排队优先级", fields: fieldsInfo([["任务", e(item.name)], ["当前优先级", e(item.priority ?? 0)]]) + input("新优先级（0-10，越大越优先）", "priority", item.priority ?? 0, 'required type="number" min="0" max="10" step="1"'), submit: "保存" };
   if (modal.kind === "service-invoke") return { title: "调用测试", fields: item.snapshot?.task_type === "image_classification" ? input("图片", "image", "", 'type="file" accept="image/png,image/jpeg" required') :
     (item.config?.inference?.mode === "label" ? `<div class="heading-actions">${item.config.inference.labels.map(tag).join("")}</div>` : "") + `<div class="field"><label for="call-text">输入内容</label><textarea id="call-text" class="textarea" name="text" required maxlength="4096" rows="5"></textarea></div>`, submit: "发送" };
   if (modal.kind === "key-new") return { title: "创建 API KEY", fields: input("名称", "name", "", 'required maxlength="100"') + select("服务", "job_id", options((ctx.data.services || []).map(job => [job.id, job.name])), "required") + input("有效天数", "days", 30, 'type="number" min="1" max="365" required'), submit: "创建" };
@@ -177,6 +179,7 @@ export async function saveWorkflow(api, modal, form, ctx) {
     return { destination: `/runs/${result.id}` };
   }
   if (modal.kind === "job-stop") { await api.request(`${base}/jobs/${item.id}/stop`, { method: "POST" }); return {}; }
+  if (modal.kind === "job-priority") { await api.request(`${base}/jobs/${item.id}/priority`, { method: "PATCH", revision: item.revision, body: { priority: Number(form.get("priority")) } }); return {}; }
   if (modal.kind === "service-invoke") {
     let body = { text: form.get("text") };
     if (form.get("image")) {
@@ -200,6 +203,7 @@ export async function workflowAction(action, id, { api, ctx, openModal, render, 
   if (action === "workflow-new") id === "train" ? navigate("/train/new") : openModal("job-new", { kind: id });
   if (action === "workflow-edit") job.kind === "train" ? navigate(`/train/new?edit=${job.id}`) : openModal("job-edit", job);
   if (action === "workflow-stop") openModal("job-stop", job);
+  if (action === "workflow-priority") openModal("job-priority", job);
   if (action === "workflow-submit") {
     const model = ctx.data.options?.models.find(item => item.id === job.model_version_id);
     if (job.kind === "service" && !job.config.inference && (job.snapshot?.trainer_id === "qwen-lora-v1" || model?.trainer_id === "qwen-lora-v1")) { openModal("job-edit", job); return true; }

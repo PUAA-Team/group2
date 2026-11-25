@@ -8,8 +8,10 @@ export async function loadCompute(api, ctx, signal) {
   const admin = ctx.path === "/admin/resources";
   if (!admin && !ctx.workspace) return { data: [] };
   const base = admin ? "/admin/nodes" : `/workspaces/${ctx.workspace.id}/resources`;
+  const query = new URLSearchParams({ page: ctx.page, page_size: 20, q: ctx.q, include_summary: "true" });
+  for (const key of ["device_kind", "purpose"]) if (ctx.params.get(key)) query.set(key, ctx.params.get(key));
   const [nodes, runtime] = await Promise.all([
-    api.request(`${base}?page=${ctx.page}&page_size=20&q=${encodeURIComponent(ctx.q)}&include_summary=true`, { signal }),
+    api.request(`${base}?${query}`, { signal }),
     ctx.session.user.is_admin && ctx.session.access.actions.includes("resources.manage") ? api.request("/admin/worker-runtimes", { signal }) : null,
   ]);
   const detail = ctx.params.get("node") ? (await api.request(`/resources/nodes/${encodeURIComponent(ctx.params.get("node"))}`, { signal })).data : null;
@@ -50,9 +52,11 @@ export function renderCompute(ctx) {
       device.metrics.utilization === null || device.metrics.utilization === undefined ? "—" : `${e(device.metrics.utilization)}%`, badge(device.status),
       tag(device.kind === "cuda" ? node.inventory.runtime.cuda_available ? "CUDA 就绪" : "CUDA 未就绪" : node.inventory.runtime.torch_version ? "PyTorch" : "待配置"),
     ]))).join("") + pager(ctx.data.pagination, "个节点") : `<div class="empty-state"><h3>尚未接入计算节点</h3>${actions}</div>`;
+  const filters = `<select class="select filter-select" data-query-filter="device_kind" aria-label="设备类型">${options([["", "全部设备"], ["cpu", "CPU"], ["cuda", "GPU"]], ctx.params.get("device_kind") || "")}</select>` +
+    `<select class="select filter-select" data-query-filter="purpose" aria-label="设备用途">${options([["", "全部用途"], ...Object.entries(devicePurposes)], ctx.params.get("purpose") || "")}</select>`;
   return pageHeader(admin ? "资源管理" : "资源监控", "", actions) +
     `<div class="tabs">${[["devices", "设备"], ["nodes", "计算节点"], ["connect", "接入新节点"]].map(([key, label]) => `<a class="tab ${tab === key ? "active" : ""}" href="#${ctx.path}?tab=${key}">${label}</a>`).join("")}</div>` +
-    (tab === "connect" ? "" : summaryTags(ctx.data.summary) + toolbar(ctx.q, "", "搜索节点")) + content;
+    (tab === "connect" ? "" : summaryTags(ctx.data.summary) + toolbar(ctx.q, filters, "搜索节点")) + content;
 }
 
 function renderNode(ctx, node, manage) {
