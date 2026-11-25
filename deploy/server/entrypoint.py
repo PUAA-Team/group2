@@ -44,8 +44,6 @@ def main():
     elif arguments[0] in {"migrate", "cli"}:
         cli_arguments = ["migrate"] if arguments[0] == "migrate" else arguments[1:]
         command = [sys.executable, "-B", "-m", "model_platform.cli", *cli_arguments]
-    elif arguments[0] == "python":
-        command = [sys.executable, "-B", *arguments[1:]]
     elif arguments[0] == "operations":
         command = [sys.executable, "-B", "-m", "model_platform.operations_runner"]
     else:

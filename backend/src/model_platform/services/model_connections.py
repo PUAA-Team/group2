@@ -95,8 +95,9 @@ async def completion(settings, connection, messages, *, max_tokens=512):
     except OSError:
         raise Problem(503, "CREDENTIAL_NOT_READY", "模型连接凭据不可读") from None
     try:
+        target_url = connection.endpoint.rstrip("/") + "/chat/completions"
         async with asyncio.timeout(30), httpx.AsyncClient(timeout=httpx.Timeout(30, connect=10), trust_env=False, follow_redirects=False) as client:
-            async with client.stream("POST", connection.endpoint + "/chat/completions", headers={"Authorization": "Bearer " + secret},
+            async with client.stream("POST", target_url, headers={"Authorization": "Bearer " + secret},
                                      json={"model": connection.model, "messages": messages, "max_tokens": max_tokens, "temperature": 0}) as response:
                 if response.status_code != 200:
                     raise Problem(502, "PROVIDER_ERROR", f"模型服务返回HTTP {response.status_code}")

@@ -36,3 +36,8 @@ def test_container_tests_do_not_inherit_application_database(monkeypatch, tmp_pa
     monkeypatch.setattr(entrypoint.os, "execv", execute)
     with pytest.raises(ReplacedProcess):
         entrypoint.main()
+
+    monkeypatch.setattr(entrypoint, "configure_database", lambda: None)
+    monkeypatch.setattr(sys, "argv", [str(path), "python", "-c", "print(1)"])
+    with pytest.raises(ValueError, match="未知容器操作"):
+        entrypoint.main()

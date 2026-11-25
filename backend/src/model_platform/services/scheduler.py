@@ -61,6 +61,8 @@ def assignment(db, execution):
 
 def claim(db, node, settings, known):
     lock_node(db, node)
+    if not node.approved or node.revoked or not node.enabled:
+        return None
     outstanding = db.scalars(select(Execution).where(Execution.node_id == node.id, Execution.finished_at.is_(None))).all()
     for execution in outstanding:
         if execution.id not in known:

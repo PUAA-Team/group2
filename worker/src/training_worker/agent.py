@@ -127,6 +127,8 @@ class Agent:
                     if error.code == "STALE_HEARTBEAT" and error.details:
                         self.state["heartbeat_seq"] = int(error.details[0]["message"]) - 1
                         self.state.pop("heartbeat_pending", None)
+                except Exception as error:
+                    print(f"Worker 周期异常：{type(error).__name__}", flush=True)
                 self.stop.wait(3)
             write_json(self.root / "stopped.json", {"pid": os.getpid(), "finished_at": time.time()})
             (self.root / "stop-request.json").unlink(missing_ok=True)

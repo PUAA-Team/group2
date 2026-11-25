@@ -216,3 +216,21 @@ def test_instruction_edits_publish_new_version(admin, workspace):
     result = admin.get(base + '/dataset-versions/' + new_id + '/download')
     assert json.loads(result.content) == {'instruction': 'new instruction', 'input': '', 'output': 'new answer'}
     assert admin.get(base + '/dataset-versions/' + version['id'] + '/download').content == original
+
+
+def test_assistant_daily_limit_is_scoped_per_user(app, admin, workspace):
+    from conftest import create_user
+    from model_platform.database import utcnow
+    other = create_user(admin, account='assistant_other')
+    conn_id = connection(admin)
+    with app.state.sessions() as db:
+        owner = db.scalar(select(User).where(User.account == 'owner'))
+        db.add(AssistantRequest(
+            id='asr_limit_test', workspace_id=workspace, created_by=owner.id, purpose='parameters',
+            connection_id=conn_id, connection_revision=1, policy_revision=1, source={}, messages=[],
+            preview={}, input_digest='a' * 64, max_tokens=256, expires_at=utcnow(), confirmed_at=utcnow(),
+            status='succeeded', result={}, usage={}, error={},
+        ))
+        db.commit()
+        assert assistant_requests.current_day_count(db, workspace, owner.id) == 1
+        assert assistant_requests.current_day_count(db, workspace, other['id']) == 0

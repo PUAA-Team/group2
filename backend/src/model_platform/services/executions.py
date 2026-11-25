@@ -34,14 +34,19 @@ def add_event(db, node, execution_id, payload):
         return {"next_seq": execution.event_seq + 1}
     if execution.finished_at or payload.seq != execution.event_seq + 1:
         raise Problem(409, "EVENT_SEQUENCE", "事件序号不连续")
+    if job.status not in {"preparing", "running", "ready", "stopping"}:
+        raise Problem(409, "INVALID_STATE", "任务当前状态不允许上报事件")
     if payload.type == "metric":
         values = payload.payload
         if not values or any(not isinstance(value, (float, int)) or isinstance(value, bool) for value in values.values()):
             raise Problem(422, "INVALID_METRIC", "指标必须是数值")
     if payload.type == "ready" and job.kind != "service":
         raise Problem(409, "INVALID_STATE", "该任务不是在线服务")
-    if payload.type in {"started", "ready"} and job.status != "stopping":
-        job.status = "ready" if payload.type == "ready" else "running"
+    if payload.type == "started" and job.status == "preparing":
+        job.status = "running"
+        job.revision += 1
+    elif payload.type == "ready" and job.status in {"preparing", "running"}:
+        job.status = "ready"
         job.revision += 1
     db.add(ExecutionEvent(id=f"{execution.id}:{payload.seq}", execution_id=execution.id, seq=payload.seq, type=payload.type, payload=payload.payload))
     execution.event_seq = payload.seq
@@ -120,6 +125,8 @@ def finish(db, node, execution_id, payload, settings=None):
         if execution.finish_digest != fingerprint:
             raise Problem(409, "FINISH_CONFLICT", "完成结果与已确认记录不同")
         return {"accepted": True, "status": job.status}
+    if job.status not in {"preparing", "running", "ready", "stopping"}:
+        raise Problem(409, "INVALID_STATE", "任务当前状态不允许结案")
     if "error_samples" in payload.result:
         from .evaluation_errors import validate_errors
         validate_errors(db, settings, job, payload.result)

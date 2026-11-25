@@ -72,6 +72,7 @@ def current_day_count(db, workspace_id, actor_id):
     day = utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     return db.scalar(select(func.count()).select_from(AssistantRequest).where(
         AssistantRequest.workspace_id == workspace_id,
+        AssistantRequest.created_by == actor_id,
         AssistantRequest.confirmed_at.is_not(None), AssistantRequest.confirmed_at >= day)) or 0
 
 
