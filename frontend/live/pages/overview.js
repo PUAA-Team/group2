@@ -17,13 +17,28 @@ export function renderHome(ctx) {
 
 export function renderSpace(ctx) {
   const create = ctx.session.access.actions.includes("workspaces.create") ? btn("创建空间", "modal", "workspace-new", "primary") : "";
+  const joinBtn = btn("加入空间", "modal", "workspace-join");
   const spaces = `<div class="live-spaces">${ctx.workspaces.map(space => `<button class="live-space ${space.id === ctx.workspace?.id ? "selected" : ""}" data-action="select-workspace" data-id="${e(space.id)}"><strong>${e(space.name)}</strong>${space.id === ctx.workspace?.id ? tag("当前空间") : ""}</button>`).join("")}</div>`;
-  if (!ctx.workspace) return pageHeader("用户空间", "", create) + spaces + workspaceRequired(ctx);
+  if (!ctx.workspace) return pageHeader("用户空间", "", joinBtn + create) + spaces + workspaceRequired(ctx);
   const members = ctx.data.members;
-  const memberSection = can(ctx, "members.manage") ? `<div class="section-heading"><h2>空间成员</h2>${btn("添加成员", "modal", "member", "primary")}</div>` +
+  const inviteBanner = ctx.generatedSpaceInvite ? `<div class="notice"><label for="space-invite-url">空间邀请链接（仅显示本次）</label><div class="heading-actions"><input id="space-invite-url" class="input" readonly value="${e(ctx.generatedSpaceInvite.url)}"/>${btn("复制链接", "admin-copy-space-invite")}${btn("关闭", "admin-hide-space-invite")}</div></div>` : "";
+  const inviteRows = (ctx.data.invites || []).map(inv => [
+    e(inv.code_preview), tag(inv.role === "viewer" ? "查看者" : "编辑者"), tag(inv.require_approval ? "需审核" : "免审核"),
+    e(inv.max_uses == null ? `${inv.used_count} / 不限` : `${inv.used_count} / ${inv.max_uses}`),
+    date(inv.expires_at), badge(inv.revoked_at ? "已撤销" : "有效"),
+    inv.revoked_at ? "—" : btn("撤销", "admin-revoke-space-invite", inv.id),
+  ]);
+  const requestRows = (ctx.data.joinRequests || []).map(req => [
+    e(req.display_name), e(req.account), tag(req.requested_role === "viewer" ? "查看者" : "编辑者"),
+    badge(({ pending: "待审批", approved: "已通过", rejected: "已拒绝" })[req.status] || req.status),
+    req.status === "pending" ? `<div class="live-row-actions">${btn("批准", "admin-approve-join", req.id, "primary")}${btn("拒绝", "admin-reject-join", req.id)}</div>` : date(req.reviewed_at),
+  ]);
+  const memberSection = can(ctx, "members.manage") ? `<div class="section-heading"><h2>空间成员</h2><div class="heading-actions">${btn("生成空间邀请", "modal", "workspace-invite")}${btn("添加成员", "modal", "member", "primary")}</div></div>` + inviteBanner +
     table(["成员", "账号", "空间角色", "操作"], (members?.data || []).map(member => [e(member.display_name), e(member.account), tag(member.role === "viewer" ? "查看者" : "编辑者"),
-      ctx.workspace.owner_id === member.user_id ? tag("所有者") : `<div class="live-row-actions">${btn("修改角色", "edit-member", member.user_id)}${btn("移除", "admin-remove-member", member.user_id)}</div>`])) + pager(members?.pagination) : "";
-  return pageHeader("用户空间", "", (can(ctx, "assistants.use") ? `<a class="btn btn-secondary" href="#/assistants">智能辅助</a>` : "") + (can(ctx, "members.manage") && can(ctx, "assistants.use") ? btn("智能辅助授权", "assistant-policy") : "") + btn("个人资料", "modal", "profile") + btn("修改密码", "modal", "password-own") + create + (can(ctx, "members.manage") ? btn("修改空间", "modal", "workspace-edit") : "")) + spaces +
+      ctx.workspace.owner_id === member.user_id ? tag("所有者") : `<div class="live-row-actions">${btn("修改角色", "edit-member", member.user_id)}${btn("移除", "admin-remove-member", member.user_id)}</div>`])) + pager(members?.pagination) +
+    `<div class="section-heading"><h2>空间邀请码</h2></div>` + table(["邀请码", "默认角色", "加入方式", "使用次数", "过期时间", "状态", "操作"], inviteRows, "暂无空间邀请") +
+    `<div class="section-heading"><h2>加入申请</h2></div>` + table(["姓名", "账号", "申请角色", "状态", "处理"], requestRows, "暂无加入申请") : "";
+  return pageHeader("用户空间", "", (can(ctx, "assistants.use") ? `<a class="btn btn-secondary" href="#/assistants">智能辅助</a>` : "") + (can(ctx, "members.manage") && can(ctx, "assistants.use") ? btn("智能辅助授权", "assistant-policy") : "") + btn("个人资料", "modal", "profile") + btn("修改密码", "modal", "password-own") + joinBtn + create + (can(ctx, "members.manage") ? btn("修改空间", "modal", "workspace-edit") + btn("删除空间", "modal", "workspace-delete") : "")) + spaces +
     `<div class="section-heading"><h2>我的权限</h2></div><div class="permission-grid live-permissions">${ACTIONS.filter(([key]) => ctx.access.actions.includes(key)).map(([, label]) => tag(label)).join("") || tag("暂无权限")}</div>` +
     `<div class="section-heading"><h2>资源上限</h2></div>` + fieldsInfo(QUOTAS.map(([key, label]) => [label, e(ctx.access.quota[key] ?? 0)])) +
     (ctx.data.storage ? `<div class="section-heading"><h2>文件存储</h2></div>` + fieldsInfo([

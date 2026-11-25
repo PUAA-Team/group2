@@ -11,6 +11,7 @@ from ..permissions import require_action, workspace_access
 from ..schemas import DatasetCreate, DatasetPatch
 from ..services.common import audit, commit, find_asset, page_data, revision_update, search_query, serialize
 from ..services.datasets import preview, store_version
+from ..services.workspace_lifecycle import delete_dataset
 from .deps import Actor, Db, Expected, Page, PageSize, Search
 
 router = APIRouter(tags=["数据资产"])
@@ -62,6 +63,11 @@ def patch_dataset(workspace_id: str, dataset_id: str, payload: DatasetPatch, req
     commit(db)
     output.headers["ETag"] = f'"{dataset.revision}"'
     return response(request, serialize(dataset))
+
+
+@router.delete(base + "/{dataset_id}")
+def remove_dataset(workspace_id: str, dataset_id: str, request: Request, actor: Actor, db: Db):
+    return response(request, delete_dataset(db, request.app.state.settings, actor, workspace_id, dataset_id))
 
 
 @router.get(base + "/{dataset_id}/versions", response_model=PageEnvelope[DatasetVersionOut])

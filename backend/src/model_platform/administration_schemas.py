@@ -9,6 +9,8 @@ from .schemas import Input, UserCreate
 class PlatformConfig(Input):
     platform_name: str = Field(default="模训平台", min_length=1, max_length=40)
     invitations_enabled: bool = True
+    self_registration_enabled: bool = False
+    default_group_id: str | None = None
     max_upload_mib: int = Field(default=10, ge=1, le=10)
     max_samples: int = Field(default=10000, ge=2, le=10000)
     global_concurrent_jobs: int = Field(default=16, ge=1, le=100)
@@ -49,7 +51,7 @@ class RegisterInput(Input):
     account: str
     display_name: str
     password: str
-    invitation: str = Field(min_length=20, max_length=200)
+    invitation: str | None = Field(default=None, min_length=20, max_length=200)
 
     @model_validator(mode="after")
     def validate_credentials(self):
@@ -73,3 +75,22 @@ class PasswordInput(Input):
 
 class ProfileInput(Input):
     display_name: str = Field(min_length=1, max_length=100)
+
+
+class WorkspaceInviteInput(Input):
+    role: Literal["editor", "viewer"] = "editor"
+    require_approval: bool = False
+    days: int = Field(default=7, ge=1, le=30)
+    max_uses: int | None = Field(default=None, ge=1, le=1000)
+
+
+class WorkspaceJoinInput(Input):
+    code: str = Field(min_length=12, max_length=200)
+
+
+class WorkspaceJoinReviewInput(Input):
+    decision: Literal["approve", "reject"]
+
+
+class WorkspaceDeleteInput(Input):
+    confirm_name: str = Field(min_length=1, max_length=100)

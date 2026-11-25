@@ -7,6 +7,7 @@ from ..job_schemas import ProjectArchive, ProjectPatch
 from ..permissions import workspace_access
 from ..services.common import audit, commit, find_asset, revision_update, serialize
 from ..services.console import job_summary, project_rows
+from ..services.workspace_lifecycle import delete_project
 from .deps import Actor, Db, Expected
 
 router = APIRouter(prefix='/api/v1/workspaces/{workspace_id}/projects', tags=['训练项目'])
@@ -40,3 +41,8 @@ def archive(workspace_id: str, project_id: str, payload: ProjectArchive, request
     revision_update(db, project, {'archived': payload.archived}, expected)
     audit(db, actor, 'projects.archive' if payload.archived else 'projects.restore', project.id, workspace_id); commit(db)
     return response(request, serialize(project))
+
+
+@router.delete('/{project_id}')
+def remove(workspace_id: str, project_id: str, request: Request, actor: Actor, db: Db):
+    return response(request, delete_project(db, actor, workspace_id, project_id))

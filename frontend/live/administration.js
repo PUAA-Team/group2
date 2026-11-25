@@ -17,7 +17,12 @@ export async function loadManagement(api, ctx, signal) {
   if (extraJobView(ctx)) return api.request(`/admin/workflow-catalog/${ctx.params.get('job_view')}?${query}`, { signal });
   if (ctx.path === "/admin/stats") return (await api.request(`/admin/statistics?${query}`, { signal })).data;
   if (ctx.path === "/admin/settings") {
-    const [settings, connections] = await Promise.all([api.request("/admin/settings", { signal }), api.request("/admin/model-connections", { signal })]);
+    const [settings, connections, groups] = await Promise.all([
+      api.request("/admin/settings", { signal }),
+      api.request("/admin/model-connections", { signal }),
+      ctx.session.access.actions.includes("groups.manage") ? api.all("/admin/groups", signal) : Promise.resolve([]),
+    ]);
+    ctx.groups = groups;
     return { settings: settings.data, connections: connections.data };
   }
   return api.request(`/admin/asset-catalog/${catalogs[ctx.path]}?${query}`, { signal });
@@ -61,8 +66,9 @@ export function renderManagement(ctx) {
 
 function renderSettings(ctx) {
   const config = ctx.data.settings;
+  const defaultGroup = ctx.groups?.find(g => g.id === config.default_group_id)?.name || (config.default_group_id || "未分组");
   return pageHeader("系统设置", "", btn("修改设置", "modal", "settings-edit", "primary")) +
-    card(`<div class="card-header"><h2>平台设置</h2></div>${fieldsInfo([["平台名称", e(config.platform_name)], ["邀请注册", tag(config.invitations_enabled ? "开启" : "关闭")], ["全局并发上限", e(config.global_concurrent_jobs)], ["单文件上限", `${config.max_upload_mib} MiB`], ["样本数上限", e(config.max_samples)]])}`) +
+    card(`<div class="card-header"><h2>平台设置</h2></div>${fieldsInfo([["平台名称", e(config.platform_name)], ["邀请注册", tag(config.invitations_enabled ? "开启" : "关闭")], ["开放注册", tag(config.self_registration_enabled ? "开启" : "关闭")], ["默认注册用户组", e(defaultGroup)], ["全局并发上限", e(config.global_concurrent_jobs)], ["单文件上限", `${config.max_upload_mib} MiB`], ["样本数上限", e(config.max_samples)]])}`) +
     `<div class="section-heading"><h2>大模型连接</h2>${btn("新增连接", "modal", "connection-new", "primary")}</div>` +
     table(["连接", "服务地址", "模型", "能力", "凭据", "状态", "操作"], (ctx.data.connections || []).map(item => [e(item.name), `<span class="live-source" title="${e(item.endpoint)}">${e(item.endpoint)}</span>`, e(item.model), item.capabilities.map(capability => tag(capabilities[capability])).join(" "), tag(item.credential_set ? "已配置" : "未配置"), badge(!item.active ? "停用" : item.health.status === "available" ? "连接成功" : item.health.status === "failed" ? "连接失败" : "未测试"), `<div class="live-row-actions">${btn("配置", "admin-edit-connection", item.id)}${btn("测试连接", "admin-test-connection", item.id, "secondary", !item.active)}</div>`]));
 }
@@ -71,13 +77,19 @@ export function administrationDialog(modal, ctx) {
   const item = modal.item || {};
   if (modal.kind === "settings-edit") {
     const config = ctx.data.settings;
-    return { title: "平台设置", fields: input("平台名称", "platform_name", config.platform_name, 'required maxlength="40"') + `<div class="live-field-grid">${input("全局并发上限", "global_concurrent_jobs", config.global_concurrent_jobs, 'required type="number" min="1" max="100"')}${input("单文件上限 / MiB", "max_upload_mib", config.max_upload_mib, 'required type="number" min="1" max="10"')}${input("单版本样本上限", "max_samples", config.max_samples, 'required type="number" min="2" max="10000"')}</div><label class="check-item"><input type="checkbox" name="invitations_enabled" ${config.invitations_enabled ? "checked" : ""}/>允许邀请注册</label>` };
+    return { title: "平台设置", fields: input("平台名称", "platform_name", config.platform_name, 'required maxlength="40"') + `<div class="live-field-grid">${input("全局并发上限", "global_concurrent_jobs", config.global_concurrent_jobs, 'required type="number" min="1" max="100"')}${input("单文件上限 / MiB", "max_upload_mib", config.max_upload_mib, 'required type="number" min="1" max="10"')}${input("单版本样本上限", "max_samples", config.max_samples, 'required type="number" min="2" max="10000"')}</div>` +
+      select("开放注册默认用户组", "default_group_id", options([["", "未分组"], ...(ctx.groups || []).map(group => [group.id, group.name])], config.default_group_id || "")) +
+      `<label class="check-item"><input type="checkbox" name="invitations_enabled" ${config.invitations_enabled ? "checked" : ""}/>允许邀请注册</label>` +
+      `<label class="check-item"><input type="checkbox" name="self_registration_enabled" ${config.self_registration_enabled ? "checked" : ""}/>允许开放自由注册</label>` };
   }
   if (["connection-new", "connection-edit"].includes(modal.kind)) return { title: item.id ? "配置大模型连接" : "新增大模型连接", fields: input("连接名称", "name", item.name || "", 'required maxlength="100"') + input("API基础地址", "endpoint", item.endpoint || "", 'required type="url" maxlength="1000" placeholder="https://example.com/v1"') + input("模型名称", "model", item.model || "", 'required maxlength="200"') + input(item.id ? "更换API密钥" : "API密钥", "secret", "", `type="password" autocomplete="new-password" maxlength="512" ${item.id ? "" : "required"}`) + `<fieldset class="live-check-field"><legend>模型能力</legend><div class="live-checks">${Object.entries(capabilities).map(([key, label]) => `<label><input type="checkbox" name="capabilities" value="${key}" ${(item.capabilities || ["text"]).includes(key) ? "checked" : ""}/>${label}</label>`).join("")}</div></fieldset><label class="check-item"><input type="checkbox" name="active" ${item.active !== false ? "checked" : ""}/>启用连接</label>` + (item.health?.message ? `<div class="notice">${e(item.health.message)}</div>` : "") };
   if (modal.kind === "invite-new") return { title: "邀请成员注册", fields: select("工作空间", "workspace_id", options(ctx.workspaces.map(space => [space.id, space.name]), ctx.workspace?.id), "required") + select("用户组", "group_id", options([["", "未分组"], ...ctx.groups.map(group => [group.id, group.name])])) + select("空间角色", "role", options([["editor", "编辑者"], ["viewer", "查看者"]])) + input("有效天数", "days", 3, 'required type="number" min="1" max="7"'), submit: "生成邀请" };
   if (["password-own", "password-reset"].includes(modal.kind)) return { title: modal.kind === "password-own" ? "修改密码" : `重置密码：${item.display_name}`, fields: (modal.kind === "password-own" ? input("原密码", "current_password", "", 'required type="password" autocomplete="current-password"') : "") + input("新密码", "password", "", 'required type="password" minlength="12" maxlength="256" autocomplete="new-password"') + input("确认密码", "confirm", "", 'required type="password" minlength="12" maxlength="256" autocomplete="new-password"') };
   if (modal.kind === "profile") return { title: "个人资料", fields: fieldsInfo([["账号", e(ctx.session.user.account)]]) + input("姓名", "display_name", ctx.session.user.display_name, 'required maxlength="100"') };
   if (modal.kind === "workspace-edit") return { title: "修改空间名称", fields: input("空间名称", "name", ctx.workspace.name, 'required maxlength="100"') };
+  if (modal.kind === "workspace-invite") return { title: "生成空间邀请", fields: select("空间角色", "role", options([["editor", "编辑者"], ["viewer", "查看者"]])) + input("有效天数", "days", 7, 'required type="number" min="1" max="30"') + input("最大使用次数（留空不限）", "max_uses", "", 'type="number" min="1" max="1000"') + `<label class="check-item"><input type="checkbox" name="require_approval"/>加入需要管理员/所有者审核</label>`, submit: "生成邀请" };
+  if (modal.kind === "workspace-join") return { title: "通过邀请码加入空间", fields: input("空间邀请码", "code", item.code || "", 'required minlength="12" maxlength="200" autocomplete="off"'), submit: "加入" };
+  if (modal.kind === "workspace-delete") return { title: "删除工作空间", fields: `<div class="notice">删除前需已清空空间内所有节点、任务、项目、模型和数据集。</div>` + input(`请输入「${ctx.workspace.name}」确认删除`, "confirm_name", "", 'required maxlength="100"'), submit: "确认删除" };
   if (modal.kind === "member-remove") return { title: "移除空间成员", fields: fieldsInfo([["成员", e(item.display_name)], ["账号", e(item.account)]]), submit: "确认移除" };
   if (modal.kind === "user-access") return { title: `${item.display_name}的有效权限`, readOnly: true, fields: `<div class="live-permissions">${item.access.actions.map(key => tag(ACTIONS.find(([action]) => action === key)?.[1] || key)).join("")}</div>` + fieldsInfo(QUOTAS.map(([key, label]) => [label, e(item.access.quota[key])])) };
   if (modal.kind === "group-members") return { title: `${item.name}的成员`, readOnly: true, wide: true, fields: table(["成员", "账号", "状态", "操作"], item.users.map(user => [e(user.display_name), e(user.account), badge(user.active ? "启用" : "停用"), btn("配置", "admin-edit-member-user", user.id)])) };
@@ -86,7 +98,7 @@ export function administrationDialog(modal, ctx) {
 
 export async function saveAdministration(api, modal, form, ctx) {
   const item = modal.item || {}, base = `/workspaces/${modal.workspaceId}`;
-  if (modal.kind === "settings-edit") return { data: await api.request("/admin/settings", { method: "PATCH", revision: ctx.data.settings.revision, body: { platform_name: form.get("platform_name"), invitations_enabled: form.has("invitations_enabled"), ...Object.fromEntries(["global_concurrent_jobs", "max_upload_mib", "max_samples"].map(key => [key, Number(form.get(key))])) } }) };
+  if (modal.kind === "settings-edit") return { data: await api.request("/admin/settings", { method: "PATCH", revision: ctx.data.settings.revision, body: { platform_name: form.get("platform_name"), invitations_enabled: form.has("invitations_enabled"), self_registration_enabled: form.has("self_registration_enabled"), default_group_id: form.get("default_group_id") || null, ...Object.fromEntries(["global_concurrent_jobs", "max_upload_mib", "max_samples"].map(key => [key, Number(form.get(key))])) } }) };
   if (["connection-new", "connection-edit"].includes(modal.kind)) {
     const body = { name: form.get("name"), endpoint: form.get("endpoint"), model: form.get("model"), capabilities: form.getAll("capabilities"), active: form.has("active") };
     if (form.get("secret")) body.secret = form.get("secret");
@@ -103,6 +115,22 @@ export async function saveAdministration(api, modal, form, ctx) {
   }
   if (modal.kind === "profile") { await api.request("/auth/profile", { method: "PATCH", revision: ctx.session.user.revision, body: { display_name: form.get("display_name") } }); return {}; }
   if (modal.kind === "workspace-edit") { await api.request(base, { method: "PATCH", revision: ctx.workspace.revision, body: { name: form.get("name") } }); return {}; }
+  if (modal.kind === "workspace-invite") {
+    const max = String(form.get("max_uses") || "").trim();
+    const res = (await api.request(`${base}/invites`, { method: "POST", body: { role: form.get("role"), days: Number(form.get("days")), max_uses: max ? Number(max) : null, require_approval: form.has("require_approval") } })).data;
+    ctx.generatedSpaceInvite = { code: res.code, url: `${ctx.origin}/#/join?code=${encodeURIComponent(res.code)}` };
+    return {};
+  }
+  if (modal.kind === "workspace-join") {
+    const res = (await api.request("/workspaces/join", { method: "POST", body: { code: String(form.get("code") || "").trim() } })).data;
+    if (res.status === "joined" || res.status === "already_member") { ctx.ui.workspaceId = res.workspace_id; }
+    return {};
+  }
+  if (modal.kind === "workspace-delete") {
+    await api.request(`${base}?confirm_name=${encodeURIComponent(form.get("confirm_name"))}`, { method: "DELETE", revision: ctx.workspace.revision });
+    ctx.ui.workspaceId = "";
+    return { destination: "/space" };
+  }
   if (modal.kind === "member-remove") { await api.request(`${base}/members/${item.user_id}/remove`, { method: "POST" }); return {}; }
   return null;
 }
@@ -124,5 +152,13 @@ export async function administrationAction(action, id, { api, ctx, openModal, re
   if (action === "admin-remove-member") openModal("member-remove", ctx.data.members.data.find(item => item.user_id === id));
   if (action === "admin-copy-invite") { await navigator.clipboard.writeText(ctx.generatedInvite); toast("邀请链接已复制"); }
   if (action === "admin-hide-invite") { ctx.generatedInvite = null; render(); }
+  if (action === "admin-copy-space-invite") { await navigator.clipboard.writeText(ctx.generatedSpaceInvite?.url || ""); toast("空间邀请链接已复制"); }
+  if (action === "admin-hide-space-invite") { ctx.generatedSpaceInvite = null; render(); }
+  if (action === "admin-revoke-space-invite") { await api.request(`/workspaces/${ctx.workspace.id}/invites/${id}/revoke`, { method: "POST" }); toast("已撤销空间邀请"); await load(); }
+  if (action === "admin-approve-join" || action === "admin-reject-join") {
+    await api.request(`/workspaces/${ctx.workspace.id}/join-requests/${id}/review`, { method: "POST", body: { decision: action === "admin-approve-join" ? "approve" : "reject" } });
+    toast(action === "admin-approve-join" ? "已批准加入" : "已拒绝申请");
+    await load();
+  }
   return true;
 }

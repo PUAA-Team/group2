@@ -9,6 +9,7 @@ from ..permissions import workspace_access
 from ..schemas import ModelCreate, ModelPatch, ModelVersionCreate
 from ..services.assets import TRAINERS, check_trainer
 from ..services.common import audit, commit, find_asset, page_data, revision_update, search_query, serialize
+from ..services.workspace_lifecycle import delete_model
 from .deps import Actor, Db, Expected, Page, PageSize, Search
 
 router = APIRouter(tags=["模型资产"])
@@ -58,6 +59,11 @@ def patch_model(workspace_id: str, model_id: str, payload: ModelPatch, request: 
     commit(db)
     output.headers["ETag"] = f'"{model.revision}"'
     return response(request, serialize(model))
+
+
+@router.delete(base + "/{model_id}")
+def remove_model(workspace_id: str, model_id: str, request: Request, actor: Actor, db: Db):
+    return response(request, delete_model(db, actor, workspace_id, model_id))
 
 
 @router.get(base + "/{model_id}/versions", response_model=PageEnvelope[ModelVersionOut])

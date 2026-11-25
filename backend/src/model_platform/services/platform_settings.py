@@ -2,6 +2,8 @@ from dataclasses import replace
 
 from ..administration_models import PlatformSetting
 from ..administration_schemas import PlatformConfig
+from ..errors import Problem
+from ..models import UserGroup
 from .common import audit, commit, revision_update
 
 
@@ -16,6 +18,8 @@ def config_view(db):
 
 
 def save_config(db, actor, payload, expected):
+    if payload.default_group_id and not db.get(UserGroup, payload.default_group_id):
+        raise Problem(422, "VALIDATION_ERROR", "默认用户组不存在")
     record = db.get(PlatformSetting, "platform")
     revision_update(db, record, {"value": payload.model_dump()}, expected)
     audit(db, actor, "settings.update", "platform")

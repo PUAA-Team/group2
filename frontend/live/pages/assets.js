@@ -19,7 +19,7 @@ export function renderAssetDetail(kind, ctx) {
   const write = can(ctx, `${kind}.write`);
   const uploadSupported = true;
   const versions = ctx.data.versions?.data || [];
-  const actions = write ? btn("编辑", "edit-asset", item.id) + btn(item.archived ? '恢复' : '归档', 'gov-archive', item.id) + (item.archived ? '' : models ? btn("登记版本", "modal", "model-version", "primary") : `<a class="btn btn-primary" href="#/datasets/new?dataset=${e(item.id)}">导入版本</a>`) : "";
+  const actions = write ? btn("编辑", "edit-asset", item.id) + btn(item.archived ? '恢复' : '归档', 'gov-archive', item.id) + (item.archived ? btn('删除', 'gov-delete', item.id, 'danger') : models ? btn("登记版本", "modal", "model-version", "primary") : `<a class="btn btn-primary" href="#/datasets/new?dataset=${e(item.id)}">导入版本</a>`) : "";
   const metadata = [["登记时间", e(date(item.created_at))]];
   if (models) metadata.push(["训练模板", e(ctx.templates.find(t => t.id === item.trainer_id)?.name || item.trainer_id)], ["模型来源", `<span class="live-break">${e(item.source_ref)}</span>`]);
   if (item.description) metadata.push(["说明", e(item.description)]);

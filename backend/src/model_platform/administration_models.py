@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, JSON, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
@@ -37,3 +37,31 @@ class Invitation(Timestamp, Base):
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     used_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+
+
+class WorkspaceInvite(Timestamp, Base):
+    __tablename__ = "workspace_invites"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    code_digest: Mapped[str] = mapped_column(String(64), unique=True)
+    code_preview: Mapped[str] = mapped_column(String(16))
+    role: Mapped[str] = mapped_column(String(10))
+    require_approval: Mapped[bool] = mapped_column(Boolean, default=False)
+    max_uses: Mapped[int | None] = mapped_column(Integer)
+    used_count: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+
+
+class WorkspaceJoinRequest(Timestamp, Base):
+    __tablename__ = "workspace_join_requests"
+    __table_args__ = (UniqueConstraint("workspace_id", "user_id", "invite_id"),)
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), index=True)
+    invite_id: Mapped[str] = mapped_column(ForeignKey("workspace_invites.id"))
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    requested_role: Mapped[str] = mapped_column(String(10))
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    reviewed_by: Mapped[str | None] = mapped_column(ForeignKey("users.id"))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

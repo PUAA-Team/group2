@@ -43,6 +43,7 @@ export function governanceDialog(modal) {
       input(text, key, item.budget[key] ?? '', 'type="number" min="0" step="1" placeholder="不另设上限"')).join('') +
       fieldsInfo([['已占并发', e(item.budget.usage.concurrent_jobs)], ['已占 GPU', e(item.budget.usage.gpu_count)], ['已存文件', `${(item.budget.usage.storage_bytes / 1048576).toFixed(2)} MiB`]]) };
   if (modal.kind === 'gov-archive') return { title: item.archived ? '恢复资产' : '归档资产', fields: `<div>${e(item.name)}</div>`, submit: item.archived ? '恢复' : '归档' };
+  if (modal.kind === 'gov-delete') return { title: '彻底删除资产', fields: `<div class="notice">将永久删除已归档资产「${e(item.name)}」及其版本文件，且不可恢复。</div>`, submit: '确认删除' };
   if (modal.kind === 'gov-review') {
     const blocked = item.review || item.execution.finished_at || item.node.enabled || item.node.online && item.node.active_executions.includes(item.execution.id);
     return { title: '执行核查', wide: true, readOnly: !!blocked, submit: '确认结案', fields:
@@ -68,6 +69,9 @@ export async function saveGovernance(api, modal, form) {
   } else if (modal.kind === 'gov-archive') {
     path = `/workspaces/${item.workspace_id}/${item.assetKind}/${item.id}/archive`;
     body = { revision: item.revision, archived: !item.archived };
+  } else if (modal.kind === 'gov-delete') {
+    await api.request(`/workspaces/${item.workspace_id}/${item.assetKind}/${item.id}`, { method: 'DELETE' });
+    return { destination: `/${item.assetKind}` };
   } else if (modal.kind === 'gov-review') {
     if (!form.has('process_exit_confirmed')) throw new Error('请先核实目标机器上的进程已经退出');
     path = `/admin/executions/${item.execution.id}/reconcile`;
@@ -83,7 +87,7 @@ export async function governanceAction(action, id, { api, ctx, openModal }) {
     openModal(action, { id, policy: policy.data, principals: principals.data });
   } else if (action === 'gov-group-budget') openModal(action, { id, budget: (await api.request(`/admin/groups/${id}/budget`)).data });
   else if (action === 'gov-review') openModal(action, (await api.request(`/admin/executions/${id}/review`)).data);
-  else if (action === 'gov-archive') openModal(action, { ...ctx.data.item, assetKind: ctx.path.startsWith('/models/') ? 'models' : 'datasets' });
+  else if (action === 'gov-archive' || action === 'gov-delete') openModal(action, { ...ctx.data.item, assetKind: ctx.path.startsWith('/models/') ? 'models' : 'datasets' });
   else return false;
   return true;
 }

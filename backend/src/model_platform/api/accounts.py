@@ -81,21 +81,31 @@ def invite(payload: InviteInput, request: Request, actor: Actor, db: Db):
 
 @router.post("/auth/register", status_code=201)
 def register(payload: RegisterInput, request: Request, db: Db):
-    if not platform_config(db).invitations_enabled:
-        raise Problem(409, "INVITATIONS_DISABLED", "邀请注册已关闭")
-    item = db.scalar(select(Invitation).where(Invitation.token_digest == digest(payload.invitation)))
-    now = utcnow()
-    if item is None or item.used_at or aware(item.expires_at) <= now:
-        raise Problem(422, "INVALID_INVITATION", "邀请码无效、已使用或已到期")
+    config = platform_config(db)
     user_payload = payload.user_payload()
-    result = db.execute(update(Invitation).where(Invitation.id == item.id, Invitation.used_at.is_(None), Invitation.expires_at > now).values(used_at=now).execution_options(synchronize_session=False))
-    if result.rowcount != 1:
-        raise Problem(409, "INVALID_INVITATION", "邀请码已使用")
-    user = User(id=new_id("usr"), account=user_payload.account, display_name=user_payload.display_name, password_hash=hash_password(user_payload.password), group_id=item.group_id)
+    if payload.invitation:
+        if not config.invitations_enabled:
+            raise Problem(409, "INVITATIONS_DISABLED", "邀请注册已关闭")
+        item = db.scalar(select(Invitation).where(Invitation.token_digest == digest(payload.invitation)))
+        now = utcnow()
+        if item is None or item.used_at or aware(item.expires_at) <= now:
+            raise Problem(422, "INVALID_INVITATION", "邀请码无效、已使用或已到期")
+        result = db.execute(update(Invitation).where(Invitation.id == item.id, Invitation.used_at.is_(None), Invitation.expires_at > now).values(used_at=now).execution_options(synchronize_session=False))
+        if result.rowcount != 1:
+            raise Problem(409, "INVALID_INVITATION", "邀请码已使用")
+        user = User(id=new_id("usr"), account=user_payload.account, display_name=user_payload.display_name, password_hash=hash_password(user_payload.password), group_id=item.group_id)
+        db.add(user); db.flush()
+        db.add(Membership(workspace_id=item.workspace_id, user_id=user.id, role=item.role))
+        db.execute(update(Invitation).where(Invitation.id == item.id).values(used_by=user.id))
+        audit(db, user, "auth.register", user.id, item.workspace_id); commit(db)
+        return response(request, {"registered": True, "account": user.account})
+    if not config.self_registration_enabled:
+        raise Problem(409, "REGISTRATION_DISABLED", "开放注册未开启，请使用邀请码或联系管理员")
+    group_id = config.default_group_id if config.default_group_id and db.get(UserGroup, config.default_group_id) else None
+    user = User(id=new_id("usr"), account=user_payload.account, display_name=user_payload.display_name,
+                password_hash=hash_password(user_payload.password), group_id=group_id)
     db.add(user); db.flush()
-    db.add(Membership(workspace_id=item.workspace_id, user_id=user.id, role=item.role))
-    db.execute(update(Invitation).where(Invitation.id == item.id).values(used_by=user.id))
-    audit(db, user, "auth.register", user.id, item.workspace_id); commit(db)
+    audit(db, user, "auth.register.self", user.id); commit(db)
     return response(request, {"registered": True, "account": user.account})
 
 

@@ -149,7 +149,7 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
         ctx.importDraft = null; ctx.annotationDrafts = null; ctx.dataChoices = null; toast("数据版本已导入"); navigate(destination); return;
       }
       if (["setup", "login", "register"].includes(type)) {
-        if (type === "register") await api.request("/auth/register", { method: "POST", body: { account: data.get("account"), display_name: data.get("display_name"), password: data.get("password"), invitation: data.get("invitation") }, quietAuth: true });
+        if (type === "register") await api.request("/auth/register", { method: "POST", body: { account: data.get("account"), display_name: data.get("display_name"), password: data.get("password"), invitation: String(data.get("invitation") || "").trim() || null }, quietAuth: true });
         if (type === "setup") await api.request("/setup", { method: "POST", body: { account: data.get("account"), display_name: data.get("display_name"), password: data.get("password") }, quietAuth: true });
         await api.request("/auth/login", { method: "POST", body: { account: data.get("account"), password: data.get("password") }, quietAuth: true });
         if (type === "setup") {

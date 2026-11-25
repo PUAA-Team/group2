@@ -94,6 +94,11 @@ async function load() {
       ctx.loading = false; render(); return;
     }
     if (["/login", "/setup", "/register"].includes(ctx.path)) { history.replaceState(null, "", "#/home"); ctx.path = "/home"; }
+    if (ctx.path === "/join") {
+      const code = current.params.get("code") || "";
+      history.replaceState(null, "", "#/space"); ctx.path = "/space";
+      if (code) ctx.pendingJoinCode = code;
+    }
     const [workspaces, templates, platform] = await Promise.all([api.all("/workspaces", signal), api.request("/trainer-templates", { signal }), api.request("/platform-info", { signal })]);
     if (epoch !== ctx.epoch) return;
     ctx.workspaces = workspaces; ctx.templates = templates.data; ctx.platform = platform.data;
@@ -140,7 +145,12 @@ async function load() {
         data = await api.request(`${base}/${catalog ? ctx.kind === "models" ? "model-catalog" : "dataset-catalog" : ctx.kind}?${query}&${filters}`, { signal });
       }
     } else if (!ctx.forbidden && ctx.workspace && ctx.path === "/space" && ctx.access.actions.includes("members.manage")) {
-      data.members = await api.request(`${base}/members?page=${ctx.page}&page_size=20`, { signal });
+      const [members, invites, joinRequests] = await Promise.all([
+        api.request(`${base}/members?page=${ctx.page}&page_size=20`, { signal }),
+        api.request(`${base}/invites`, { signal }),
+        api.request(`${base}/join-requests`, { signal }),
+      ]);
+      data.members = members; data.invites = invites.data; data.joinRequests = joinRequests.data;
     } else if (!ctx.forbidden && ctx.workspace && ctx.path === "/admin/audit") {
       data = await api.request(`${base}/audit?page=${ctx.page}&page_size=20`, { signal });
     } else if (!ctx.forbidden && ctx.workspace && ["/home", "/admin/stats"].includes(ctx.path)) {
@@ -149,7 +159,9 @@ async function load() {
     if (!ctx.forbidden && ctx.workspace && ctx.path === '/space' && ctx.access.actions.includes('datasets.read'))
       data.storage = (await api.request(`${base}/storage-usage`, { signal })).data;
     if (epoch !== ctx.epoch) return;
-    ctx.data = data; ctx.loading = false; render();
+    ctx.data = data; ctx.loading = false;
+    if (ctx.path === "/space" && ctx.pendingJoinCode) { ctx.ui.modal = { kind: "workspace-join", item: { code: ctx.pendingJoinCode }, workspaceId: ctx.workspace?.id }; ctx.pendingJoinCode = null; }
+    render();
   } catch (error) {
     if (epoch !== ctx.epoch || error.name === "AbortError") return;
     ctx.loading = false; ctx.error = errorMessage(error); render();

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 from sqlalchemy import func, select
 
+from ..administration_schemas import WorkspaceInviteInput, WorkspaceJoinInput, WorkspaceJoinReviewInput
 from ..database import new_id
 from ..errors import Problem, response
 from ..models import AuditEvent, Membership, User, Workspace
@@ -8,7 +9,16 @@ from ..outputs import AccessOut, AuditOut, Envelope, MemberOut, MemberSummaryOut
 from ..permissions import effective_policy, require_action, visible_workspaces, workspace_access, WRITE_SUFFIXES
 from ..schemas import MemberInput, WorkspaceCreate
 from ..services.common import audit, commit, page_data, serialize
-from .deps import Actor, Db, Page, PageSize
+from ..services.workspace_invites import (
+    create_workspace_invite,
+    join_workspace_by_code,
+    list_join_requests,
+    list_workspace_invites,
+    review_join_request,
+    revoke_workspace_invite,
+)
+from ..services.workspace_lifecycle import delete_workspace
+from .deps import Actor, Db, Expected, Page, PageSize
 
 router = APIRouter(prefix="/api/v1/workspaces", tags=["工作空间"])
 
@@ -29,6 +39,41 @@ def create_workspace(payload: WorkspaceCreate, request: Request, actor: Actor, d
     audit(db, actor, "workspaces.create", workspace.id, workspace.id)
     commit(db)
     return response(request, serialize(workspace))
+
+
+@router.post("/join")
+def join_workspace(payload: WorkspaceJoinInput, request: Request, actor: Actor, db: Db):
+    return response(request, join_workspace_by_code(db, actor, payload.code))
+
+
+@router.delete("/{workspace_id}")
+def remove_workspace(workspace_id: str, confirm_name: str, request: Request, actor: Actor, db: Db, expected: Expected):
+    return response(request, delete_workspace(db, actor, workspace_id, confirm_name, expected))
+
+
+@router.get("/{workspace_id}/invites")
+def get_invites(workspace_id: str, request: Request, actor: Actor, db: Db):
+    return response(request, list_workspace_invites(db, actor, workspace_id))
+
+
+@router.post("/{workspace_id}/invites", status_code=201)
+def new_invite(workspace_id: str, payload: WorkspaceInviteInput, request: Request, actor: Actor, db: Db):
+    return response(request, create_workspace_invite(db, actor, workspace_id, payload))
+
+
+@router.post("/{workspace_id}/invites/{invite_id}/revoke")
+def revoke_invite(workspace_id: str, invite_id: str, request: Request, actor: Actor, db: Db):
+    return response(request, revoke_workspace_invite(db, actor, workspace_id, invite_id))
+
+
+@router.get("/{workspace_id}/join-requests")
+def get_join_requests(workspace_id: str, request: Request, actor: Actor, db: Db):
+    return response(request, list_join_requests(db, actor, workspace_id))
+
+
+@router.post("/{workspace_id}/join-requests/{request_id}/review")
+def review_join(workspace_id: str, request_id: str, payload: WorkspaceJoinReviewInput, request: Request, actor: Actor, db: Db):
+    return response(request, review_join_request(db, actor, workspace_id, request_id, payload.decision))
 
 
 @router.post("/{workspace_id}/members", response_model=Envelope[MemberOut])

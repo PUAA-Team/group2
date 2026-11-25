@@ -30,7 +30,8 @@ def workflow_jobs(kind: Literal['operations', 'assistants'], request: Request, a
 @router.get("/platform-info")
 def public_branding(request: Request, db: Db):
     config = platform_config(db)
-    return response(request, {"platform_name": config.platform_name, "invitations_enabled": config.invitations_enabled})
+    return response(request, {"platform_name": config.platform_name, "invitations_enabled": config.invitations_enabled,
+                              "self_registration_enabled": config.self_registration_enabled})
 
 
 @router.get("/admin/settings")
