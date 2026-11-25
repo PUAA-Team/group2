@@ -125,6 +125,8 @@ class ModelVersionOut(Entity):
     model_id: str
     version: str
     source_ref: str
+    sha256: str | None = None
+    size_bytes: int | None = None
     status: str
     created_by: str
 

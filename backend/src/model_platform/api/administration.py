@@ -72,9 +72,9 @@ async def check_connection(connection_id: str, request: Request, actor: Actor, d
 
 
 @router.get("/admin/statistics")
-def global_statistics(request: Request, actor: Actor, db: Db, space: Search = ""):
+def global_statistics(request: Request, actor: Actor, db: Db, filters: Filters, space: Search = ""):
     require_admin(db, actor, "audit.read")
-    return response(request, statistics(db, actor, space or None))
+    return response(request, statistics(db, actor, space or None, filters))
 
 
 @router.get("/admin/asset-catalog/{kind}")

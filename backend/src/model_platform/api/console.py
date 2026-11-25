@@ -9,7 +9,7 @@ from ..job_models import Execution, ExecutionEvent
 from ..schemas import TaskType
 from ..permissions import workspace_access
 from ..services.dataset_files import parse_samples
-from ..services.console import dataset_catalog, model_catalog, overview, project_catalog
+from ..services.console import dataset_catalog, model_catalog, my_jobs, overview, project_catalog
 from ..services.jobs import get_job
 from .deps import Actor, Db, Page, PageSize, Search
 
@@ -19,6 +19,12 @@ router = APIRouter(prefix="/api/v1/workspaces/{workspace_id}", tags=["控制台�
 @router.get("/overview")
 def workspace_overview(workspace_id: str, request: Request, actor: Actor, db: Db):
     return response(request, overview(db, actor, workspace_id))
+
+
+@router.get("/my-jobs")
+def personal_jobs(workspace_id: str, request: Request, actor: Actor, db: Db, page: Page = 1, page_size: PageSize = 20):
+    rows, pagination = my_jobs(db, actor, workspace_id, page, page_size)
+    return response(request, rows, pagination=pagination)
 
 
 @router.get("/model-catalog")

@@ -1,4 +1,4 @@
-import { ACTIONS, btn, description, e, input, options, QUOTAS, select, taskOptions } from "./components.js?v=stage15-1";
+import { ACTIONS, badge, btn, description, e, fieldsInfo, input, options, QUOTAS, select, table, taskOptions } from "./components.js?v=stage15-1";
 import { computeDialog } from "./compute.js?v=stage15-1";
 import { workflowDialog } from "./workflows.js?v=stage15-1";
 import { administrationDialog } from "./administration.js?v=stage15-1";
@@ -30,6 +30,12 @@ export function renderDialog(modal, ctx) {
   }
   if (modal.kind === "asset-edit") { title = "修改名称与说明"; fields = input("名称", "name", item.name, 'required maxlength="100"') + description(item.description); }
   if (modal.kind === "model-version") { title = "登记模型版本"; fields = input("版本", "version", "", 'required maxlength="64" placeholder="例如 v1.0"') + input("模型来源", "source_ref", item.source_ref, 'required maxlength="1000"'); submit = "登记"; }
+  if (modal.kind === "model-upload") {
+    title = "上传受控权重"; submit = "上传";
+    fields = `<div class="notice">仅支持包含 manifest.json 与 safetensors 权重的受控 .zip 包（≤ 64 MiB）。</div>` +
+      input("版本", "version", "", 'required maxlength="64" placeholder="例如 import-v1"') +
+      `<div class="field"><label for="model-weight-file">选择权重包</label><input id="model-weight-file" name="file" class="input live-file" type="file" required accept=".zip" /></div>`;
+  }
   if (modal.kind === "dataset-version") {
     title = "导入数据版本"; submit = "导入";
     fields = `<div class="heading-actions">${btn("下载模板", "template", item.task_type)}</div><div class="field"><label for="version-file">选择文件</label><input id="version-file" name="file" class="input live-file" type="file" required accept="${item.task_type === "llm_sft" ? ".jsonl" : item.task_type === "image_classification" ? ".zip" : ".csv"}" /></div>`;
@@ -54,6 +60,18 @@ export function renderDialog(modal, ctx) {
   if (modal.kind === "examples") {
     title = "添加示例资产"; submit = "添加";
     fields = `<div class="live-checks live-checks-stacked"><label><input type="checkbox" name="examples" value="text" checked />文本分类</label><label><input type="checkbox" name="examples" value="sft" checked />Qwen LoRA</label><label><input type="checkbox" name="examples" value="image" checked />图像分类</label></div>`;
+  }
+  if (modal.kind === "dataset-report") {
+    title = "数据集校验报告"; readOnly = true; wide = true;
+    const rows = (item.label_distribution || []).map(row => [e(row.label), e(row.count), `${((Number(row.ratio) || 0) * 100).toFixed(1)}%`]);
+    fields = fieldsInfo([
+      ["版本", `v${e(item.number ?? "")}`],
+      ["样本数", e(item.sample_count ?? 0)],
+      ["空标签样本", e(item.empty_labels ?? 0)],
+      ["文件大小", `${((Number(item.size_bytes) || 0) / 1024).toFixed(1)} KiB`],
+      ["完整性", badge(item.integrity_ok ? "正常" : "异常")],
+      ["SHA256", `<code>${e(item.sha256 || "—")}</code>`],
+    ]) + `<div class="section-heading"><h2>标签分布</h2></div>` + table(["标签", "样本数", "占比"], rows, "暂无标签样本");
   }
   return `<div class="modal-layer" id="live-modal"><div class="modal-scrim" data-action="close-modal"></div><section class="modal-panel ${wide ? "modal-wide" : ""}" role="dialog" aria-modal="true" aria-labelledby="live-dialog-title"><form data-form="dialog">
     <div class="modal-header"><h2 id="live-dialog-title">${e(title)}</h2><button class="icon-button" type="button" data-action="close-modal" aria-label="关闭">×</button></div><div class="modal-body stack"><div class="notice notice-danger" data-modal-error role="alert" hidden></div>${fields}</div><div class="modal-footer">${btn(readOnly ? "关闭" : "取消", "close-modal")}${readOnly ? "" : `<button class="btn btn-primary" type="submit">${submit}</button>`}</div></form></section></div>`;

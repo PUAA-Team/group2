@@ -1,6 +1,8 @@
 """完整控制台的只读汇总，所有查询保持空间与读取权限边界。"""
 from sqlalchemy import func, select
 
+from ..administration_models import WorkspaceJoinRequest
+from ..data_models import AnnotationBatch
 from ..errors import Problem
 from ..job_models import Job, Project
 from ..models import AuditEvent, Dataset, DatasetVersion, Membership, ModelAsset, ModelVersion, User, Workspace
@@ -27,7 +29,33 @@ def overview(db, actor, workspace_id):
     if "audit.read" in actions:
         for event, name in db.execute(select(AuditEvent, User.display_name).join(User, User.id == AuditEvent.actor_id).where(AuditEvent.workspace_id == workspace_id).order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc()).limit(6)):
             activity.append({**serialize(event), "actor_name": name})
-    return {"counts": counts, "recent_jobs": recent, "activity": activity}
+    pending = []
+    if "members.manage" in actions:
+        join_cnt = db.scalar(select(func.count()).select_from(WorkspaceJoinRequest).where(WorkspaceJoinRequest.workspace_id == workspace_id, WorkspaceJoinRequest.status == "pending")) or 0
+        if join_cnt:
+            pending.append({"key": "join_requests", "label": "待审批加入申请", "count": join_cnt, "href": "/space"})
+    if "datasets.read" in actions:
+        ann_cnt = db.scalar(select(func.count()).select_from(AnnotationBatch).where(AnnotationBatch.workspace_id == workspace_id, AnnotationBatch.status == "open")) or 0
+        if ann_cnt:
+            pending.append({"key": "annotation_batches", "label": "进行中标注批次", "count": ann_cnt, "href": "/annotation"})
+    if "training.read" in actions:
+        failed_cnt = db.scalar(select(func.count()).select_from(Job).where(Job.workspace_id == workspace_id, Job.kind == "train", Job.status == "failed")) or 0
+        if failed_cnt:
+            pending.append({"key": "failed_jobs", "label": "失败训练任务", "count": failed_cnt, "href": "/runs?status=failed"})
+    return {"counts": counts, "recent_jobs": recent, "activity": activity, "pending_items": pending}
+
+
+def my_jobs(db, actor, workspace_id, page, page_size):
+    space = db.get(Workspace, workspace_id)
+    if space is None or (not actor.is_admin and not db.get(Membership, (workspace_id, actor.id))):
+        raise Problem(404, "NOT_FOUND", "工作空间不存在")
+    actions, _ = effective_policy(db, actor)
+    allowed_kinds = (["train", "evaluate"] if "training.read" in actions else []) + (["service"] if "services.read" in actions else [])
+    if not allowed_kinds:
+        return [], {"page": page, "page_size": page_size, "total": 0}
+    query = select(Job).where(Job.workspace_id == workspace_id, Job.created_by == actor.id, Job.kind.in_(allowed_kinds)).order_by(Job.created_at.desc(), Job.id.desc())
+    rows, pagination = page_data(db, query, page, page_size)
+    return [job_summary(db, db.get(Job, row["id"])) for row in rows], pagination
 
 
 def job_summary(db, job):

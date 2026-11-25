@@ -11,7 +11,7 @@ from ..models import AuditEvent, Dataset, DatasetVersion, Membership, ModelAsset
 from ..permissions import workspace_access
 from ..template_models import TrainingParameterTemplate
 from .common import audit, commit, find_asset
-from .dataset_files import controlled_path
+from .file_storage import delete_object
 
 
 def delete_project(db, actor, workspace_id, project_id):
@@ -28,22 +28,26 @@ def delete_project(db, actor, workspace_id, project_id):
     return {"deleted": True, "id": project_id}
 
 
-def delete_model(db, actor, workspace_id, model_id):
+def delete_model(db, settings, actor, workspace_id, model_id):
     workspace_access(db, actor, workspace_id, "models.write")
     model = find_asset(db, ModelAsset, workspace_id, model_id)
     if not model.archived:
         raise Problem(409, "ARCHIVE_REQUIRED", "请先归档模型后再删除")
-    version_ids = list(db.scalars(select(ModelVersion.id).where(ModelVersion.model_id == model.id)))
+    versions = list(db.scalars(select(ModelVersion).where(ModelVersion.model_id == model.id)))
+    version_ids = [item.id for item in versions]
     if version_ids:
         used = db.scalar(select(func.count()).select_from(Job).where(
             (Job.model_version_id.in_(version_ids)) | (Job.output_model_version_id.in_(version_ids))
         ))
         if used:
             raise Problem(409, "ASSET_IN_USE", "该模型版本已被任务记录引用，无法删除")
+        db.execute(delete(StoredObject).where(StoredObject.workspace_id == workspace_id, StoredObject.object_id.in_(version_ids)))
         db.execute(delete(ModelVersion).where(ModelVersion.model_id == model.id))
     db.delete(model)
     audit(db, actor, "models.delete", model_id, workspace_id)
     commit(db)
+    for item in versions:
+        delete_object(settings, item.storage_key)
     return {"deleted": True, "id": model_id}
 
 
@@ -70,10 +74,7 @@ def delete_dataset(db, settings, actor, workspace_id, dataset_id):
     audit(db, actor, "datasets.delete", dataset_id, workspace_id)
     commit(db)
     for item in versions:
-        try:
-            controlled_path(settings, item.storage_key).unlink(missing_ok=True)
-        except OSError:
-            pass
+        delete_object(settings, item.storage_key)
     return {"deleted": True, "id": dataset_id}
 
 

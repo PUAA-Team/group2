@@ -10,7 +10,9 @@ export function renderHome(ctx) {
   const shortcuts = [["新建训练", "/train/new", "training.write"], ["导入数据集", "/datasets/new", "datasets.write"], ["在线标注", "/annotation", "datasets.write"], ["模型仓库", "/models", "models.read"]].filter(([, , action]) => can(ctx, action)).map(([label, href]) => `<a class="quick-link" href="#${href}">${label}<span aria-hidden="true">›</span></a>`).join("");
   const actionNames = { "presets.create": "添加示例资产", "jobs.create": "创建任务", "jobs.submit": "提交任务", "jobs.stop": "停止任务", "projects.create": "新建项目", "datasets.create": "新增数据集", "dataset_versions.create": "导入数据", "models.create": "登记模型", "model_versions.create": "登记模型版本" };
   const activity = (ctx.data.activity || []).map(item => `<div class="console-activity"><strong>${e(actionNames[item.action] || item.action)}</strong><span>${e(item.actor_name)}</span><time>${date(item.created_at)}</time></div>`).join("");
-  return pageHeader("工作台", "", actions) + `<section class="console-summary">${counts.map(([label, value, href]) => `<a href="#${href}"><span>${label}</span><strong>${value ?? "—"}</strong></a>`).join("")}</section>` +
+  const pItems = Array.isArray(ctx.data.pending_items) ? ctx.data.pending_items : [];
+  const pendingBar = pItems.length ? `<div class="section-heading"><h2>待处理事项</h2></div><section class="console-summary">${pItems.map(item => `<a href="#${e(item.href)}"><span>${e(item.label)}</span><strong>${e(item.count)}</strong></a>`).join("")}</section>` : "";
+  return pageHeader("工作台", "", actions) + `<section class="console-summary">${counts.map(([label, value, href]) => `<a href="#${href}"><span>${label}</span><strong>${value ?? "—"}</strong></a>`).join("")}</section>` + pendingBar +
     `<div class="section-heading"><h2>最近训练</h2>${can(ctx, "training.read") ? '<a class="entity-link" href="#/runs">全部训练</a>' : ""}</div>` + table(["任务", "任务类型", "状态", "准确率", "模型", "创建时间"], rows) +
     `<div class="section-heading"><h2>继续操作</h2>${can(ctx, "models.write") && can(ctx, "datasets.write") ? btn("添加示例资产", "modal", "examples") : ""}</div><div class="console-home-bottom"><div class="console-quick">${shortcuts || '<a class="quick-link" href="#/space">用户空间</a>'}</div>${card(`<div class="card-header"><h2>近期操作</h2></div>${activity || '<div class="empty-state">暂无操作记录</div>'}`)}</div>`;
 }
@@ -47,7 +49,10 @@ export function renderSpace(ctx) {
       ['数据版本', `${((ctx.data.storage.categories.dataset || 0) / 1048576).toFixed(2)} MiB`],
       ['模型产物', `${((ctx.data.storage.categories.artifact || 0) / 1048576).toFixed(2)} MiB`],
       ['处理候选', `${((ctx.data.storage.categories.candidate || 0) / 1048576).toFixed(2)} MiB`],
-      ['未归属文件', `${(ctx.data.storage.unattributed_bytes / 1048576).toFixed(2)} MiB`]]) : '') + memberSection;
+      ['未归属文件', `${(ctx.data.storage.unattributed_bytes / 1048576).toFixed(2)} MiB`]]) : '') +
+    (ctx.data.myJobs ? `<div class="section-heading"><h2>我的近期任务</h2></div>` + table(["任务", "类型", "状态", "创建时间"], (ctx.data.myJobs || []).map(job => [
+      link(job.name, `/runs/${job.id}`), tag(TASKS[job.task_type] || job.job_kind || "—"), badge(job.status), date(job.created_at),
+    ]), "暂无个人任务") : "") + memberSection;
 }
 
 const pending = {

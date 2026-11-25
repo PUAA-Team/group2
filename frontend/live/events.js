@@ -69,7 +69,7 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
       if (action === "logout") { await api.request("/auth/logout", { method: "POST" }); api.csrf = ""; ctx.session = null; ctx.ui.modal = null; ctx.resourceConnection = null; ctx.generatedKey = null; ctx.generatedInvite = null; ctx.pendingCall = null; ctx.callResult = null; ctx.wizard = null; ctx.importDraft = null; ctx.annotationDrafts = null; ctx.dataChoices = null; ctx.assistantOptions = null; navigate("/login"); }
       if (action === "refresh") await load();
       if (action === "go") navigate(id);
-      if (action === "modal") openModal(id, ["model-version", "dataset-version"].includes(id) ? ctx.data.item : undefined);
+      if (action === "modal") openModal(id, ["model-version", "model-upload", "dataset-version"].includes(id) ? ctx.data.item : undefined);
       if (action === "close-modal") closeModal();
       if (action === "edit-asset") openModal("asset-edit", ctx.data.item || ctx.data.data.find(item => item.id === id));
       if (action === "edit-group") openModal("group-edit", ctx.data.data.find(item => item.id === id));
@@ -84,6 +84,11 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
         const epoch = ctx.epoch;
         const result = await api.request(`/workspaces/${ctx.workspace.id}/datasets/${ctx.data.item.id}/versions/${id}/preview?limit=20`);
         if (epoch === ctx.epoch) { ctx.data.preview = result.data; render(); document.getElementById("samples")?.scrollIntoView({ block: "start", behavior: "smooth" }); }
+      }
+      if (action === "dataset-report") {
+        const [datasetId, versionId] = String(id).split(":");
+        const result = await api.request(`/workspaces/${ctx.workspace.id}/datasets/${datasetId}/versions/${versionId}/report`);
+        openModal("dataset-report", result.data);
       }
     } catch (error) { toast(errorMessage(error)); }
   });
@@ -179,6 +184,7 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
         }
         case "asset-edit": await api.request(`${base}/${kind}/${modal.item.id}`, { method: "PATCH", revision: modal.item.revision, body: { name: data.get("name"), description: data.get("description") } }); break;
         case "model-version": await api.request(`${base}/models/${modal.item.id}/versions`, { method: "POST", body: { version: data.get("version"), source_ref: data.get("source_ref") } }); break;
+        case "model-upload": { const file = new FormData(); file.append("version", data.get("version")); file.append("file", data.get("file")); await api.request(`${base}/models/${modal.item.id}/versions/upload`, { method: "POST", body: file }); break; }
         case "dataset-version": { const file = new FormData(); file.append("file", data.get("file")); await api.request(`${base}/datasets/${modal.item.id}/versions`, { method: "POST", body: file }); break; }
         case "member": await api.request(`${base}/members`, { method: "POST", body: { ...(modal.item.user_id ? { user_id: modal.item.user_id } : { account: data.get("account") }), role: data.get("role") } }); break;
         case "group-new": case "group-edit": await api.request(`/admin/groups${modal.item.id ? `/${modal.item.id}` : ""}`, { method: modal.item.id ? "PATCH" : "POST", revision: modal.item.revision, body: { name: data.get("name"), ...policy(data) } }); break;

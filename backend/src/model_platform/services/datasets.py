@@ -4,7 +4,8 @@ from ..database import new_id
 from ..errors import Problem
 from ..models import DatasetVersion
 from .common import audit, commit, revision_update
-from .dataset_files import controlled_path, parse_samples
+from .dataset_files import parse_samples
+from .file_storage import delete_object, read_verified, write_atomic
 from .asset_lifecycle import ensure_active
 from .budgets import charge_objects
 
@@ -43,13 +44,8 @@ def store_versions(db, settings, actor, dataset, files, *, parent=None, finalize
             storage_key = f"{dataset.workspace_id}/{dataset.id}/{version_id}.{metadata['format']}"
             charge_objects(db, actor, [{'id': 'dataset:' + version_id, 'workspace_id': dataset.workspace_id,
                 'kind': 'dataset', 'object_id': version_id, 'storage_key': storage_key, 'size_bytes': len(content)}])
-            path = controlled_path(settings, storage_key)
-            staged = path.with_suffix(".upload")
-            path.parent.mkdir(parents=True, exist_ok=True)
-            owned_paths.extend([staged, path])
-            with staged.open("xb") as stream:
-                stream.write(content)
-            staged.replace(path)
+            path, _, _ = write_atomic(settings, storage_key, content)
+            owned_paths.append(storage_key)
             version = DatasetVersion(id=version_id, dataset_id=dataset.id, number=number + offset,
                 storage_key=storage_key, filename=filename, parent_version_id=parent.id if parent else None,
                 provenance=provenance, **metadata)
@@ -64,16 +60,14 @@ def store_versions(db, settings, actor, dataset, files, *, parent=None, finalize
     except Exception:
         db.rollback()
         # 仅清理本次生成的随机文件；不扫描或删除用户历史资产。
-        for path in owned_paths:
-            path.unlink(missing_ok=True)
+        for key in owned_paths:
+            delete_object(settings, key)
         raise
 
 
 def preview(settings, dataset, version, limit):
-    path = controlled_path(settings, version.storage_key)
-    if not path.is_file():
-        raise Problem(503, "NOT_READY", "版本文件暂不可读")
-    rows, metadata = parse_samples(path.read_bytes(), dataset.task_type, version.filename, settings.max_samples)
+    _, content, _ = read_verified(settings, version.storage_key, version.sha256, missing_message="版本文件暂不可读")
+    rows, metadata = parse_samples(content, dataset.task_type, version.filename, settings.max_samples)
     if metadata["sha256"] != version.sha256:
         raise Problem(409, "CONFLICT", "版本文件完整性校验失败")
     return {"version_id": version.id, "samples": rows[:limit], "total": version.sample_count}

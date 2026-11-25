@@ -40,7 +40,7 @@ export const card = (inner, extra = "") => `<section class="card ${extra}">${inn
 export const pageHeader = (title, _subtitle = "", actions = "") => `<div class="page-heading"><h1>${escapeHtml(title)}</h1><div class="heading-actions">${actions}</div></div>`;
 
 export const NAV_GROUPS = [
-  { id: "overview", label: "概览", icon: "home", children: [["工作台", "/home"], ["用户空间", "/space"], ["资源监控", "/monitor"]] },
+  { id: "overview", label: "概览", icon: "home", children: [["工作台", "/home"], ["用户空间", "/space"], ["资源监控", "/monitor"], ["智能辅助", "/assistants"]] },
   { id: "data", label: "数据管理", icon: "data", children: [["数据集", "/datasets"], ["在线标注", "/annotation"], ["数据增强", "/augmentation"]] },
   { id: "training", label: "模型训练", icon: "training", children: [["训练项目", "/projects"], ["训练任务", "/runs"]] },
   { id: "models", label: "模型管理", icon: "models", children: [["模型仓库", "/models"], ["模型评估", "/evaluation"]] },

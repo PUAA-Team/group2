@@ -53,7 +53,7 @@ def global_catalog(db, kind, q, space, status, job_kind, page, page_size, allowe
     return rows, pagination
 
 
-def statistics(db, actor, space=None):
+def statistics(db, actor, space=None, filters=None):
     actions, _ = effective_policy(db, actor)
     counts = {}
     for key, model, action in [("users", User, "users.manage"), ("datasets", Dataset, "datasets.read"), ("models", ModelAsset, "models.read")]:
@@ -62,11 +62,15 @@ def statistics(db, actor, space=None):
             query = query.where(model.workspace_id == space)
         if space and model is User:
             query = query.join(Membership, Membership.user_id == User.id).where(Membership.workspace_id == space)
+        if model is not User and filters:
+            query = filter_catalog(query, model, key, filters)
         counts[key] = db.scalar(query) if action in actions else None
     kinds = (["train", "evaluate"] if "training.read" in actions else []) + (["service"] if "services.read" in actions else [])
     query = select(Job).where(Job.kind.in_(kinds))
     if space:
         query = query.where(Job.workspace_id == space)
+    if filters:
+        query = filter_catalog(query, Job, "jobs", filters)
     jobs = db.scalars(query).all()
     states = Counter(job.status for job in jobs)
     counts.update(jobs=len(jobs), active=sum(states[key] for key in ["preparing", "running", "ready", "stopping"]), queued=states["queued"], failed=states["failed"])

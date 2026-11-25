@@ -86,6 +86,9 @@ class ModelVersion(Timestamp, Base):
     model_id: Mapped[str] = mapped_column(ForeignKey("models.id"), index=True)
     version: Mapped[str] = mapped_column(String(64))
     source_ref: Mapped[str] = mapped_column(String(1000))
+    storage_key: Mapped[str | None] = mapped_column(String(200), unique=True)
+    sha256: Mapped[str | None] = mapped_column(String(64))
+    size_bytes: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(24), default="registered")
     created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
 

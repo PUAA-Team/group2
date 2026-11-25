@@ -1,3 +1,4 @@
+from collections import Counter
 from typing import Annotated
 
 from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile
@@ -10,7 +11,9 @@ from ..outputs import DatasetOut, DatasetVersionOut, Envelope, PageEnvelope, Pre
 from ..permissions import require_action, workspace_access
 from ..schemas import DatasetCreate, DatasetPatch
 from ..services.common import audit, commit, find_asset, page_data, revision_update, search_query, serialize
+from ..services.dataset_files import parse_samples
 from ..services.datasets import preview, store_version
+from ..services.file_storage import read_verified
 from ..services.workspace_lifecycle import delete_dataset
 from .deps import Actor, Db, Expected, Page, PageSize, Search
 
@@ -99,3 +102,39 @@ def sample_preview(workspace_id: str, dataset_id: str, version_id: str, request:
     if version is None:
         raise Problem(404, "NOT_FOUND", "数据版本不存在")
     return response(request, preview(request.app.state.settings, dataset, version, limit))
+
+
+@router.get(base + "/{dataset_id}/versions/{version_id}/report")
+def version_report(workspace_id: str, dataset_id: str, version_id: str, request: Request, actor: Actor, db: Db):
+    workspace_access(db, actor, workspace_id, "datasets.read")
+    dataset = find_asset(db, Dataset, workspace_id, dataset_id)
+    version = db.scalar(select(DatasetVersion).where(DatasetVersion.id == version_id, DatasetVersion.dataset_id == dataset.id))
+    if version is None:
+        raise Problem(404, "NOT_FOUND", "数据版本不存在")
+    settings = request.app.state.settings
+    _, content, actual_sha = read_verified(settings, version.storage_key, version.sha256, missing_message="版本文件暂不可读")
+    rows, metadata = parse_samples(content, dataset.task_type, version.filename, settings.max_samples)
+    total = len(rows)
+    empty_labels = 0
+    distribution = []
+    if dataset.task_type != "llm_sft":
+        counter = Counter(row.get("label") or "" for row in rows)
+        empty_labels = counter.pop("", 0)
+        distribution = [
+            {"label": label, "count": count, "ratio": round(count / total, 4) if total else 0}
+            for label, count in counter.most_common()
+        ]
+    return response(request, {
+        "version_id": version.id,
+        "number": version.number,
+        "task_type": dataset.task_type,
+        "format": version.format,
+        "filename": version.filename,
+        "sample_count": total,
+        "size_bytes": metadata["size_bytes"],
+        "sha256": actual_sha,
+        "integrity_ok": actual_sha == version.sha256,
+        "status": version.status,
+        "empty_labels": empty_labels,
+        "label_distribution": distribution,
+    })

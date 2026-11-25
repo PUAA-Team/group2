@@ -11,7 +11,7 @@ from ..job_models import Execution, ExecutionEvent, Job, ServiceCall
 from ..models import DatasetVersion, ModelVersion, User
 from .artifact_files import validate_artifact
 from .common import audit, commit
-from .dataset_files import controlled_path
+from .file_storage import delete_object, resolve_key, write_atomic
 from .jobs import source_job
 from .call_lifecycle import finish_call
 
@@ -72,16 +72,19 @@ def input_path(db, settings, node, execution_id, model=False):
         raise Problem(409, "EXECUTION_FINISHED", "执行已结束")
     if model:
         version = db.get(ModelVersion, job.model_version_id)
-        parent = source_job(db, job.workspace_id, version)
-        if not parent:
-            raise Problem(404, "NOT_FOUND", "该模型无需下载平台产物")
-        key, sha = parent.artifact_key, parent.artifact_sha256
+        if version and version.source_ref.startswith("upload://") and version.storage_key and version.sha256:
+            key, sha = version.storage_key, version.sha256
+        else:
+            parent = source_job(db, job.workspace_id, version)
+            if not parent:
+                raise Problem(404, "NOT_FOUND", "该模型无需下载平台产物")
+            key, sha = parent.artifact_key, parent.artifact_sha256
     else:
         data = db.get(DatasetVersion, job.dataset_version_id)
         if not data:
             raise Problem(404, "NOT_FOUND", "该执行没有数据输入")
         key, sha = data.storage_key, data.sha256
-    path = controlled_path(settings, key)
+    path = resolve_key(settings, key)
     if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != sha:
         raise Problem(409, "FILE_NOT_READY", "输入文件缺失或校验失败")
     return path, sha
@@ -101,19 +104,13 @@ def store_artifact(db, settings, node, execution_id, content):
     actor = db.get(User, job.created_by)
     charge_objects(db, actor, [{'id': 'artifact:' + job.id, 'workspace_id': job.workspace_id,
         'kind': 'artifact', 'object_id': job.id, 'storage_key': key, 'size_bytes': len(content)}])
-    path = controlled_path(settings, key); path.parent.mkdir(parents=True, exist_ok=True)
-    staged = path.with_suffix(".upload")
-    # 只有当前受控执行能写入此文件；完整落盘后提交引用。
     try:
-        with staged.open("wb") as stream:
-            stream.write(content)
-        staged.replace(path)
+        path, _, _ = write_atomic(settings, key, content)
         job.artifact_key, job.artifact_sha256, job.artifact_bytes = key, sha, len(content)
         commit(db)
     except Exception:
         db.rollback()
-        staged.unlink(missing_ok=True)
-        path.unlink(missing_ok=True)
+        delete_object(settings, key)
         raise
     return {"sha256": sha}
 

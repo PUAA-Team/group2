@@ -11,7 +11,8 @@ from ..job_schemas import JobInput
 from ..models import Dataset, DatasetVersion, ModelAsset, ModelVersion, User
 from ..permissions import effective_policy, workspace_access
 from .common import audit, commit, find_asset, revision_update, serialize
-from .dataset_files import controlled_path, parse_samples
+from .dataset_files import parse_samples
+from .file_storage import read_verified, resolve_key
 from .asset_lifecycle import ensure_active, lock_active
 from .budgets import allocation_allowed
 from .platform_settings import platform_config
@@ -52,8 +53,8 @@ def inputs(db, workspace_id, payload):
         raise Problem(422, "INVALID_DATASET", "请选择已标注且任务匹配的数据版本")
     if payload.kind == "train" and data.provenance.get("partition") in {"validation", "test"}:
         raise Problem(422, "EVALUATION_PARTITION", "验证集和测试集不能用于训练")
-    if payload.kind != "train" and (version.status != "available" or not version.source_ref.startswith("artifact://")):
-        raise Problem(422, "MODEL_NOT_READY", "评估和部署需要已训练的模型版本")
+    if payload.kind != "train" and (version.status != "available" or not version.source_ref.startswith(("artifact://", "upload://"))):
+        raise Problem(422, "MODEL_NOT_READY", "评估和部署需要已训练或已导入的模型版本")
     if model.trainer_id == "qwen-lora-v1" and payload.device_kind != "cuda":
         raise Problem(422, "GPU_REQUIRED", "Qwen LoRA 需要 CUDA 设备")
     return model, version, data, dataset
@@ -93,10 +94,13 @@ def submit_job(db, settings, actor, job, expected):
         if devices and not any(purpose_matches(purpose, job.kind) for _, _, purpose in devices):
             raise Problem(409, "DEVICE_PURPOSE_MISMATCH", "指定节点的设备用途与任务不匹配，请更换节点或自动选择")
     source = source_job(db, job.workspace_id, version)
-    if not source and version.source_ref != BUILTINS.get(model.trainer_id):
-        raise Problem(422, "MODEL_SOURCE_UNSUPPORTED", "当前训练器支持预置基础模型或平台训练产物，请登记兼容来源")
+    uploaded_model = version.source_ref.startswith("upload://") and version.status == "available" and version.storage_key
+    if not source and not uploaded_model and version.source_ref != BUILTINS.get(model.trainer_id):
+        raise Problem(422, "MODEL_SOURCE_UNSUPPORTED", "当前训练器支持预置基础模型、平台训练产物或受控导入权重，请登记兼容来源")
+    if uploaded_model:
+        read_verified(settings, version.storage_key, version.sha256, missing_message="导入的模型权重文件缺失")
     if data:
-        path = controlled_path(settings, data.storage_key)
+        path = resolve_key(settings, data.storage_key)
         if not path.is_file():
             raise Problem(409, "DATA_NOT_READY", "数据版本文件缺失")
         rows, metadata = parse_samples(path.read_bytes(), dataset.task_type, data.filename, settings.max_samples)
@@ -112,7 +116,7 @@ def submit_job(db, settings, actor, job, expected):
     snapshot = {"protocol_version": 1, "trainer_id": model.trainer_id, "task_type": model.task_type,
                 "source_ref": version.source_ref, "model_version_id": version.id, "dataset_version_id": data.id if data else None,
                 "dataset_sha256": data.sha256 if data else None, "dataset_format": data.format if data else None,
-                "model_sha256": source.artifact_sha256 if source else None, "config": job.config,
+                "model_sha256": source.artifact_sha256 if source else (version.sha256 if uploaded_model else None), "config": job.config,
                 "qwen_revision": QWEN_REVISION if model.trainer_id == "qwen-lora-v1" else None}
     snapshot["sha256"] = hashlib.sha256(json.dumps(snapshot, sort_keys=True).encode()).hexdigest()
     revision_update(db, job, {"snapshot": snapshot, "status": "queued"}, expected)
