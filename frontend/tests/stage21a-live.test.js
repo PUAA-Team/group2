@@ -46,11 +46,12 @@ test("Stage 21A: 成员配置弹窗、所有权转让弹窗与空间设备策略
   assert.ok(wsPol.fields.includes("允许用户"));
   assert.ok(!wsPol.fields.includes("允许用户组"));
 
-  const wsBudget = governanceDialog({
+  const wsBudgetHtml = renderDialog({
     kind: "gov-workspace-budget",
     item: { budget: { gpu_count: 2, concurrent_jobs: 4, storage_gib: 100, usage: { concurrent_jobs: 0, gpu_count: 0, storage_bytes: 0 } } },
-  });
-  assert.equal(wsBudget.title, "工作空间总预算");
+  }, { data: {} });
+  assert.ok(wsBudgetHtml.includes("工作空间总预算"));
+  assert.ok(wsBudgetHtml.includes('name="storage_gib"'));
 
   const nodeHtml = renderCompute({
     path: "/monitor",

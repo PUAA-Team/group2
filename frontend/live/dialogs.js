@@ -22,7 +22,7 @@ const DIALOG_RENDERERS = new Map([
   ...["keys-expiry", "keys-example"].map(kind => [kind, keyDialog]),
   ["query-filter", queryDialog],
   ...["parameter-template-list", "parameter-template-new", "parameter-template-edit", "parameter-template-archive"].map(kind => [kind, parameterTemplateDialog]),
-  ...["gov-device-policy", "gov-group-budget", "gov-archive", "gov-delete", "gov-review"].map(kind => [kind, governanceDialog]),
+  ...["gov-device-policy", "gov-group-budget", "gov-workspace-budget", "gov-archive", "gov-delete", "gov-review"].map(kind => [kind, governanceDialog]),
   ...["assistant-policy", "assistant-annotation-new", "assistant-parameters-new", "assistant-logs-new", "assistant-apply"].map(kind => [kind, assistantDialog]),
   ...["data-annotation-new", "data-operation-new", "data-publish", "annotation-publish", "data-cancel"].map(kind => [kind, dataDialog]),
   ...["settings-edit", "connection-new", "connection-edit", "invite-new", "password-own", "password-reset", "profile", "workspace-edit", "workspace-invite", "workspace-join", "workspace-delete", "member-remove", "user-access", "group-members"].map(kind => [kind, administrationDialog]),
