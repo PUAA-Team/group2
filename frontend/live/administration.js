@@ -53,11 +53,18 @@ export function renderManagement(ctx) {
   }
   const kind = catalogs[ctx.path], data = ctx.data.data || [];
   const jobFilters = kind === "jobs" ? `<select class="select filter-select" data-query-filter="job_kind" aria-label="作业类型">${options([["", "全部类型"], ...Object.entries(kinds)], ctx.params.get("job_kind") || "")}</select><select class="select filter-select" data-query-filter="status" aria-label="作业状态">${options([["", "全部状态"], ...Object.entries(states)], ctx.params.get("status") || "")}</select>` : ['datasets', 'models'].includes(kind) ? `<select class="select filter-select" data-query-filter="status" aria-label="归档状态">${options([['', '全部资产'], ['active', '未归档'], ['archived', '已归档']], ctx.params.get('status') || '')}</select>` : kind === 'audit' ? `<select class="select filter-select" data-query-filter="status" aria-label="操作结果">${options([['', '全部结果'], ['success', '成功'], ['failure', '失败']], ctx.params.get('status') || '')}</select>` : "";
-  const heads = kind === "audit" ? ["时间", "操作", "操作者", "工作空间", "目标", "结果", '错误码', '请求编号'] : kind === "jobs" ? ["作业", "类型", "工作空间", "创建人", "状态", "资源", "创建时间"] : ["名称", "任务", "工作空间", "创建人", "最新版本", ...(kind === "datasets" ? ["样本数"] : ["训练器"]), '状态', '存储', "创建时间"];
+  const heads = kind === "audit" ? ["时间", "操作", "操作者", "工作空间", "目标", "结果", '错误码', '请求编号'] : kind === "jobs" ? ["作业", "类型", "工作空间", "创建人", "状态", "资源", "创建时间", "操作"] : ["名称", "任务", "工作空间", "创建人", "最新版本", ...(kind === "datasets" ? ["样本数"] : ["训练器"]), '状态', '存储', "创建时间"];
   const rows = data.map(item => {
     if (kind === "audit") return [date(item.created_at), e(actionLabel(item.action)), e(item.actor_name), e(item.workspace_name), `<span class="live-source">${e(item.target_id)}</span>`, badge(item.result === "success" ? "已保存" : "失败"), e(item.error_code || '—'), `<span class="live-source" title="${e(item.request_id || '')}">${e(item.request_id || '—')}</span>`];
     const href = kind === "jobs" ? `/runs/${item.id}?workspace=${item.workspace_id}` : `/${kind}/${item.id}?workspace=${item.workspace_id}`;
-    if (kind === "jobs") return [link(item.name, href), tag(kinds[item.kind]), e(item.workspace_name), e(item.actor_name), badge(states[item.status] || item.status), tag(item.device_kind === "cuda" ? "GPU" : "CPU"), date(item.created_at)];
+    if (kind === "jobs") {
+      const op = ["draft", "queued", "preparing", "running", "ready"].includes(item.status)
+        ? btn(["draft", "queued"].includes(item.status) ? "取消" : "停止", "admin-job-stop", `${item.workspace_id}:${item.id}`)
+        : ["succeeded", "failed", "stopped", "cancelled"].includes(item.status)
+          ? btn("重跑", "admin-job-retry", `${item.workspace_id}:${item.id}`)
+          : "—";
+      return [link(item.name, href), tag(kinds[item.kind]), e(item.workspace_name), e(item.actor_name), badge(states[item.status] || item.status), tag(item.device_kind === "cuda" ? "GPU" : "CPU"), date(item.created_at), `<div class="live-row-actions">${op}</div>`];
+    }
     return [link(item.name, href), tag(TASKS[item.task_type]), e(item.workspace_name), e(item.actor_name), e(kind === "datasets" ? item.latest_version ? `v${item.latest_version.number}` : "—" : item.latest_version?.version || "—"), e(kind === "datasets" ? item.latest_version?.sample_count ?? "—" : item.trainer_id), badge(item.archived ? '已归档' : '正常'), `${((item.storage_bytes || 0) / 1024).toFixed(1)} KiB`, date(item.created_at)];
   });
   const types = ['datasets', 'models'].includes(kind) ? `<select class="select filter-select" data-query-filter="task_type" aria-label="任务类型">${options([['', '全部任务'], ...Object.entries(TASKS)], ctx.params.get('task_type') || '')}</select>` : '';

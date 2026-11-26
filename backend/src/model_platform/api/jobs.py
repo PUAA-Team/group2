@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Header, Query, Request
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 
@@ -124,13 +124,23 @@ def change_priority(workspace_id: str, job_id: str, payload: JobPriorityInput, r
 
 
 @router.post("/jobs/{job_id}/retry", status_code=201)
-def retry(workspace_id: str, job_id: str, request: Request, actor: Actor, db: Db):
+def retry(workspace_id: str, job_id: str, request: Request, actor: Actor, db: Db,
+          idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key", max_length=128)] = None):
     job = get_job(db, actor, workspace_id, job_id, True)
     if job.status not in TERMINAL:
         raise Problem(409, "INVALID_STATE", "结束后的任务可以重跑")
+    if idempotency_key:
+        drafts = db.scalars(select(Job).where(Job.workspace_id == workspace_id, Job.created_by == actor.id, Job.status == "draft").order_by(Job.created_at.desc()).limit(50)).all()
+        for existing in drafts:
+            if (existing.snapshot or {}).get("retry_idempotency_key") == idempotency_key:
+                return response(request, job_view(db, existing))
     payload = JobInput(**{key: getattr(job, key) for key in JobInput.model_fields})
     payload.name = (job.name[:92] + " · 重跑")
-    return response(request, job_view(db, create_job(db, actor, workspace_id, payload)))
+    created = create_job(db, actor, workspace_id, payload)
+    if idempotency_key:
+        created.snapshot = {**(created.snapshot or {}), "retry_idempotency_key": idempotency_key}
+        commit(db)
+    return response(request, job_view(db, created))
 
 
 @router.get("/jobs/{job_id}/events")

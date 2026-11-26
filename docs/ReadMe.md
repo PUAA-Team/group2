@@ -10,6 +10,8 @@
 
 ## 当前进度
 
+2026-11-26：在 `lx/stage18b-hardening-sessions` 分支完成 **Stage 18B（状态机/租约/并发加固、多端会话管理与管理端作业行内操作）**：新增过期租约自动回收、执行结案源状态白名单、`lock_batch`/`publish_operation` 乐观锁条件更新、`retry` 幂等、多端会话查看与踢出、管理端作业列表行内停止/重跑。本地验证通过：后端 `184 passed, 1 skipped`，前端 `140 pass, 0 fail`。详见[Stage 18B 实施与验收](./stage18/实施与验收.md) 与 [OpenAPI](./stage18/openapi.json)。
+
 2026-11-26：在 `lx/stage17a-storage-weights` 分支完成 **Stage 17A（统一默认文件存储与受控权重上传）** 与 **Stage 18A（控制台补齐与 `/assistants` 导航修复）**：新增模型受控权重上传（schema `0013_model_storage`）、工作台待处理事项、用户空间个人任务、数据集校验报告与标签分布、统计面板创建人/时间筛选。本地验证通过：后端 `181 passed, 1 skipped`，前端 `138 pass, 0 fail`。详见[Stage 17A/18A 实施与验收](./stage17/实施与验收.md) 与 [OpenAPI](./stage17/openapi.json)。
 
 2026-11-01：[项目、筛选与报告](./stage15/运行与验收.md)已发布20261101-15a，缓存stage15-1、schema0011_console。项目维护和归档、资产及管理组合筛选、密钥调用统计和期限、审计/评估导出均接入页面。164项镜像后端、126项前端、132项布局、5项PG迁移与并发检查通过；云端CPU真实训练/评估/服务和公网12项认证查询通过。[实拍与记录](./stage15/previews/ReadMe.md)、[继续入口](./stage15/实施进度与交接.md)。原记录保留，本机CPU/GPU继续暂停。

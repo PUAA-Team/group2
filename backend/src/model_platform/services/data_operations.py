@@ -64,8 +64,14 @@ def candidate_source(db, settings, operation, candidate_index):
 
 
 def publish_operation(db, settings, actor, operation):
-    db.execute(update(DataOperation).where(DataOperation.id == operation.id)
-        .values(revision=DataOperation.revision + 1).execution_options(synchronize_session=False))
+    result = db.execute(
+        update(DataOperation)
+        .where(DataOperation.id == operation.id, DataOperation.revision == operation.revision)
+        .values(revision=DataOperation.revision + 1)
+        .execution_options(synchronize_session=False)
+    )
+    if result.rowcount != 1:
+        raise Problem(409, "CONFLICT", "操作状态已更新，请刷新重试")
     db.refresh(operation)
     if operation.status == "published":
         return operation_view(operation)

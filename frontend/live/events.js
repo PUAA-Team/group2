@@ -90,6 +90,10 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
         const result = await api.request(`/workspaces/${ctx.workspace.id}/datasets/${datasetId}/versions/${versionId}/report`);
         openModal("dataset-report", result.data);
       }
+      if (action === "session-revoke") { await api.request(`/auth/sessions/${id}`, { method: "DELETE" }); toast("已退出该会话"); await load(); }
+      if (action === "session-revoke-others") { const res = await api.request("/auth/sessions/revoke-others", { method: "POST" }); toast(`已退出其他 ${res.data.revoked} 个会话`); await load(); }
+      if (action === "admin-job-stop") { const [ws, jobId] = String(id).split(":"); await api.request(`/workspaces/${ws}/jobs/${jobId}/stop`, { method: "POST" }); toast("已提交停止/取消"); await load(); }
+      if (action === "admin-job-retry") { const [ws, jobId] = String(id).split(":"); const res = await api.request(`/workspaces/${ws}/jobs/${jobId}/retry`, { method: "POST" }); toast("已创建重跑草稿"); navigate(`/runs/${res.data.id}?workspace=${ws}`); }
     } catch (error) { toast(errorMessage(error)); }
   });
 

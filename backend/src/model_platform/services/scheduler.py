@@ -7,9 +7,10 @@ from ..administration_models import PlatformSetting
 from ..database import new_id, utcnow
 from ..errors import Problem
 from ..governance_models import DevicePolicy
-from ..job_models import Execution, Job, Project
+from ..job_models import Execution, Job, Project, ServiceCall
 from ..models import User
 from ..permissions import workspace_access
+from .call_lifecycle import finish_call
 from .common import commit
 from .compute import lock_node
 from .jobs import ACTIVE, action_for, personal_capacity_available
@@ -59,14 +60,62 @@ def assignment(db, execution):
             "event_seq": execution.event_seq}
 
 
+def reclaim_expired_leases(db, node_id=None):
+    """回收租约已超时的未结案执行，释放设备占用与并发槽位。"""
+    now = utcnow()
+    query = select(Execution).where(Execution.finished_at.is_(None), Execution.lease_until < now)
+    if node_id is not None:
+        query = query.where(Execution.node_id == node_id)
+    expired = db.scalars(query).all()
+    if not expired:
+        return 0
+    reclaimed = 0
+    for execution in expired:
+        res = db.execute(
+            update(Execution)
+            .where(Execution.id == execution.id, Execution.finished_at.is_(None))
+            .values(status="failed", finished_at=now)
+            .execution_options(synchronize_session=False)
+        )
+        if not res.rowcount:
+            continue
+        reclaimed += 1
+        db.execute(
+            update(Job)
+            .where(Job.id == execution.job_id, Job.status.in_(ACTIVE))
+            .values(
+                status="failed",
+                error="执行租约超时，Worker 已失联",
+                revision=Job.revision + 1,
+            )
+            .execution_options(synchronize_session=False)
+        )
+        db.execute(
+            update(ComputeDevice)
+            .where(ComputeDevice.id == execution.device_id, ComputeDevice.reserved_execution_id == execution.id)
+            .values(reserved_execution_id=None)
+            .execution_options(synchronize_session=False)
+        )
+        job = db.get(Job, execution.job_id)
+        if job and job.kind == "service":
+            for call in db.scalars(select(ServiceCall).where(ServiceCall.job_id == job.id, ServiceCall.status == "pending")):
+                finish_call(call, "failed", {"error": "执行租约超时"})
+    if reclaimed:
+        commit(db)
+    return reclaimed
+
+
 def claim(db, node, settings, known):
     lock_node(db, node)
     if not node.approved or node.revoked or not node.enabled:
         return None
+    reclaim_expired_leases(db, node.id)
     outstanding = db.scalars(select(Execution).where(Execution.node_id == node.id, Execution.finished_at.is_(None))).all()
     for execution in outstanding:
         if execution.id not in known:
-            return {**assignment(db, execution), "redelivered": True}
+            job = db.get(Job, execution.job_id)
+            if job and job.status in {"preparing", "running", "ready", "stopping"}:
+                return {**assignment(db, execution), "redelivered": True}
     if not node_accepts_tasks(node, settings) or len(outstanding) >= node.slots:
         return None
     if node.inventory.get('runtime', {}).get('execution_contract_version', 0) < 1:

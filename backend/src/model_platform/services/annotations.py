@@ -26,9 +26,15 @@ def reviewer(db, actor, batch):
 
 
 def lock_batch(db, batch, *, publishing=False):
-    # 所有结果写入和发布先竞争同一父行，防止审核后内容又被并发改写。
-    db.execute(update(AnnotationBatch).where(AnnotationBatch.id == batch.id)
-        .values(revision=AnnotationBatch.revision + 1).execution_options(synchronize_session=False))
+    # 所有结果写入和发布先通过版本号条件更新竞争同一父行，防止并发改写丢失。
+    result = db.execute(
+        update(AnnotationBatch)
+        .where(AnnotationBatch.id == batch.id, AnnotationBatch.revision == batch.revision)
+        .values(revision=AnnotationBatch.revision + 1)
+        .execution_options(synchronize_session=False)
+    )
+    if result.rowcount != 1:
+        raise Problem(409, "CONFLICT", "批次状态已更新，请刷新重试")
     db.refresh(batch)
     if batch.status != "open" and not (publishing and batch.output_version_id):
         raise Problem(409, "CONFLICT", "批次已发布，无法继续修改")

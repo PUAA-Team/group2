@@ -52,7 +52,11 @@ export function renderSpace(ctx) {
       ['未归属文件', `${(ctx.data.storage.unattributed_bytes / 1048576).toFixed(2)} MiB`]]) : '') +
     (ctx.data.myJobs ? `<div class="section-heading"><h2>我的近期任务</h2></div>` + table(["任务", "类型", "状态", "创建时间"], (ctx.data.myJobs || []).map(job => [
       link(job.name, `/runs/${job.id}`), tag(TASKS[job.task_type] || job.job_kind || "—"), badge(job.status), date(job.created_at),
-    ]), "暂无个人任务") : "") + memberSection;
+    ]), "暂无个人任务") : "") +
+    (ctx.data.sessions ? `<div class="section-heading"><h2>登录会话管理</h2>${ctx.data.sessions.length > 1 ? btn("踢出其他设备", "session-revoke-others") : ""}</div>` + table(["会话标识", "登录时间", "过期时间", "状态", "操作"], ctx.data.sessions.map(s => [
+      `<code>${e(s.id)}</code>`, date(s.created_at), date(s.expires_at), badge(s.current ? "当前设备" : "其他设备"),
+      s.current ? tag("当前会话") : btn("退出该设备", "session-revoke", s.id),
+    ]), "暂无活跃会话") : "") + memberSection;
 }
 
 const pending = {

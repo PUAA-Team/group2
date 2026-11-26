@@ -160,6 +160,8 @@ async function load() {
       data.storage = (await api.request(`${base}/storage-usage`, { signal })).data;
     if (!ctx.forbidden && ctx.workspace && ctx.path === '/space' && ctx.access.actions.includes('training.read'))
       data.myJobs = (await api.request(`${base}/my-jobs?page=1&page_size=10`, { signal })).data;
+    if (!ctx.forbidden && ctx.path === '/space')
+      data.sessions = (await api.request('/auth/sessions', { signal })).data;
     if (epoch !== ctx.epoch) return;
     ctx.data = data; ctx.loading = false;
     if (ctx.path === "/space" && ctx.pendingJoinCode) { ctx.ui.modal = { kind: "workspace-join", item: { code: ctx.pendingJoinCode }, workspaceId: ctx.workspace?.id }; ctx.pendingJoinCode = null; }

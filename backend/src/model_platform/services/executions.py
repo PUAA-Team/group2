@@ -92,7 +92,7 @@ def input_path(db, settings, node, execution_id, model=False):
 
 def store_artifact(db, settings, node, execution_id, content):
     execution, job = owned_execution(db, node, execution_id, lock=True)
-    if job.kind != "train" or execution.finished_at:
+    if job.kind != "train" or execution.finished_at or job.status not in {"preparing", "running"}:
         raise Problem(409, "INVALID_STATE", "当前执行不能上传产物")
     sha = validate_artifact(content, job.snapshot["trainer_id"])
     if job.artifact_sha256:
@@ -132,13 +132,22 @@ def finish(db, node, execution_id, payload, settings=None):
         raise Problem(409, "ARTIFACT_REQUIRED", "成功训练需要先回传模型产物")
     if status == "succeeded" and job.kind == "service":
         status = "stopped"
+    # 原子校验源状态白名单，防止与取消/停止并发竞争或复活终态任务。
+    res = db.execute(
+        update(Job)
+        .where(Job.id == job.id, Job.status.in_(("preparing", "running", "ready", "stopping")))
+        .values(status=status, result=payload.result, error=payload.error, revision=Job.revision + 1)
+        .execution_options(synchronize_session=False)
+    )
+    if res.rowcount != 1:
+        db.rollback()
+        raise Problem(409, "INVALID_STATE", "任务当前状态不允许结案")
+    db.refresh(job)
     if status == "succeeded" and job.kind == "train":
         version = db.get(ModelVersion, job.model_version_id)
         output = ModelVersion(id=new_id("mvr"), model_id=version.model_id, version=f"run-{job.id[-12:]}",
                               source_ref=f"artifact://{job.id}", status="available", created_by=job.created_by)
         db.add(output); db.flush(); job.output_model_version_id = output.id
-    job.status, job.result, job.error = status, payload.result, payload.error
-    job.revision += 1
     execution.status, execution.finished_at, execution.finish_digest = status, utcnow(), fingerprint
     db.execute(update(ComputeDevice).where(ComputeDevice.id == execution.device_id, ComputeDevice.reserved_execution_id == execution.id).values(reserved_execution_id=None))
     if job.kind == "service":

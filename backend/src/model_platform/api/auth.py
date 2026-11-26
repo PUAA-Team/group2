@@ -69,3 +69,48 @@ def logout(request: Request, output: Response, actor: Actor, db: Db):
     output.delete_cookie("mt_session", path="/", secure=request.app.state.settings.secure_cookie,
                          httponly=True, samesite="strict")
     return response(request, {"logged_out": True})
+
+
+@router.get("/sessions")
+def list_sessions(request: Request, actor: Actor, db: Db):
+    now = utcnow()
+    rows = db.scalars(
+        select(SessionToken)
+        .where(SessionToken.user_id == actor.id, SessionToken.expires_at > now)
+        .order_by(SessionToken.created_at.desc(), SessionToken.id.desc())
+    ).all()
+    current_id = request.state.session_id
+    return response(request, [
+        {
+            "id": row.id,
+            "created_at": aware(row.created_at).isoformat(),
+            "expires_at": aware(row.expires_at).isoformat(),
+            "current": row.id == current_id,
+        }
+        for row in rows
+    ])
+
+
+@router.post("/sessions/revoke-others")
+def revoke_other_sessions(request: Request, actor: Actor, db: Db):
+    res = db.execute(
+        delete(SessionToken).where(SessionToken.user_id == actor.id, SessionToken.id != request.state.session_id)
+    )
+    audit(db, actor, "auth.sessions.revoke_others", actor.id)
+    commit(db)
+    return response(request, {"revoked": int(res.rowcount or 0)})
+
+
+@router.delete("/sessions/{session_id}")
+def revoke_session(session_id: str, request: Request, output: Response, actor: Actor, db: Db):
+    row = db.scalar(select(SessionToken).where(SessionToken.id == session_id, SessionToken.user_id == actor.id))
+    if row is None:
+        raise Problem(404, "NOT_FOUND", "会话不存在")
+    is_current = row.id == request.state.session_id
+    db.delete(row)
+    audit(db, actor, "auth.session.revoke", session_id)
+    commit(db)
+    if is_current:
+        output.delete_cookie("mt_session", path="/", secure=request.app.state.settings.secure_cookie,
+                             httponly=True, samesite="strict")
+    return response(request, {"revoked": True, "current": is_current})
