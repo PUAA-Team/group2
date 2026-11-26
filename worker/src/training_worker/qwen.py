@@ -61,6 +61,8 @@ class Qwen:
     def train(self):
         config = self.spec["snapshot"]["config"]
         train, validation = split_rows(read_rows(self.spec), config["validation_ratio"], config["seed"], False)
+        if not train:
+            raise ValueError("训练集为空，无法训练")
         self.model.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
         self.model.enable_input_require_grads()
         optimizer = torch.optim.AdamW((p for p in self.model.parameters() if p.requires_grad), lr=config["learning_rate"])

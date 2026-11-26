@@ -10,6 +10,8 @@
 
 ## 当前进度
 
+2026-11-26：在 `lx/stage19b-2-streaming-data` 分支完成 **Stage 19B-2（训练数据流式读取与单样本/空验证集零分母防护）**：新增 `iter_rows()` 生成器按行流式读 CSV/JSONL、图像只存原始字节并按需解码像素；单样本非分类任务全进训练集、空数据集明确报错、`scores()` 空标签/空验证集不再除零；`Classifier.train()` 空验证集跳过验证前向、`val_loss` 置 0。本地验证通过：后端 `203 passed`（含新增 12 项），前端 `140 pass, 0 fail`。无表结构变更，无新增接口。未合并 main，未部署。详见[Stage 19B-2 实施与验收](./stage19b-2/实施与验收.md)与 [OpenAPI](./stage19b-2/openapi.json)。
+
 2026-11-26：在 `lx/stage19b-1-credential-rotation` 分支完成 **Stage 19B-1（Worker 凭据轮换与已撤销节点防复活）**：已撤销节点重新接入时新建独立节点、旧记录保留，`machine_id` / `installation_id` 改为仅未撤销节点部分唯一；新增 `POST /api/worker/v1/rotate-credential` 与 `credential_expires_at`（默认 90 天），Worker 临期自动轮换并原子写入 `node-state.json`；迁移 `0014_worker_credential`。本地验证通过：后端 `191 passed`，前端 `140 pass, 0 fail`。未合并 main，未部署。详见[Stage 19B-1 实施与验收](./stage19/实施与验收.md)与 [OpenAPI](./stage19/openapi.json)。
 
 2026-11-26：在 `lx/stage19a-worker-deploy-hardening` 分支完成 **Stage 19A（SSRF IP 钉扎、CSRF 服务端密钥分离、Worker 异常处理与超时清理、部署备份加固）**。本地验证通过：后端 `187 passed, 1 skipped`，前端 `140 pass, 0 fail`。详见[Stage 19A 实施与验收](./stage19/实施与验收.md)。

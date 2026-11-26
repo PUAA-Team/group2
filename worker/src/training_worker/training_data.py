@@ -8,18 +8,44 @@ import zipfile
 from PIL import Image
 
 
-def read_rows(spec):
-    content = open(spec["dataset_path"], "rb").read()
+def iter_rows(spec):
+    """按行流式读取数据集，不一次性读入整个文件。
+
+    文本按行迭代、JSONL 按行解析；图像只流式读 labels.csv 与每张图的原始
+    压缩字节，像素按需解码（见 row_pixels），避免整套图像转 Python list[int]
+    驻留内存。调用方如需多次遍历或随机划分，可用 read_rows() 取列表。
+    """
+    path = spec["dataset_path"]
     kind = spec["snapshot"]["task_type"]
     if kind == "text_classification":
-        return list(csv.DictReader(io.StringIO(content.decode("utf-8-sig"))))
+        with open(path, "r", encoding="utf-8-sig", newline="") as handle:
+            yield from csv.DictReader(handle)
+        return
     if kind == "llm_sft":
-        return [json.loads(line) for line in content.decode("utf-8-sig").splitlines() if line.strip()]
-    with zipfile.ZipFile(io.BytesIO(content)) as archive:
-        rows = list(csv.DictReader(io.StringIO(archive.read("labels.csv").decode("utf-8-sig"))))
-        for row in rows:
-            row["pixels"] = image_pixels(archive.read(row["filename"]))
-        return rows
+        with open(path, "r", encoding="utf-8-sig") as handle:
+            for line in handle:
+                if line.strip():
+                    yield json.loads(line)
+        return
+    with zipfile.ZipFile(path) as archive:
+        with io.TextIOWrapper(archive.open("labels.csv"), encoding="utf-8-sig", newline="") as handle:
+            for row in csv.DictReader(handle):
+                row["image_bytes"] = archive.read(row["filename"])
+                yield row
+
+
+def read_rows(spec):
+    return list(iter_rows(spec))
+
+
+def row_pixels(row):
+    """按需解码图像行像素，解码后缓存到行内并释放原始字节，避免重复解码。"""
+    pixels = row.get("pixels")
+    if pixels is None:
+        pixels = image_pixels(row["image_bytes"])
+        row["pixels"] = pixels
+        row.pop("image_bytes", None)
+    return pixels
 
 
 def image_pixels(raw):
@@ -38,8 +64,15 @@ def image_input(encoded):
 
 
 def split_rows(rows, ratio, seed, classification=True):
+    rows = list(rows)
+    if not rows:
+        raise ValueError("数据集为空，无法划分训练集与验证集")
     randomizer = random.Random(seed)
     if not classification:
+        if len(rows) == 1:
+            # 单样本无法同时分出训练集与验证集：全进训练集，验证集为空，
+            # 训练侧以零分母保护处理空验证集，不触发除零错误。
+            return rows, []
         shuffled = list(rows); randomizer.shuffle(shuffled)
         count = max(1, min(len(rows) - 1, round(len(rows) * ratio)))
         return shuffled[count:], shuffled[:count]
@@ -57,6 +90,9 @@ def split_rows(rows, ratio, seed, classification=True):
 
 
 def scores(labels, expected, predicted):
+    labels = list(labels)
+    if not labels:
+        return {"accuracy": 0.0, "macro_f1": 0.0, "labels": labels, "confusion_matrix": [], "samples": len(expected)}
     matrix = [[0 for _ in labels] for _ in labels]
     for actual, result in zip(expected, predicted):
         matrix[actual][result] += 1
