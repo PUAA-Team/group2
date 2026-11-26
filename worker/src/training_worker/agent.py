@@ -130,6 +130,7 @@ class Agent:
                 except Exception as error:
                     print(f"Worker 周期异常：{type(error).__name__}", flush=True)
                 self.stop.wait(3)
+            executor.shutdown()
             write_json(self.root / "stopped.json", {"pid": os.getpid(), "finished_at": time.time()})
             (self.root / "stop-request.json").unlink(missing_ok=True)
             print("Worker 已停止", flush=True)

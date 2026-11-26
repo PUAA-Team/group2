@@ -43,6 +43,8 @@ def main():
                    "--no-access-log", "--no-proxy-headers"]
     elif arguments[0] in {"migrate", "cli"}:
         cli_arguments = ["migrate"] if arguments[0] == "migrate" else arguments[1:]
+        if not cli_arguments or cli_arguments[0] not in {"migrate", "bootstrap-admin", "export-openapi"}:
+            raise ValueError("不允许的 CLI 子命令")
         command = [sys.executable, "-B", "-m", "model_platform.cli", *cli_arguments]
     elif arguments[0] == "operations":
         command = [sys.executable, "-B", "-m", "model_platform.operations_runner"]

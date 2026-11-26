@@ -30,7 +30,8 @@ def current_user(request: Request, db: Db,
         raise Problem(401, "UNAUTHENTICATED", "请重新登录")
     request.state.actor_id = user.id
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
-        if not hmac.compare_digest(csrf_header or "", csrf_token(raw)):
+        secret = request.app.state.settings.resolved_csrf_secret
+        if not hmac.compare_digest(csrf_header or "", csrf_token(raw, secret)):
             raise Problem(403, "CSRF_FAILED", "请求校验失败，请刷新后重试")
     request.state.session_id = token.id
     return user

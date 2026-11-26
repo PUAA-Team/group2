@@ -76,29 +76,47 @@ def save_connection(db, settings, actor, payload, connection_id=None, expected=N
 
 def validate_remote(endpoint):
     url = urlsplit(endpoint)
-    if url.scheme != "https" or not url.hostname or url.username or url.password:
-        raise Problem(422, "INVALID_ENDPOINT", "模型API需要HTTPS地址")
+    if url.scheme != "https" or not url.hostname or url.username or url.password or url.query or url.fragment:
+        raise Problem(422, "INVALID_ENDPOINT", "模型API需要合法的HTTPS基础地址")
+    port = url.port or 443
     try:
-        addresses = socket.getaddrinfo(url.hostname, url.port or 443, type=socket.SOCK_STREAM)
+        addresses = socket.getaddrinfo(url.hostname, port, type=socket.SOCK_STREAM)
     except (socket.gaierror, ValueError):
         raise Problem(422, "INVALID_ENDPOINT", "模型API地址无法解析") from None
     if not addresses or any(not ipaddress.ip_address(record[4][0]).is_global for record in addresses):
         raise Problem(422, "INVALID_ENDPOINT", "模型API地址需要使用公网服务")
+    pinned_ip = addresses[0][4][0]
+    base_path = "/" + "/".join(seg for seg in url.path.split("/") if seg and seg not in {".", ".."})
+    base_path = "" if base_path == "/" else base_path
+    host_header = url.hostname if port == 443 else f"{url.hostname}:{port}"
+    ip_host = f"[{pinned_ip}]" if ":" in pinned_ip else pinned_ip
+    pinned_url = f"https://{ip_host}:{port}{base_path}/chat/completions"
+    return {"pinned_url": pinned_url, "host": host_header, "sni_hostname": url.hostname}
 
 
 async def completion(settings, connection, messages, *, max_tokens=512):
     if not connection.active or not connection.secret_ref:
         raise Problem(409, "CONNECTION_DISABLED", "模型连接未启用或未配置凭据")
-    validate_remote(connection.endpoint)
+    target = validate_remote(connection.endpoint)
+    url = target["pinned_url"] if isinstance(target, dict) else (connection.endpoint.rstrip("/") + "/chat/completions")
+    headers = {}
+    if isinstance(target, dict):
+        headers["Host"] = target["host"]
+    extensions = {"sni_hostname": target["sni_hostname"]} if isinstance(target, dict) else {}
     try:
         secret = secret_path(settings, connection.secret_ref).read_text(encoding="ascii")
+        headers["Authorization"] = "Bearer " + secret
     except OSError:
         raise Problem(503, "CREDENTIAL_NOT_READY", "模型连接凭据不可读") from None
     try:
-        target_url = connection.endpoint.rstrip("/") + "/chat/completions"
         async with asyncio.timeout(30), httpx.AsyncClient(timeout=httpx.Timeout(30, connect=10), trust_env=False, follow_redirects=False) as client:
-            async with client.stream("POST", target_url, headers={"Authorization": "Bearer " + secret},
-                                     json={"model": connection.model, "messages": messages, "max_tokens": max_tokens, "temperature": 0}) as response:
+            async with client.stream(
+                "POST",
+                url,
+                headers=headers,
+                extensions=extensions,
+                json={"model": connection.model, "messages": messages, "max_tokens": max_tokens, "temperature": 0},
+            ) as response:
                 if response.status_code != 200:
                     raise Problem(502, "PROVIDER_ERROR", f"模型服务返回HTTP {response.status_code}")
                 content = bytearray()

@@ -12,7 +12,9 @@ from .transfers import download, upload
 EXECUTION_CONTRACT_VERSION = 1
 
 
-def alive(pid):
+def alive(pid, proc=None):
+    if proc is not None:
+        return proc.poll() is None
     if not pid:
         return False
     if os.name == "nt":
@@ -56,10 +58,25 @@ class Executor:
         self.agent, self.root, self.client = agent, agent.root / "executions", agent.client
         self.root.mkdir(exist_ok=True)
         self.active = {}
+        self.processes = {}
+        self.max_seconds = max(60, int(os.environ.get("MT_WORKER_MAX_SECONDS") or 14400))
         for item in self.root.iterdir():
             journal = read_json(item / "journal.json", {}) if item.is_dir() else {}
             if journal and not journal.get("acknowledged"):
                 self.active[item.name] = journal
+
+    def shutdown(self):
+        for eid, proc in list(self.processes.items()):
+            if proc.poll() is None:
+                try:
+                    proc.terminate()
+                    proc.wait(timeout=2)
+                except Exception:
+                    try:
+                        proc.kill()
+                    except OSError:
+                        pass
+            self.processes.pop(eid, None)
 
     def launch(self, assignment):
         eid = assignment["execution_id"]
@@ -91,70 +108,87 @@ class Executor:
             process = subprocess.Popen([self.agent.args.trainer_python, "-B", str(self.agent.args.bundle), "run", "--spec", str(path / "spec.json")],
                                        env=environment, cwd=path, stdin=subprocess.DEVNULL, stdout=log, stderr=log,
                                        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
-        journal.update(pid=process.pid, phase="running")
+        self.processes[task["execution_id"]] = process
+        journal.update(pid=process.pid, phase="running", started_at=time.time())
         write_json(path / "journal.json", journal)
 
     def tick(self):
         for eid, journal in list(self.active.items()):
-            path = self.root / eid; prefix = f"/executions/{eid}"
-            command = self.client.request(prefix + "/control")
-            if command["finished"]:
-                journal["acknowledged"] = True; write_json(path / "journal.json", journal); self.active.pop(eid); continue
+            try:
+                self._tick_one(eid, journal)
+            except WorkerError:
+                raise
+            except Exception as error:
+                path = self.root / eid
+                if not (path / "result.json").exists():
+                    write_json(path / "result.json", {"status": "failed", "result": {}, "error": f"Worker 任务轮询异常：{type(error).__name__}: {str(error)[:400]}"})
+
+    def _tick_one(self, eid, journal):
+        path = self.root / eid; prefix = f"/executions/{eid}"
+        proc = self.processes.get(eid)
+        if journal.get("phase") == "running" and journal.get("started_at") and time.time() - journal["started_at"] > self.max_seconds:
+            if not (path / "cancel.json").exists():
+                write_json(path / "cancel.json", {"requested_at": time.time(), "reason": "timeout"})
+            elif proc is not None and proc.poll() is None and time.time() - journal["started_at"] > self.max_seconds + 15:
+                proc.kill()
+        command = self.client.request(prefix + "/control")
+        if command["finished"]:
+            journal["acknowledged"] = True; write_json(path / "journal.json", journal); self.active.pop(eid); self.processes.pop(eid, None); return
+        if command["stop"]:
+            write_json(path / "cancel.json", {"requested_at": time.time()})
+        if journal["phase"] == "preparing":
             if command["stop"]:
-                write_json(path / "cancel.json", {"requested_at": time.time()})
-            if journal["phase"] == "preparing":
-                if command["stop"]:
-                    write_json(path / "result.json", {"status": "stopped", "result": {}})
-                    journal["phase"] = "completed"
-                else:
-                    try:
-                        self.prepare(path, journal)
-                    except (ValueError, OSError, WorkerError) as error:
-                        if isinstance(error, WorkerError) and error.code not in {'FILE_NOT_READY', 'MODEL_NOT_READY'}:
-                            raise
-                        write_json(path / "result.json", {"status": "failed", "result": {'failure_stage': 'input_transfer',
-                            'failure_code': error.code if isinstance(error, WorkerError) else 'INPUT_ERROR'}, "error": str(error)[:1000]})
-                        journal["phase"] = "completed"; write_json(path / "journal.json", journal)
-            if journal["phase"] in {"launching", "uncertain"}:
-                # 此状态表示启动回执未落盘；需人工核查，保持租约和设备占用。
-                continue
-            for call in command["calls"]:
-                call_dir = path / "calls"; call_dir.mkdir(exist_ok=True)
-                result = read_json(call_dir / (call["id"] + ".result.json"), {})
-                if result:
-                    self.client.request(prefix + "/calls/" + call["id"], result)
-                elif not (call_dir / (call["id"] + ".json")).exists():
-                    write_json(call_dir / (call["id"] + ".json"), call["input"])
-            events_file = path / "events.jsonl"
-            if events_file.exists():
-                lines = events_file.read_text(encoding="utf-8").splitlines()
-                # 尾行未完整写入时等待下一轮。
-                for line in lines[journal["cursor"]:journal["cursor"] + 100]:
-                    try:
-                        event = json.loads(line)
-                    except ValueError:
-                        break
-                    self.client.request(prefix + "/events", event)
-                    journal["cursor"] += 1; write_json(path / "journal.json", journal)
-            result = read_json(path / "result.json", {})
-            if not result and journal["phase"] == "running" and not alive(journal["pid"]):
-                result = {"status": "failed", "result": {}, "error": "训练子进程异常退出，请查看 Worker 执行日志"}
-                write_json(path / "result.json", result)
-            if result and (not events_file.exists() or journal["cursor"] >= len(events_file.read_text(encoding="utf-8").splitlines())):
-                # 结果文件写成后仍等进程退出，避免提前释放设备。
-                if alive(journal.get("pid")):
-                    continue
-                if result["status"] == "succeeded" and journal["assignment"]["kind"] == "train":
-                    try:
-                        upload(self.client, eid, path / "artifact.zip")
-                    except WorkerError as error:
-                        if error.code not in {'STORAGE_LIMIT', 'GROUP_STORAGE_LIMIT', 'INVALID_ARTIFACT', 'FILE_TOO_LARGE'}:
-                            raise
-                        result = {'status': 'failed', 'result': {'failure_stage': 'artifact_upload'},
-                                  'error': '模型产物未被控制端接收：' + str(error)[:800]}
-                        write_json(path / 'result.json', result)
-                    except ValueError as error:
-                        result = {'status': 'failed', 'result': {'failure_stage': 'artifact_upload'}, 'error': str(error)[:1000]}
-                        write_json(path / 'result.json', result)
-                self.client.request(prefix + "/finish", result)
-                journal["acknowledged"] = True; write_json(path / "journal.json", journal); self.active.pop(eid)
+                write_json(path / "result.json", {"status": "stopped", "result": {}})
+                journal["phase"] = "completed"
+            else:
+                try:
+                    self.prepare(path, journal)
+                except (ValueError, OSError, WorkerError) as error:
+                    if isinstance(error, WorkerError) and error.code not in {'FILE_NOT_READY', 'MODEL_NOT_READY'}:
+                        raise
+                    write_json(path / "result.json", {"status": "failed", "result": {'failure_stage': 'input_transfer',
+                        'failure_code': error.code if isinstance(error, WorkerError) else 'INPUT_ERROR'}, "error": str(error)[:1000]})
+                    journal["phase"] = "completed"; write_json(path / "journal.json", journal)
+        if journal["phase"] in {"launching", "uncertain"}:
+            # 此状态表示启动回执未落盘；需人工核查，保持租约和设备占用。
+            return
+        for call in command["calls"]:
+            call_dir = path / "calls"; call_dir.mkdir(exist_ok=True)
+            result = read_json(call_dir / (call["id"] + ".result.json"), {})
+            if result:
+                self.client.request(prefix + "/calls/" + call["id"], result)
+            elif not (call_dir / (call["id"] + ".json")).exists():
+                write_json(call_dir / (call["id"] + ".json"), call["input"])
+        events_file = path / "events.jsonl"
+        if events_file.exists():
+            lines = events_file.read_text(encoding="utf-8").splitlines()
+            # 尾行未完整写入时等待下一轮。
+            for line in lines[journal["cursor"]:journal["cursor"] + 100]:
+                try:
+                    event = json.loads(line)
+                except ValueError:
+                    break
+                self.client.request(prefix + "/events", event)
+                journal["cursor"] += 1; write_json(path / "journal.json", journal)
+        result = read_json(path / "result.json", {})
+        if not result and journal["phase"] == "running" and not alive(journal["pid"], proc):
+            result = {"status": "failed", "result": {}, "error": "训练子进程异常退出，请查看 Worker 执行日志"}
+            write_json(path / "result.json", result)
+        if result and (not events_file.exists() or journal["cursor"] >= len(events_file.read_text(encoding="utf-8").splitlines())):
+            # 结果文件写成后仍等进程退出，避免提前释放设备。
+            if alive(journal.get("pid"), proc):
+                return
+            if result["status"] == "succeeded" and journal["assignment"]["kind"] == "train":
+                try:
+                    upload(self.client, eid, path / "artifact.zip")
+                except WorkerError as error:
+                    if error.code not in {'STORAGE_LIMIT', 'GROUP_STORAGE_LIMIT', 'INVALID_ARTIFACT', 'FILE_TOO_LARGE'}:
+                        raise
+                    result = {'status': 'failed', 'result': {'failure_stage': 'artifact_upload'},
+                              'error': '模型产物未被控制端接收：' + str(error)[:800]}
+                    write_json(path / 'result.json', result)
+                except ValueError as error:
+                    result = {'status': 'failed', 'result': {'failure_stage': 'artifact_upload'}, 'error': str(error)[:1000]}
+                    write_json(path / 'result.json', result)
+            self.client.request(prefix + "/finish", result)
+            journal["acknowledged"] = True; write_json(path / "journal.json", journal); self.active.pop(eid); self.processes.pop(eid, None)

@@ -1,9 +1,10 @@
 """续期IP证书，只有证书发生变化时才重新加载网关。"""
 import argparse
 import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
+import shutil
 import subprocess
-import socket
 
 
 def renew(root, address, dry_run=False):
@@ -12,6 +13,9 @@ def renew(root, address, dry_run=False):
     if not certificate.is_file():
         raise ValueError("请先完成证书首次签发")
     before = hashlib.sha256(certificate.read_bytes()).digest()
+    if not dry_run:
+        backup_dir = runtime / f"certificates.bak.{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+        shutil.copytree(runtime / "certificates", backup_dir, symlinks=True, dirs_exist_ok=True)
     volumes = []
     for name, target in (("certificates", "/etc/letsencrypt"),
                          ("certbot-work", "/var/lib/letsencrypt"),
@@ -23,16 +27,7 @@ def renew(root, address, dry_run=False):
     if dry_run:
         options.append("--dry-run")
     command = [*base, *volumes, *options]
-    result = subprocess.run(command)
-    if result.returncode:
-        # 直连不稳定时仅使用回环上的官方ACME专用SSH转发，TLS仍由Certbot验证。
-        try:
-            with socket.create_connection(("127.0.0.1", 18080), timeout=2):
-                pass
-        except OSError:
-            raise RuntimeError("证书机构直连失败，回环证书通道未在线；请检查续期日志") from None
-        subprocess.run([*base, "-e", "HTTPS_PROXY=http://127.0.0.1:18080",
-                        "-e", "NO_PROXY=localhost,127.0.0.1", *volumes, *options], check=True)
+    subprocess.run(command, check=True)
     if dry_run:
         if hashlib.sha256(certificate.read_bytes()).digest() != before:
             raise RuntimeError("续期演练不应替换正式证书")

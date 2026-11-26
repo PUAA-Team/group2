@@ -19,5 +19,9 @@ def verify_password(password: str, encoded: str):
     return hmac.compare_digest(actual.hex(), expected)
 
 
-def csrf_token(raw_session: str):
-    return hmac.new(raw_session.encode(), b"model-platform:csrf:v1", hashlib.sha256).hexdigest()
+_FALLBACK_CSRF_KEY = secrets.token_hex(32)
+
+
+def csrf_token(raw_session: str, secret: str | None = None):
+    key = (secret or _FALLBACK_CSRF_KEY).encode()
+    return hmac.new(key, f"model-platform:csrf:v2:{raw_session}".encode(), hashlib.sha256).hexdigest()

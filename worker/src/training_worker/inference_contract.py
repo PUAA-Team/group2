@@ -39,6 +39,8 @@ def prepare_request(tokenizer, payload, profile=None):
     if len(ids) > 512:
         raise ValueError("输入与任务指令超过512 Token，请缩短内容")
     budget = payload.get("max_new_tokens", 32)
+    if isinstance(budget, bool) or not isinstance(budget, int) or not 1 <= budget <= 2048:
+        raise ValueError("max_new_tokens 必须在 1 到 2048 之间")
     constraint = LabelConstraint(tokenizer, profile.get("labels", []), len(ids)) if mode == "label" else None
     if constraint:
         if constraint.max_new_tokens > budget:

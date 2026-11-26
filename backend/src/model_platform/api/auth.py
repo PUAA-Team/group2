@@ -53,12 +53,12 @@ def login(payload: Login, request: Request, output: Response, db: Db):
     commit(db)
     output.set_cookie("mt_session", raw, httponly=True, secure=settings.secure_cookie,
                       samesite="strict", max_age=settings.session_hours * 3600, path="/")
-    return response(request, session_data(db, user, raw))
+    return response(request, session_data(db, user, raw, settings.resolved_csrf_secret))
 
 
 @router.get("/session", response_model=Envelope[SessionOut])
 def session(request: Request, actor: Actor, db: Db):
-    return response(request, session_data(db, actor, request.cookies["mt_session"]))
+    return response(request, session_data(db, actor, request.cookies["mt_session"], request.app.state.settings.resolved_csrf_secret))
 
 
 @router.post("/logout", response_model=Envelope[dict[str, bool]])

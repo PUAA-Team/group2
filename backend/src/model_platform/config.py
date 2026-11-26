@@ -12,6 +12,7 @@ class Settings:
         value.strip() for value in os.environ.get(
             "MT_ALLOWED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000,http://127.0.0.1:8765,http://localhost:8765").split(",") if value.strip()))
     secure_cookie: bool = field(default_factory=lambda: os.environ.get("MT_SECURE_COOKIE") == "1")
+    csrf_secret: str = field(default_factory=lambda: os.environ.get("MT_CSRF_SECRET") or "")
     allow_browser_setup: bool = field(default_factory=lambda: os.environ.get("MT_ALLOW_BROWSER_SETUP") == "1")
     session_hours: int = 8
     login_failures: int = 5
@@ -40,3 +41,21 @@ class Settings:
     @property
     def storage_dir(self) -> Path:
         return self.runtime_dir / "storage"
+
+    @property
+    def resolved_csrf_secret(self) -> str:
+        if self.csrf_secret:
+            return self.csrf_secret
+        import secrets
+        key_dir = self.runtime_dir / "private"
+        key_file = key_dir / "csrf.key"
+        if key_file.is_file():
+            return key_file.read_text(encoding="ascii").strip()
+        key_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        generated = secrets.token_hex(32)
+        try:
+            with os.fdopen(os.open(key_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w", encoding="ascii") as f:
+                f.write(generated)
+            return generated
+        except FileExistsError:
+            return key_file.read_text(encoding="ascii").strip()

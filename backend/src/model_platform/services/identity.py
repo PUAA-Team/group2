@@ -25,7 +25,7 @@ def initialize_admin(db, payload):
     return user
 
 
-def session_data(db, user, raw):
+def session_data(db, user, raw, csrf_secret=None):
     actions, quota = effective_policy(db, user)
-    return {"user": serialize(user), "csrf_token": csrf_token(raw),
+    return {"user": serialize(user), "csrf_token": csrf_token(raw, csrf_secret),
             "access": {"actions": sorted(actions), "quota": quota}}
