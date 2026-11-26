@@ -44,5 +44,5 @@ watch(
 </script>
 
 <template>
-  <div v-html="pageHtml" />
+  <div class="page-surface" v-html="pageHtml" />
 </template>

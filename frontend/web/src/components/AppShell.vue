@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { ADMIN_NAV, icon, NAV_GROUPS } from "@live/ui/ui.js";
+import { ADMIN_NAV, escapeHtml, icon, NAV_GROUPS } from "@live/ui/ui.js";
 import { ctx } from "@/stores/app";
 
 const props = defineProps<{
@@ -97,11 +97,8 @@ function isLinkActive(href: string) {
             :aria-expanded="ctx.ui.navOpen[group.id] !== false"
             :aria-label="group.label"
             :title="group.label"
-          >
-            <span v-html="icon(group.icon)" />
-            <span class="nav-label">{{ group.label }}</span>
-            <span v-html="icon('chevron', 14)" />
-          </button>
+            v-html="`${icon(group.icon)}<span class=&quot;nav-label&quot;>${escapeHtml(group.label)}</span>${icon('chevron', 14)}`"
+          />
           <div class="nav-children">
             <a
               v-for="[label, href] in group.children"
@@ -126,17 +123,17 @@ function isLinkActive(href: string) {
             :href="`#${href}`"
             :aria-current="activePath === href ? 'page' : undefined"
             :title="label"
-          >
-            <span v-html="icon(symbol)" />
-            <span class="nav-label">{{ label }}</span>
-          </a>
+            v-html="`${icon(symbol)}<span class=&quot;nav-label&quot;>${escapeHtml(label)}</span>`"
+          />
         </template>
       </nav>
 
-      <a class="sidebar-bottom" href="#/space" title="用户空间">
-        <span v-html="icon('users', 17)" />
-        <span class="nav-label">用户空间</span>
-      </a>
+      <a
+        class="sidebar-bottom"
+        href="#/space"
+        title="用户空间"
+        v-html="`${icon('users', 17)}<span class=&quot;nav-label&quot;>用户空间</span>`"
+      />
     </aside>
 
     <main class="main-area">
@@ -146,9 +143,7 @@ function isLinkActive(href: string) {
           <span>/</span>
           <span>{{ props.title }}</span>
         </div>
-        <div class="page-surface">
-          <slot />
-        </div>
+        <slot />
       </div>
     </main>
   </div>
