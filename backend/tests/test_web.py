@@ -12,14 +12,15 @@ from model_platform.main import create_app
 
 def test_web_assets_do_not_expose_workspace_files(app):
     with TestClient(app) as client:
-        assert client.get("/").status_code == 200
-        entry = re.search(r'src="(/live/app\.js\?v=[^\"]+)"', client.get("/").text)
-        assert entry, "真实前端入口必须带缓存版本"
+        html = client.get("/")
+        assert html.status_code == 200
+        entry = re.search(r'src="(/assets/index-[^\"]+\.js|/live/app\.js\?v=[^\"]+)"', html.text)
+        assert entry, "真实前端入口必须带内容哈希或缓存版本"
         script = client.get(entry.group(1))
         assert script.status_code == 200 and 'javascript' in script.headers['content-type']
         for path in ["/live/app.js", "/styles/base.css", "/js/ui.js"]:
             assert client.get(path).status_code == 200
-        for path in ["/backend/src/model_platform/config.py", "/docs/stage5/ReadMe.md", "/storage/file", "/live/../backend/requirements.txt"]:
+        for path in ["/backend/src/model_platform/config.py", "/docs/stage5/ReadMe.md", "/storage/file", "/live/../backend/requirements.txt", "/assets/../package.json"]:
             assert client.get(path).status_code == 404
 
 

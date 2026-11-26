@@ -10,6 +10,8 @@
 
 ## 当前进度
 
+2026-11-26：在 `lx/stage22a-vue3-vite-migration` 分支完成 **Stage 22A（前端 Vue 3 + TypeScript + Vite 工程化迁移）**：新建 `frontend/web/`（Vue 3.5 + TypeScript 5.7 + Vite 6），完整复用既有 `frontend/styles/*` 与 `frontend/live/*.css` 保持界面视觉与交互零改动，接入强类型 `ApiClient`、Vue 3 `reactive` 状态管理与 `AppShell`/`AuthView`/`ModalHost`/`ToastHost`/`WorkspaceContent` SFC 外壳，同时保留 `frontend/live/` 支持 5 人团队按页面渐进替换为纯 Vue SFC；后端 `web.py` 优先提供 `frontend/web/dist/` 并自动回退 `frontend/live/`，Docker 升级为 `node:22-alpine` + Python 多阶段构建。详见 [frontend/web/README.md](../frontend/web/README.md)。
+
 2026-11-26：在 `lx/stage21a-workspace-governance` 分支完成 **Stage 21A（空间自治与团队治理）**：落地 4 级空间角色（`admin`/`editor`/`annotator`/`viewer`）、空间所有权转让、本空间已归属设备策略自治、空间总预算与成员子配额三层收敛及空间成员用量账单（schema `0017_workspace_governance`）。本地验证通过：后端 `234 passed, 1 skipped`，前端 `149 pass, 0 fail`。详见[Stage 21A 实施与验收](./stage21/实施与验收.md) 与 [OpenAPI](./stage21/openapi.json)。
 
 2026-11-26：在 `lx/stage20b-1-deploy-hardening` 分支完成 **Stage 20B-1（网关、数据库与容器运行时安全加固）**：db/gateway 加 `cap_drop: [ALL]` + `no-new-privileges`（按需保留 CHOWN/DAC_OVERRIDE/SETGID/SETUID 最小能力），网关加 healthcheck（wget 探 `/readyz`），网关镜像固定 `nginx:1.30.8-alpine`；nginx 配置改为 `.template` 并经 envsubst 渲染，统一加 HSTS（仅 HTTPS）、nosniff、`X-Frame-Options: DENY`、Referrer-Policy 与同源 CSP，证书路径改读 `${TLS_IP}`；旧 IP `47.93.115.188` 从现网配置与脚本中清除，改为 `.env` 的 `PUBLIC_HOST`/`TLS_IP`；certbot 镜像固定 `v5.10.0`；修了 `backup.sh` 备份错库的 bug（原先实际备份的是 postgres 维护库，现改为应用库 `model_platform`），备份新增 `tables.txt`/`backup.json` 清单，新建 `restore.sh`（摘要校验、停服务恢复、逐表行数与存储文件数校验、通过后才重启）与每日 03:00 备份 systemd 定时器；本地桩演练备份→恢复全流程通过，真实 PostgreSQL 演练待预发环境。本地验证通过：后端 `233 passed`（含新增 18 项部署加固回归测试），前端 `147 pass, 0 fail`。无表结构变更，无新增接口。未合并 main，未部署。详见[Stage 20B-1 实施与验收](./stage20b-1/实施与验收.md)与 [OpenAPI](./stage20b-1/openapi.json)。

@@ -1,4 +1,13 @@
+ARG NODE_IMAGE=node:22-alpine
 ARG PYTHON_IMAGE=python:3.12-slim-bookworm
+
+FROM ${NODE_IMAGE} AS web-builder
+WORKDIR /src/frontend/web
+COPY frontend/web/package.json frontend/web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend /src/frontend
+RUN npm run build
+
 FROM ${PYTHON_IMAGE}
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -26,6 +35,7 @@ COPY backend /app/backend
 COPY frontend/live /app/frontend/live
 COPY frontend/styles /app/frontend/styles
 COPY frontend/js /app/frontend/js
+COPY --from=web-builder /src/frontend/web/dist /app/frontend/web/dist
 COPY worker/src /app/worker/src
 COPY deploy/server/entrypoint.py /app/deploy/server/entrypoint.py
 COPY scripts/seed_application_presets.py /app/scripts/seed_application_presets.py
