@@ -153,6 +153,13 @@ export async function administrationAction(action, id, { api, ctx, openModal, re
   }
   if (action === "admin-edit-connection") openModal("connection-edit", ctx.data.connections.find(item => item.id === id));
   if (action === "admin-reset-password") openModal("password-reset", user);
+  if (action === "admin-issue-reset-code") {
+    const result = (await api.request("/auth/password-reset-codes", { method: "POST", body: { account: user.account } })).data;
+    ctx.generatedResetCode = { account: result.account, code: result.code, expires_at: result.expires_at };
+    toast(`已为 ${user.account} 生成重置码，15 分钟内有效`); render();
+  }
+  if (action === "admin-copy-reset-code") { await navigator.clipboard.writeText(ctx.generatedResetCode?.code || ""); toast("重置码已复制"); }
+  if (action === "admin-hide-reset-code") { ctx.generatedResetCode = null; render(); }
   if (action === "admin-user-access") openModal("user-access", { ...user, access: (await api.request(`/admin/users/${id}/access`)).data });
   if (action === "admin-group-members") openModal("group-members", { ...user, users: await api.all(`/admin/users?group_id=${id}`) });
   if (action === "admin-edit-member-user") openModal("user-edit", ctx.ui.modal.item.users.find(item => item.id === id));

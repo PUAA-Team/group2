@@ -53,6 +53,33 @@ class Login(Input):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
 
 
+class PasswordResetCodeIssue(Input):
+    """管理员签发一次性密码重置码：按账号签发。"""
+    account: str = Field(min_length=1, max_length=64)
+
+
+class PasswordReset(Input):
+    """用户凭重置码自助重置密码：账号 + 8 位重置码 + 新密码。"""
+    account: str = Field(min_length=1, max_length=64)
+    code: str = Field(min_length=8, max_length=8)
+    password: str = Field(min_length=12, max_length=256, strict=True)
+
+    @field_validator("code", mode="before")
+    @classmethod
+    def normalize_code(cls, value):
+        # 重置码为 8 位无歧义大写字母数字，输入时容忍小写与首尾空格。
+        return value.strip().upper() if isinstance(value, str) else value
+
+    @field_validator("password", mode="before")
+    @classmethod
+    def password_not_blank(cls, value):
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError("密码不能为空")
+        return value
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=False)
+
+
 class UserCreate(Policy):
     account: str = Field(pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_.-]{2,63}$")
     display_name: str = Field(min_length=1, max_length=100)

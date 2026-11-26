@@ -21,6 +21,8 @@ class Settings:
     login_account_failures: int = 15
     login_account_lock_seconds: int = 900
     login_account_window_seconds: int = 900
+    # 一次性密码重置码有效期（分钟），可通过 MT_PASSWORD_RESET_CODE_MINUTES 覆盖。
+    password_reset_code_minutes: int = field(default_factory=lambda: int(os.environ.get("MT_PASSWORD_RESET_CODE_MINUTES") or 15))
     max_upload_bytes: int = 10 * 1024 * 1024
     max_samples: int = 10000
     node_timeout_seconds: int = 20

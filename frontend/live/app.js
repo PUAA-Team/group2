@@ -83,17 +83,17 @@ async function load() {
     try { session = (await api.request("/auth/session", { signal, quietAuth: true })).data; }
     catch (error) { if (error.status !== 401) throw error; }
     if (epoch !== ctx.epoch) return;
-    if (ctx.session?.user.id !== session?.user.id) { ctx.resourceConnection = null; ctx.generatedKey = null; ctx.generatedInvite = null; ctx.pendingCall = null; ctx.callResult = null; ctx.wizard = null; ctx.importDraft = null; ctx.annotationDrafts = null; ctx.dataChoices = null; ctx.assistantOptions = null; }
+    if (ctx.session?.user.id !== session?.user.id) { ctx.resourceConnection = null; ctx.generatedKey = null; ctx.generatedInvite = null; ctx.generatedResetCode = null; ctx.pendingCall = null; ctx.callResult = null; ctx.wizard = null; ctx.importDraft = null; ctx.annotationDrafts = null; ctx.dataChoices = null; ctx.assistantOptions = null; }
     ctx.session = session || null;
     if (!session) {
       api.csrf = "";
       const [setup, branding] = await Promise.all([api.request("/setup", { signal }), api.request("/platform-info", { signal })]);
-      ctx.setup = { ...setup.data, ...branding.data, registration: current.path === "/register", invitation: current.params.get("invitation") || "" };
+      ctx.setup = { ...setup.data, ...branding.data, registration: current.path === "/register", reset: current.path === "/reset-password", invitation: current.params.get("invitation") || "" };
       if (epoch !== ctx.epoch) return;
-      if (current.path !== "/register") { history.replaceState(null, "", "#/login"); ctx.path = "/login"; }
+      if (!["/register", "/reset-password"].includes(current.path)) { history.replaceState(null, "", "#/login"); ctx.path = "/login"; }
       ctx.loading = false; render(); return;
     }
-    if (["/login", "/setup", "/register"].includes(ctx.path)) { history.replaceState(null, "", "#/home"); ctx.path = "/home"; }
+    if (["/login", "/setup", "/register", "/reset-password"].includes(ctx.path)) { history.replaceState(null, "", "#/home"); ctx.path = "/home"; }
     if (ctx.path === "/join") {
       const code = current.params.get("code") || "";
       history.replaceState(null, "", "#/space"); ctx.path = "/space";
@@ -188,7 +188,7 @@ function closeModal() {
   const target = ctx.returnFocus;
   if (target?.action) document.querySelector(`[data-action="${CSS.escape(target.action)}"]${target.id ? `[data-id="${CSS.escape(target.id)}"]` : ""}`)?.focus({ preventScroll: true });
 }
-api.onExpired = () => { ctx.session = null; ctx.ui.modal = null; ctx.resourceConnection = null; ctx.generatedKey = null; ctx.generatedInvite = null; ctx.pendingCall = null; ctx.callResult = null; ctx.wizard = null; ctx.importDraft = null; ctx.annotationDrafts = null; ctx.dataChoices = null; ctx.assistantOptions = null; document.body.classList.remove("modal-open"); navigate("/login"); };
+api.onExpired = () => { ctx.session = null; ctx.ui.modal = null; ctx.resourceConnection = null; ctx.generatedKey = null; ctx.generatedInvite = null; ctx.generatedResetCode = null; ctx.pendingCall = null; ctx.callResult = null; ctx.wizard = null; ctx.importDraft = null; ctx.annotationDrafts = null; ctx.dataChoices = null; ctx.assistantOptions = null; document.body.classList.remove("modal-open"); navigate("/login"); };
 installEvents({ api, ctx, load, render, persist, navigate, toast, openModal, closeModal });
 window.addEventListener("hashchange", () => { ctx.ui.menuOpen = false; load(); });
 render(); load();

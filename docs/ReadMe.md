@@ -10,6 +10,8 @@
 
 ## 当前进度
 
+2026-11-26：在 `lx/stage20a-1-password-reset` 分支完成 **Stage 20A-1（用户自助找回/重置密码）**：管理员签发一次性密码重置码（8 位无歧义字符，库里只存 HMAC-SHA-256 摘要，15 分钟过期、一次有效，签发新码作废旧码），用户在登录页“忘记密码”入口凭码自助重置并自动踢出全部历史会话；猜码失败计入账号维度限流桶（15 次锁定 15 分钟），已锁定账号仍可凭有效码重置解锁；迁移 `0016_password_reset_codes`（新建 `password_reset_codes` 表）。本地验证通过：后端 `215 passed`（含新增 8 项），前端 `142 pass, 0 fail`（含新增 2 项）。新增 2 个接口（OpenAPI 146 路径）。未合并 main，未部署。详见[Stage 20A-1 实施与验收](./stage20a-1/实施与验收.md)与 [OpenAPI](./stage20a-1/openapi.json)。
+
 2026-11-26：在 `lx/stage19b-3-login-rate-limit` 分支完成 **Stage 19B-3（登录限流与上传产物并发保护）**：登录在原有“账号+IP”单桶之外新增纯账号维度全局滑动计数（15 分钟窗口内累计 15 次失败锁定账号 15 分钟，轮换 IP 无法绕过）；`store_artifact()` 写盘前用条件更新抢占式声明产物槽位，并发双传只有一个成功、另一个按幂等/冲突处理不覆盖已落盘产物，写盘改用唯一临时文件名 `{execution.id}.{uuid}.zip`；迁移 `0015_login_account_rate_limit`（`login_attempts` 新增 `window_started_at`）。本地验证通过：后端 `207 passed`（含新增 4 项），前端 `140 pass, 0 fail`。无新增接口。未合并 main，未部署。详见[Stage 19B-3 实施与验收](./stage19b-3/实施与验收.md)与 [OpenAPI](./stage19b-3/openapi.json)。
 
 2026-11-26：在 `lx/stage19b-2-streaming-data` 分支完成 **Stage 19B-2（训练数据流式读取与单样本/空验证集零分母防护）**：新增 `iter_rows()` 生成器按行流式读 CSV/JSONL、图像只存原始字节并按需解码像素；单样本非分类任务全进训练集、空数据集明确报错、`scores()` 空标签/空验证集不再除零；`Classifier.train()` 空验证集跳过验证前向、`val_loss` 置 0。本地验证通过：后端 `203 passed`（含新增 12 项），前端 `140 pass, 0 fail`。无表结构变更，无新增接口。未合并 main，未部署。详见[Stage 19B-2 实施与验收](./stage19b-2/实施与验收.md)与 [OpenAPI](./stage19b-2/openapi.json)。

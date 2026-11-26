@@ -141,7 +141,7 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
       const draft = ensureDraft(ctx); captureDraft(draft, data);
       if (draft.step < 3) { draft.step++; render(); return; }
     }
-    if (["setup", "register"].includes(type) && data.get("password") !== data.get("confirm")) { showError("[data-auth-error]", "两次输入的密码不一致"); return; }
+    if (["setup", "register", "reset-password"].includes(type) && data.get("password") !== data.get("confirm")) { showError("[data-auth-error]", "两次输入的密码不一致"); return; }
     busy = true;
     const submit = event.submitter || form.querySelector('[type="submit"]'); submit.disabled = true; const caption = submit.textContent; submit.textContent = "正在保存…";
     try {
@@ -156,6 +156,10 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
       if (type === "dataset-import") {
         const destination = await persistImport(api, syncImport(ctx, form));
         ctx.importDraft = null; ctx.annotationDrafts = null; ctx.dataChoices = null; toast("数据版本已导入"); navigate(destination); return;
+      }
+      if (type === "reset-password") {
+        await api.request("/auth/password-reset", { method: "POST", body: { account: data.get("account"), code: String(data.get("code") || "").trim(), password: data.get("password") }, quietAuth: true });
+        toast("密码已重置，请使用新密码登录"); navigate("/login"); return;
       }
       if (["setup", "login", "register"].includes(type)) {
         if (type === "register") await api.request("/auth/register", { method: "POST", body: { account: data.get("account"), display_name: data.get("display_name"), password: data.get("password"), invitation: String(data.get("invitation") || "").trim() || null }, quietAuth: true });

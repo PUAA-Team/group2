@@ -22,6 +22,11 @@ def verify_password(password: str, encoded: str):
 _FALLBACK_CSRF_KEY = secrets.token_hex(32)
 
 
+def hmac_digest(value: str, secret: str):
+    """HMAC-SHA-256 摘要：用于一次性凭据（如密码重置码），库里只存摘要。"""
+    return hmac.new(secret.encode(), value.encode(), hashlib.sha256).hexdigest()
+
+
 def csrf_token(raw_session: str, secret: str | None = None):
     key = (secret or _FALLBACK_CSRF_KEY).encode()
     return hmac.new(key, f"model-platform:csrf:v2:{raw_session}".encode(), hashlib.sha256).hexdigest()

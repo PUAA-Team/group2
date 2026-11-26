@@ -21,6 +21,16 @@ test("真实登录无默认密码或演示身份，首次设置可在页面完�
   assert.ok(renderAuth({ initialized: false, enabled: false }).includes("请联系管理员"));
 });
 
+test("忘记密码入口渲染重置表单，管理员签发重置码只显示一次", () => {
+  const login = renderAuth({ initialized: true });
+  assert.ok(login.includes('href="#/reset-password"') && login.includes("忘记密码"));
+  const reset = renderAuth({ initialized: true, reset: true });
+  assert.ok(reset.includes('data-form="reset-password"') && reset.includes('name="code"'));
+  assert.ok(reset.includes('minlength="12"') && reset.includes("重置密码"));
+  const users = renderUsers({ ...ctx, data: { data: [{ id: "u2", account: "member", display_name: "成员", is_admin: false, group_id: null, active: true }] }, groups: [], tab: "users", generatedResetCode: { account: "member", code: "ABCDEFGH" } });
+  assert.ok(users.includes("生成重置码") && users.includes("ABCDEFGH") && users.includes("仅显示本次"));
+});
+
 test("模型页面使用真实记录并转义，写入按钮受权限控制", () => {
   const item = { id: "mdl_1", name: '<script>alert("x")</script>', task_type: "text_classification", trainer_id: "text-classifier-v1", source_ref: "team/model" };
   const html = renderAssets("models", { ...ctx, data: { data: [item] } });

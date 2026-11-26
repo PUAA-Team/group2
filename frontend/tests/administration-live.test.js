@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { administrationDialog, isManagementPage, loadManagement, renderManagement, saveAdministration } from "../live/administration.js";
+import { administrationAction, administrationDialog, isManagementPage, loadManagement, renderManagement, saveAdministration } from "../live/administration.js";
 import { renderDialog } from "../live/dialogs.js";
 import { renderAuth } from "../live/pages/auth.js";
 
@@ -40,4 +40,20 @@ test("密码确认失败不发送请求，读取有效权限的弹窗没有保�
   assert.equal(sent, false);
   const dialog = renderDialog({ kind: "user-access", item: { display_name: "成员", access: { actions: ["training.read"], quota: {} } } }, context("/admin/users"));
   assert.ok(dialog.includes("查看训练") && !dialog.includes('type="submit"'));
+});
+
+test("管理员签发重置码后只显示一次，可关闭", async () => {
+  const ctx = context("/admin/users");
+  ctx.data = { data: [{ id: "u2", account: "member", display_name: "成员", is_admin: false, group_id: null, active: true }] };
+  const calls = [];
+  const api = { async request(path, opts) { calls.push([path, opts]); return { data: { account: "member", code: "ABCDEFGH", expires_at: "2026-11-26T18:00:00+08:00" } }; } };
+  let rendered = false;
+  const helpers = { api, ctx, openModal() {}, render() { rendered = true; }, load() {}, toast() {} };
+  await administrationAction("admin-issue-reset-code", "u2", helpers);
+  assert.equal(calls[0][0], "/auth/password-reset-codes");
+  assert.deepEqual(calls[0][1].body, { account: "member" });
+  assert.equal(ctx.generatedResetCode.code, "ABCDEFGH");
+  assert.ok(rendered);
+  await administrationAction("admin-hide-reset-code", "u2", helpers);
+  assert.equal(ctx.generatedResetCode, null);
 });

@@ -54,6 +54,21 @@ class LoginAttempt(Base):
     window_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class PasswordResetCode(Timestamp, Base):
+    """一次性密码重置码（Stage 20A-1）：管理员签发，用户凭码自助重置密码。
+
+    明文码只在签发响应里返回一次，库里只存 HMAC-SHA-256 摘要；
+    码 15 分钟过期，一次有效，重置成功后自动踢出该用户全部历史会话。
+    """
+    __tablename__ = "password_reset_codes"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    code_digest: Mapped[str] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_by: Mapped[str] = mapped_column(ForeignKey("users.id"))
+
+
 class Workspace(Timestamp, Revision, Base):
     __tablename__ = "workspaces"
     id: Mapped[str] = mapped_column(String(40), primary_key=True)

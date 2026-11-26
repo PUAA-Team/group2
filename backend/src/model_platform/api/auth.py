@@ -2,14 +2,15 @@ import secrets
 from datetime import timedelta
 
 from fastapi import APIRouter, Request, Response
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 
 from ..database import aware, new_id, utcnow
 from ..errors import Problem, response
-from ..models import LoginAttempt, SessionToken, User
+from ..models import LoginAttempt, PasswordResetCode, SessionToken, User
 from ..outputs import Envelope, SessionOut
-from ..schemas import Login
-from ..security import digest, hash_password, verify_password
+from ..permissions import require_admin
+from ..schemas import Login, PasswordReset, PasswordResetCodeIssue
+from ..security import digest, hash_password, hmac_digest, verify_password
 from ..services.common import audit, commit
 from ..services.identity import session_data
 from .deps import Actor, Db
@@ -17,6 +18,16 @@ from .deps import Actor, Db
 router = APIRouter(prefix="/api/v1/auth", tags=["身份认证"])
 # 未知用户也执行同等成本的密码验证。
 DUMMY_PASSWORD = hash_password(secrets.token_urlsafe(24))
+# 重置码字符表：去掉易混淆的 0/O、1/I/L，用户手抄不易错。
+_RESET_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+
+def _new_reset_code():
+    return "".join(secrets.choice(_RESET_CODE_ALPHABET) for _ in range(8))
+
+
+def _reset_code_digest(code, secret):
+    return hmac_digest(f"password-reset:{code}", secret)
 
 
 def _is_blocked(attempt, now):
@@ -87,6 +98,75 @@ def login(payload: Login, request: Request, output: Response, db: Db):
     output.set_cookie("mt_session", raw, httponly=True, secure=settings.secure_cookie,
                       samesite="strict", max_age=settings.session_hours * 3600, path="/")
     return response(request, session_data(db, user, raw, settings.resolved_csrf_secret))
+
+
+@router.post("/password-reset-codes", status_code=201)
+def issue_password_reset_code(payload: PasswordResetCodeIssue, request: Request, actor: Actor, db: Db):
+    """管理员签发一次性密码重置码（Stage 20A-1）。
+
+    明文码只在本次响应里返回一次，库里只存 HMAC-SHA-256 摘要；
+    签发新码时作废该用户此前未使用的旧码，同一时间只有一个有效码。
+    """
+    require_admin(db, actor, "users.manage")
+    account = payload.account.strip().lower()
+    user = db.scalar(select(User).where(User.account == account))
+    if user is None:
+        raise Problem(404, "NOT_FOUND", "用户不存在")
+    now = utcnow()
+    settings = request.app.state.settings
+    db.execute(delete(PasswordResetCode).where(
+        PasswordResetCode.user_id == user.id, PasswordResetCode.used_at.is_(None)))
+    raw = _new_reset_code()
+    item = PasswordResetCode(
+        id=new_id("prc"), user_id=user.id,
+        code_digest=_reset_code_digest(raw, settings.resolved_csrf_secret),
+        expires_at=now + timedelta(minutes=settings.password_reset_code_minutes),
+        created_by=actor.id)
+    db.add(item)
+    audit(db, actor, "auth.password.reset_code.issue", user.id)
+    commit(db)
+    return response(request, {"user_id": user.id, "account": user.account, "code": raw,
+                             "expires_at": aware(item.expires_at).isoformat()})
+
+
+@router.post("/password-reset")
+def reset_password_by_code(payload: PasswordReset, request: Request, db: Db):
+    """用户凭重置码自助重置密码（Stage 20A-1）。
+
+    码 15 分钟过期、一次有效；重置成功后改密码、踢出该用户全部历史
+    会话并清除登录限流计数。未知账号与错误/过期码返回同一错误，
+    不泄露账号是否存在；猜码失败计入账号桶，暴力猜码会触发账号锁定，
+    但已锁定的账号仍可凭有效码重置（重置即是锁定的恢复路径）。
+    """
+    settings = request.app.state.settings
+    account = payload.account.strip().lower()
+    now = utcnow()
+    user = db.scalar(select(User).where(User.account == account))
+    row = None
+    if user is not None:
+        row = db.scalar(select(PasswordResetCode).where(
+            PasswordResetCode.user_id == user.id,
+            PasswordResetCode.code_digest == _reset_code_digest(payload.code, settings.resolved_csrf_secret),
+            PasswordResetCode.used_at.is_(None),
+            PasswordResetCode.expires_at > now))
+    if user is None or not user.active or row is None:
+        _record_failure(db, digest(f"account|{account}"), now, settings.login_account_failures,
+                        settings.login_account_lock_seconds, settings.login_account_window_seconds)
+        commit(db)
+        raise Problem(400, "INVALID_RESET_CODE", "重置码无效或已过期")
+    db.execute(update(User).where(User.id == user.id).values(
+        password_hash=hash_password(payload.password),
+        revision=User.revision + 1).execution_options(synchronize_session=False))
+    row.used_at = now
+    db.execute(delete(SessionToken).where(SessionToken.user_id == user.id))
+    client = request.client.host if request.client else "unknown"
+    for key in (digest(f"account|{account}"), digest(f"{account}|{client}")):
+        attempt = db.get(LoginAttempt, key)
+        if attempt is not None:
+            db.delete(attempt)
+    audit(db, user, "auth.password.reset_by_code", user.id)
+    commit(db)
+    return response(request, {"reset": True})
 
 
 @router.get("/session", response_model=Envelope[SessionOut])
