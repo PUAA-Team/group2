@@ -10,7 +10,7 @@ from .resource_policies import node_is_online, policy_allows
 
 
 def node_view(db, node, settings, *, actor=None):
-    value = serialize(node, exclude=("credential_digest", "machine_id", "heartbeat_digest"))
+    value = serialize(node, exclude=("credential_digest", "machine_id", "heartbeat_digest", "credential_expires_at"))
     online = node_is_online(node, settings)
     status = "已撤销" if node.revoked else "待审核" if not node.approved else "离线" if not online else "暂停接收" if not node.enabled else "在线"
     devices = db.execute(select(ComputeDevice, DevicePolicy.value)

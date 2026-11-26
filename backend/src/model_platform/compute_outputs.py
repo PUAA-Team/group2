@@ -83,6 +83,12 @@ class WorkerReceipt(Output):
     enabled: bool
     heartbeat_seconds: int
     next_seq: int
+    credential_expires_at: datetime | None = None
+
+
+class CredentialReceipt(WorkerReceipt):
+    # 轮换出的新凭据只在本次响应里返回一次，服务端只存摘要。
+    credential: str
 
 
 class HeartbeatReceipt(WorkerReceipt):

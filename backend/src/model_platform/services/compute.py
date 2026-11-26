@@ -74,22 +74,22 @@ def register_node(db, settings, payload):
         if node and not node.revoked and node.installation_id == payload.installation_id and hmac.compare_digest(node.credential_digest, payload.credential_digest):
             return register_receipt(node, settings)
         raise Problem(409, "ENROLLMENT_USED", "接入码已使用")
-    existing = db.scalar(select(ComputeNode).where(ComputeNode.machine_id == payload.machine_id))
+    existing = db.scalar(select(ComputeNode).where(ComputeNode.machine_id == payload.machine_id, ComputeNode.revoked.is_(False)))
     if existing:
-        if not existing.revoked or existing.active_executions or db.scalar(select(ComputeDevice.id).where(ComputeDevice.node_id == existing.id, ComputeDevice.reserved_execution_id.is_not(None)).limit(1)):
-            raise Problem(409, "NODE_EXISTS", "该机器已接入，请使用原工作目录，或先撤销旧节点")
-        node = existing
-        node.installation_id, node.credential_digest = payload.installation_id, payload.credential_digest
-        node.workspace_id, node.name = enrollment.workspace_id, enrollment.name
-        node.revoked, node.enabled, node.approved = False, True, enrollment.auto_approve
-        node.heartbeat_seq, node.heartbeat_digest = 0, None
-        node.revision += 1
-    else:
-        node = ComputeNode(id=new_id("nod"), workspace_id=enrollment.workspace_id, name=enrollment.name,
-                           machine_id=payload.machine_id, installation_id=payload.installation_id,
-                           credential_digest=payload.credential_digest, approved=enrollment.auto_approve)
-        db.add(node)
+        raise Problem(409, "NODE_EXISTS", "该机器已接入，请使用原工作目录，或先撤销旧节点")
+    # 已撤销旧节点禁止原地复活：旧记录原样保留（历史审计与关联执行
+    # 仍指向旧节点 ID），一律新建独立节点。旧节点仍有未结束执行或
+    # 设备占用时也不允许重新接入，避免同一台机器双份执行。
+    revoked = db.scalar(select(ComputeNode).where(ComputeNode.machine_id == payload.machine_id, ComputeNode.revoked.is_(True)))
+    if revoked and (revoked.active_executions or db.scalar(select(ComputeDevice.id).where(
+            ComputeDevice.node_id == revoked.id, ComputeDevice.reserved_execution_id.is_not(None)).limit(1))):
+        raise Problem(409, "NODE_EXISTS", "旧节点仍有未结束执行，请先确认执行结束后再重新接入")
+    node = ComputeNode(id=new_id("nod"), workspace_id=enrollment.workspace_id, name=enrollment.name,
+                       machine_id=payload.machine_id, installation_id=payload.installation_id,
+                       credential_digest=payload.credential_digest, approved=enrollment.auto_approve)
+    db.add(node)
     node.slots, node.last_seen_at = payload.slots, utcnow()
+    node.credential_expires_at = utcnow() + timedelta(days=settings.worker_credential_days)
     try:
         db.flush()
     except IntegrityError:
@@ -104,7 +104,29 @@ def register_node(db, settings, payload):
 
 def register_receipt(node, settings):
     return {"node_id": node.id, "approved": node.approved, "enabled": node.enabled,
-            "heartbeat_seconds": settings.heartbeat_seconds, "next_seq": node.heartbeat_seq + 1}
+            "heartbeat_seconds": settings.heartbeat_seconds, "next_seq": node.heartbeat_seq + 1,
+            "credential_expires_at": aware(node.credential_expires_at).isoformat() if node.credential_expires_at else None}
+
+
+def rotate_credential(db, node, settings):
+    # Worker 凭据轮换：旧凭据立即失效（worker_identity 按摘要查找，
+    # 换发后旧摘要查不到节点即 401）。新凭据只在本次响应里返回一次。
+    # 轮换不写审计事件：审计表要求用户 actor，Worker 侧没有用户身份。
+    lock_node(db, node)
+    if node.revoked:
+        raise Problem(409, "NODE_REVOKED", "已撤销节点不能轮换凭据")
+    raw = secrets.token_urlsafe(48)
+    expires_at = utcnow() + timedelta(days=settings.worker_credential_days)
+    changed = db.execute(update(ComputeNode).where(
+        ComputeNode.id == node.id, ComputeNode.credential_digest == node.credential_digest)
+        .values(credential_digest=digest(raw), credential_expires_at=expires_at,
+                revision=ComputeNode.revision + 1).execution_options(synchronize_session=False))
+    if changed.rowcount != 1:
+        db.rollback()
+        raise Problem(409, "CREDENTIAL_CHANGED", "凭据已被轮换，请用新凭据重试")
+    db.refresh(node)
+    commit(db)
+    return {**register_receipt(node, settings), "credential": raw}
 
 
 def heartbeat(db, node, payload, settings):

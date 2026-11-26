@@ -103,6 +103,64 @@ def test_space_visibility_approval_and_no_release_on_disconnect(app, admin, work
         assert client.post(f"/api/v1/resources/nodes/{node_id}/probe").status_code == 403
 
 
+def test_revoked_node_registers_as_new_node_and_keeps_history(app, admin, workspace):
+    receipt, code = enrollment(admin, workspace)
+    key = secrets.token_urlsafe(32)
+    payload = registration(code, key)
+    with TestClient(app) as worker:
+        node_id = worker.post("/api/worker/v1/register", json=payload).json()["data"]["node_id"]
+    assert admin.post(f"/api/v1/resources/nodes/{node_id}/revoke").status_code == 200
+    second, code2 = enrollment(admin, workspace)
+    key2 = secrets.token_urlsafe(32)
+    beat = {"protocol_version": 1, "seq": 1, "active_executions": [], "metrics": payload["inventory"]["devices"]}
+    with TestClient(app) as worker:
+        result = worker.post("/api/worker/v1/register", json=registration(code2, key2))
+        assert result.status_code == 200, result.text
+        new_id = result.json()["data"]["node_id"]
+        assert new_id != node_id
+        worker.headers["Authorization"] = f"Bearer {key}"
+        assert worker.post("/api/worker/v1/heartbeat", json=beat).status_code == 401
+        worker.headers["Authorization"] = f"Bearer {key2}"
+        assert worker.post("/api/worker/v1/heartbeat", json=beat).status_code == 200
+    with app.state.sessions() as db:
+        old = db.get(ComputeNode, node_id)
+        new = db.get(ComputeNode, new_id)
+        assert old.revoked and old.machine_id == "a" * 64
+        assert not new.revoked and new.machine_id == old.machine_id
+        assert new.installation_id == old.installation_id
+        assert db.scalar(select(ComputeDevice).where(ComputeDevice.node_id == node_id)) is not None
+        assert db.scalar(select(ComputeDevice).where(ComputeDevice.node_id == new_id)) is not None
+
+
+def test_rotate_credential_invalidates_old_credential(app, admin, workspace):
+    receipt, code = enrollment(admin, workspace)
+    key = secrets.token_urlsafe(32)
+    payload = registration(code, key)
+    beat = {"protocol_version": 1, "seq": 1, "active_executions": [], "metrics": payload["inventory"]["devices"]}
+    with TestClient(app) as worker:
+        node_id = worker.post("/api/worker/v1/register", json=payload).json()["data"]["node_id"]
+        worker.headers["Authorization"] = f"Bearer {key}"
+        assert worker.post("/api/worker/v1/heartbeat", json=beat).status_code == 200
+        result = worker.post("/api/worker/v1/rotate-credential", json={})
+        assert result.status_code == 200, result.text
+        data = result.json()["data"]
+        assert data["node_id"] == node_id and data["credential"] != key
+        assert data["credential_expires_at"] is not None
+        worker.headers["Authorization"] = f"Bearer {key}"
+        assert worker.post("/api/worker/v1/heartbeat", json=beat).status_code == 401
+        worker.headers["Authorization"] = f"Bearer {data['credential']}"
+        assert worker.post("/api/worker/v1/heartbeat", json={**beat, "seq": 2}).status_code == 200
+        new_key = data["credential"]
+    with app.state.sessions() as db:
+        node = db.get(ComputeNode, node_id)
+        node.credential_expires_at = utcnow() - timedelta(seconds=1)
+        db.commit()
+    with TestClient(app) as worker:
+        worker.headers["Authorization"] = f"Bearer {new_key}"
+        assert worker.post("/api/worker/v1/heartbeat", json={**beat, "seq": 3}).status_code == 401
+        assert worker.post("/api/worker/v1/rotate-credential", json={}).status_code == 401
+
+
 def test_bundle_contains_only_worker_source(admin):
     import io, zipfile
     response = admin.get("/api/worker/v1/bundle")

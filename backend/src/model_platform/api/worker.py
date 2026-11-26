@@ -3,11 +3,11 @@ import hashlib
 from fastapi.responses import FileResponse
 
 from ..compute_schemas import HeartbeatInput, InventoryReport, RegisterInput
-from ..compute_outputs import HeartbeatReceipt, WorkerReceipt
+from ..compute_outputs import CredentialReceipt, HeartbeatReceipt, WorkerReceipt
 from ..errors import Problem, response
 from ..outputs import Envelope
 from ..services.common import commit
-from ..services.compute import heartbeat, inventory_update, register_node
+from ..services.compute import heartbeat, inventory_update, register_node, rotate_credential
 from ..services.worker_bundle import build_bundle
 from .deps import Db
 from .worker_auth import Worker
@@ -31,6 +31,11 @@ def bundle(request: Request, sha256: str | None = Query(default=None, pattern=r"
 @router.post("/register", response_model=Envelope[WorkerReceipt])
 def register(payload: RegisterInput, request: Request, db: Db):
     return response(request, register_node(db, request.app.state.settings, payload))
+
+
+@router.post("/rotate-credential", response_model=Envelope[CredentialReceipt])
+def rotate(request: Request, node: Worker, db: Db):
+    return response(request, rotate_credential(db, node, request.app.state.settings))
 
 
 @router.post("/heartbeat", response_model=Envelope[HeartbeatReceipt])

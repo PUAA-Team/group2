@@ -22,6 +22,8 @@ class Settings:
     node_timeout_seconds: int = 20
     heartbeat_seconds: int = 3
     enrollment_seconds: int = 600
+    # Worker 凭据有效期（天），可通过 MT_WORKER_CREDENTIAL_DAYS 覆盖。
+    worker_credential_days: int = field(default_factory=lambda: int(os.environ.get("MT_WORKER_CREDENTIAL_DAYS") or 90))
     enable_local_worker: bool = field(default_factory=lambda: os.environ.get("MT_ENABLE_LOCAL_WORKER") == "1")
     local_controller_url: str = field(default_factory=lambda: os.environ.get("MT_LOCAL_CONTROLLER_URL") or "http://127.0.0.1:8000")
     torch_python: str = field(default_factory=lambda: os.environ.get("MT_TORCH_PYTHON") or "D:/Anaconda/anzhuang/envs/torch_env/python.exe")

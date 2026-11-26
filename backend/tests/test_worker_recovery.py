@@ -149,6 +149,31 @@ def test_recovery_retains_launching_state_and_finished_ack(tmp_path):
     assert not Executor(agent(tmp_path)).active
 
 
+def test_worker_rotates_credential_when_near_expiry(tmp_path, monkeypatch):
+    import training_worker.agent as module
+    from datetime import datetime, timedelta, timezone
+    expiry = (datetime.now(timezone.utc) + timedelta(days=3)).isoformat()
+    write_json(tmp_path / "node-state.json", {"node_id": "nod-test", "credential": "old-credential",
+        "credential_expires_at": expiry, "installation_id": "00000000-0000-0000-0000-000000000001",
+        "machine_id": "a" * 64, "heartbeat_seq": 0})
+    new_expiry = (datetime.now(timezone.utc) + timedelta(days=90)).isoformat()
+    class FakeClient:
+        def __init__(self, *args):
+            self.key = "old-credential"
+        def request(self, path, payload=None):
+            if path == "/rotate-credential":
+                return {"credential": "new-credential", "credential_expires_at": new_expiry}
+            return {}
+    monkeypatch.setattr(module, "Client", FakeClient)
+    monkeypatch.setattr(module, "full_probe", lambda *args: {})
+    args = SimpleNamespace(state_dir=str(tmp_path), model_cache=str(tmp_path / "models"), join_code_stdin=False,
+                           trainer_python="test-python", bundle=tmp_path / "test.pyz", controller="http://127.0.0.1", allow_http=True, slots=2)
+    worker = module.Agent(args); worker.stop.set(); worker.run()
+    state = read_json(tmp_path / "node-state.json")
+    assert state["credential"] == "new-credential" and state["node_id"] == "nod-test"
+    assert state["credential_expires_at"] == new_expiry
+
+
 def test_repeating_same_join_command_reuses_local_identity(tmp_path, monkeypatch):
     import training_worker.agent as module
     registrations = []

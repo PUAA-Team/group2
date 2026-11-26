@@ -1,5 +1,6 @@
 import hashlib
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import secrets
 import signal
@@ -29,6 +30,35 @@ class Agent:
         model_cache.mkdir(parents=True, exist_ok=True); os.environ["HF_HOME"] = str(model_cache)
         os.environ["PYTHONDONTWRITEBYTECODE"] = "1"
         os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN"] = "1"
+
+    def _credential_expiry(self):
+        raw = self.state.get("credential_expires_at")
+        if not raw:
+            return None
+        try:
+            expiry = datetime.fromisoformat(raw)
+        except ValueError:
+            return None
+        return expiry if expiry.tzinfo else expiry.replace(tzinfo=timezone.utc)
+
+    def _maybe_rotate_credential(self):
+        # 凭据临期（7 天内）或已过期时自动轮换，新凭据原子写入
+        # node-state.json（write_json 临时文件 + fsync + 原子替换）。
+        # 轮换失败不中断 Worker，旧凭据过期前仍可用，下次心跳再试。
+        expiry = self._credential_expiry()
+        if expiry is None or expiry - datetime.now(timezone.utc) > timedelta(days=7):
+            return False
+        try:
+            receipt = self.client.request("/rotate-credential", {})
+        except WorkerError as error:
+            print(f"Worker 凭据轮换失败：{error.code}，继续使用当前凭据", flush=True)
+            return False
+        self.state["credential"] = receipt["credential"]
+        self.state["credential_expires_at"] = receipt["credential_expires_at"]
+        self.client.key = receipt["credential"]
+        write_json(self.state_file, self.state)
+        print("Worker 凭据已轮换", flush=True)
+        return True
 
     def run(self):
         with AgentLock(self.root):
@@ -74,6 +104,7 @@ class Agent:
                             raise
                         print(error, flush=True); time.sleep(3)
                 self.state["node_id"] = receipt["node_id"]
+                self.state["credential_expires_at"] = receipt.get("credential_expires_at")
                 self.state["enrollment_fingerprint"] = self.state.get("pending_enrollment")
                 self.state["heartbeat_seq"] = max(self.state["heartbeat_seq"], receipt["next_seq"] - 1)
                 self.state.pop("pending_enrollment", None)
@@ -81,6 +112,7 @@ class Agent:
                 pending_file.unlink(missing_ok=True)
             else:
                 self.client.request("/inventory", {"request_id": "startup", "inventory": inventory})
+            self._maybe_rotate_credential()
             print(f"Worker 已连接：{self.state['node_id']}", flush=True)
             from .executor import Executor
             executor = Executor(self)
@@ -100,7 +132,10 @@ class Agent:
                     receipt = self.client.request("/heartbeat", payload)
                     self.state["heartbeat_seq"] = payload["seq"]
                     self.state.pop("heartbeat_pending", None)
+                    if receipt.get("credential_expires_at"):
+                        self.state["credential_expires_at"] = receipt["credential_expires_at"]
                     write_json(self.state_file, self.state)
+                    self._maybe_rotate_credential()
                     if self.probe_result:
                         request_id, report = self.probe_result
                         try:
