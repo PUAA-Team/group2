@@ -93,6 +93,7 @@ class MemberOut(Output):
     workspace_id: str
     user_id: str
     role: str
+    quota: dict[str, int] | None = None
 
 
 class MemberSummaryOut(MemberOut):

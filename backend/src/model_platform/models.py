@@ -81,6 +81,7 @@ class Membership(Base):
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), primary_key=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), primary_key=True)
     role: Mapped[str] = mapped_column(String(10))
+    quota: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
 
 class ModelAsset(Timestamp, Revision, Base):

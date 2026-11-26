@@ -9,7 +9,7 @@ from ..errors import Problem
 from ..job_models import Execution, Job, Project
 from ..job_schemas import JobInput
 from ..models import Dataset, DatasetVersion, ModelAsset, ModelVersion, User
-from ..permissions import effective_policy, workspace_access
+from ..permissions import effective_policy, workspace_access, workspace_effective_quota
 from .common import audit, commit, find_asset, revision_update, serialize
 from .dataset_files import parse_samples
 from .file_storage import read_verified, resolve_key
@@ -148,8 +148,8 @@ def update_job_priority(db, actor, workspace_id, job_id, priority, expected):
     return job
 
 
-def personal_capacity_available(db, owner, device_kind):
-    _, quota = effective_policy(db, owner)
+def personal_capacity_available(db, owner, device_kind, workspace_id=None):
+    quota = workspace_effective_quota(db, owner, workspace_id) if workspace_id else effective_policy(db, owner)[1]
     own = select(func.count()).select_from(Job).where(Job.status.in_(ACTIVE), Job.created_by == owner.id)
     return (db.scalar(own) < quota["concurrent_jobs"]
             and (device_kind != "cuda" or db.scalar(own.where(Job.device_kind == "cuda")) < quota["gpu_count"]))

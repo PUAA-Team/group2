@@ -78,6 +78,7 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
     ["edit-group", deps => deps.openModal("group-edit", deps.ctx.data.data.find(item => item.id === deps.id))],
     ["edit-user", deps => deps.openModal("user-edit", deps.ctx.data.data.find(item => item.id === deps.id))],
     ["edit-member", deps => deps.openModal("member", deps.ctx.data.members.data.find(item => item.user_id === deps.id))],
+    ["transfer-owner", deps => deps.openModal("transfer-owner", deps.ctx.data.members.data.find(item => item.user_id === deps.id))],
     ["toggle-user", deps => deps.openModal("toggle-user", deps.ctx.data.data.find(item => item.id === deps.id))],
     ["page", deps => changedQuery({ page: Number(deps.id) })],
     ["clear-search", () => changedQuery({ page: 1, q: "" })],
@@ -199,7 +200,14 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
         case "model-version": await api.request(`${base}/models/${modal.item.id}/versions`, { method: "POST", body: { version: data.get("version"), source_ref: data.get("source_ref") } }); break;
         case "model-upload": { const file = new FormData(); file.append("version", data.get("version")); file.append("file", data.get("file")); await api.request(`${base}/models/${modal.item.id}/versions/upload`, { method: "POST", body: file }); break; }
         case "dataset-version": { const file = new FormData(); file.append("file", data.get("file")); await api.request(`${base}/datasets/${modal.item.id}/versions`, { method: "POST", body: file }); break; }
-        case "member": await api.request(`${base}/members`, { method: "POST", body: { ...(modal.item.user_id ? { user_id: modal.item.user_id } : { account: data.get("account") }), role: data.get("role") } }); break;
+        case "member": {
+          const quota = Object.fromEntries(QUOTAS.filter(([k]) => String(data.get(`quota_${k}`) || "").trim() !== "").map(([k]) => [k, Number(data.get(`quota_${k}`))]));
+          await api.request(`${base}/members`, { method: "POST", body: { ...(modal.item.user_id ? { user_id: modal.item.user_id } : { account: data.get("account") }), role: data.get("role"), quota } });
+          break;
+        }
+        case "transfer-owner":
+          await api.request(`${base}/transfer-owner`, { method: "POST", revision: ctx.workspace.revision, body: { user_id: modal.item.user_id } });
+          break;
         case "group-new": case "group-edit": await api.request(`/admin/groups${modal.item.id ? `/${modal.item.id}` : ""}`, { method: modal.item.id ? "PATCH" : "POST", revision: modal.item.revision, body: { name: data.get("name"), ...policy(data) } }); break;
         case "user-new": case "user-edit": {
           const payload = { display_name: data.get("display_name"), group_id: data.get("group_id") || null, is_admin: data.get("is_admin") === "true", ...policy(data) };

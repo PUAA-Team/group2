@@ -138,13 +138,34 @@ class SetupInput(Input):
 class MemberInput(Input):
     user_id: str | None = None
     account: str | None = Field(default=None, min_length=3, max_length=64)
-    role: Literal["editor", "viewer"]
+    role: Literal["admin", "editor", "annotator", "viewer"]
+    quota: dict[str, int | None] | None = None
+
+    @field_validator("quota")
+    @classmethod
+    def check_member_quota(cls, value):
+        if value is None:
+            return None
+        cleaned = {}
+        for key, limit in value.items():
+            if key not in QUOTAS:
+                raise ValueError(f"未知配额项: {key}")
+            if limit is None:
+                continue
+            if isinstance(limit, bool) or not isinstance(limit, int) or limit < 0 or limit > 10000:
+                raise ValueError(f"配额 {key} 须为 0～10000 之间的整数")
+            cleaned[key] = limit
+        return cleaned
 
     @model_validator(mode="after")
     def one_identity(self):
         if bool(self.user_id) == bool(self.account):
             raise ValueError("请选择一个已有用户或填写账号")
         return self
+
+
+class WorkspaceOwnerTransfer(Input):
+    user_id: str = Field(min_length=1, max_length=40)
 
 
 def safe_source(value):

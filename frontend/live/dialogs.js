@@ -56,8 +56,16 @@ export function renderDialog(modal, ctx) {
     fields = `<div class="heading-actions">${btn("下载模板", "template", item.task_type)}</div><div class="field"><label for="version-file">选择文件</label><input id="version-file" name="file" class="input live-file" type="file" required accept="${item.task_type === "llm_sft" ? ".jsonl" : item.task_type === "image_classification" ? ".zip" : ".csv"}" /></div>`;
   }
   if (modal.kind === "member") {
-    title = item.user_id ? "修改成员角色" : "添加空间成员";
-    fields = input("已有用户账号", "account", item.account, `required maxlength="64" ${item.user_id ? "readonly" : ""}`) + select("空间角色", "role", options([["editor", "编辑者"], ["viewer", "查看者"]], item.role || "editor"));
+    title = item.user_id ? "配置空间成员" : "添加空间成员";
+    const sub = item.quota || {};
+    fields = input("已有用户账号", "account", item.account, `required maxlength="64" ${item.user_id ? "readonly" : ""}`) +
+      select("空间角色", "role", options([["admin", "空间管理员"], ["editor", "研发成员"], ["annotator", "标注员"], ["viewer", "查看者"]], item.role || "editor")) +
+      `<div class="live-field-grid">${QUOTAS.map(([key, label]) => input(`空间子配额：${label}`, `quota_${key}`, sub[key] ?? "", 'type="number" min="0" max="10000" placeholder="不另设上限"')).join("")}</div>`;
+  }
+  if (modal.kind === "transfer-owner") {
+    title = "转让空间所有权"; submit = "确认转让";
+    fields = `<div class="notice">转让后目标成员将成为空间所有者，您将保留空间管理员身份。</div>` +
+      fieldsInfo([["目标成员", e(item.display_name)], ["账号", e(item.account)]]);
   }
   if (["group-new", "group-edit"].includes(modal.kind)) { title = modal.kind === "group-new" ? "新增用户组" : "配置用户组"; fields = input("用户组名称", "name", item.name, 'required maxlength="100"') + policyFields(item); wide = true; }
   if (["user-new", "user-edit"].includes(modal.kind)) {

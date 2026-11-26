@@ -14,7 +14,7 @@ from .call_lifecycle import finish_call
 from .common import commit
 from .compute import lock_node
 from .jobs import ACTIVE, action_for, personal_capacity_available
-from .budgets import allocation_allowed
+from .budgets import allocation_allowed, workspace_allocation_allowed
 from .resource_policies import device_allowed, device_fits, node_accepts_tasks, purpose_matches, runtime_fits
 from .asset_lifecycle import ensure_active, lock_active
 
@@ -161,7 +161,7 @@ def claim(db, node, settings, known):
             continue
         device = next((item for item, rule in devices if device_fits(job, item, runtime)
                        and device_allowed(rule, actor, job.kind)), None)
-        if device is None or not personal_capacity_available(db, actor, job.device_kind):
+        if device is None or not personal_capacity_available(db, actor, job.device_kind, job.workspace_id) or not workspace_allocation_allowed(db, job.workspace_id, job.device_kind):
             continue
         result = db.execute(update(Job).where(Job.id == job.id, Job.status == "queued").values(status="preparing", revision=Job.revision + 1).execution_options(synchronize_session=False))
         if not result.rowcount:

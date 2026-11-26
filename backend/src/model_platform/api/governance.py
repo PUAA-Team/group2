@@ -6,10 +6,17 @@ from sqlalchemy import select
 from ..compute_models import ComputeDevice
 from ..errors import Problem, response
 from ..governance_schemas import ArchiveInput, BudgetInput, DevicePolicyInput, ReconcileInput
-from ..models import Dataset, ModelAsset, User, UserGroup
-from ..permissions import require_admin, workspace_access
+from ..models import Dataset, Membership, ModelAsset, User, UserGroup
+from ..permissions import require_admin, require_workspace_admin, workspace_access
 from ..services.asset_lifecycle import set_archive
-from ..services.budgets import budget_view, save_budget, storage_usage
+from ..services.budgets import (
+    budget_view,
+    save_budget,
+    save_workspace_budget,
+    storage_usage,
+    workspace_budget_view,
+    workspace_governance_summary,
+)
 from ..services.common import find_asset
 from ..services.compute import get_visible_node
 from ..services.execution_reviews import reconcile, review_view
@@ -66,6 +73,65 @@ def get_budget(group_id: str, request: Request, actor: Actor, db: Db):
 def update_budget(group_id: str, payload: BudgetInput, request: Request, actor: Actor, db: Db):
     require_admin(db, actor, 'groups.manage')
     return response(request, save_budget(db, actor, group_id, payload))
+
+
+@router.get('/admin/workspaces/{workspace_id}/budget')
+def get_workspace_budget(workspace_id: str, request: Request, actor: Actor, db: Db):
+    require_admin(db, actor, 'resources.manage')
+    return response(request, workspace_budget_view(db, workspace_id))
+
+
+@router.post('/admin/workspaces/{workspace_id}/budget')
+def update_workspace_budget(workspace_id: str, payload: BudgetInput, request: Request, actor: Actor, db: Db):
+    require_admin(db, actor, 'resources.manage')
+    return response(request, save_workspace_budget(db, actor, workspace_id, payload))
+
+
+@router.get('/workspaces/{workspace_id}/resource-principals')
+def workspace_principals(workspace_id: str, request: Request, actor: Actor, db: Db):
+    require_workspace_admin(db, actor, workspace_id)
+    rows = db.execute(
+        select(User).join(Membership, Membership.user_id == User.id)
+        .where(Membership.workspace_id == workspace_id, User.active.is_(True))
+        .order_by(User.account)
+    ).scalars().all()
+    groups = [{'id': row.id, 'name': row.name} for row in db.scalars(select(UserGroup).order_by(UserGroup.id))] if actor.is_admin else []
+    return response(request, {'users': [{'id': row.id, 'name': row.display_name} for row in rows], 'groups': groups})
+
+
+@router.get('/workspaces/{workspace_id}/devices/{device_id}/policy')
+def get_workspace_device_policy(workspace_id: str, device_id: str, request: Request, actor: Actor, db: Db):
+    require_workspace_admin(db, actor, workspace_id)
+    device = find_device(db, device_id)
+    from ..compute_models import ComputeNode
+    node = db.get(ComputeNode, device.node_id)
+    if not node or node.workspace_id != workspace_id:
+        raise Problem(404, 'NOT_FOUND', '设备不属于当前工作空间')
+    return response(request, device_policy(db, device_id))
+
+
+@router.post('/workspaces/{workspace_id}/devices/{device_id}/policy')
+def update_workspace_device_policy(workspace_id: str, device_id: str, payload: DevicePolicyInput, request: Request, actor: Actor, db: Db):
+    require_workspace_admin(db, actor, workspace_id)
+    device = find_device(db, device_id)
+    from ..compute_models import ComputeNode
+    node = db.get(ComputeNode, device.node_id)
+    if not node or node.workspace_id != workspace_id:
+        raise Problem(404, 'NOT_FOUND', '设备不属于当前工作空间')
+    if not actor.is_admin:
+        # 空间管理员仅能选择本空间成员作为设备白/黑名单，且保留平台管理员配置的用户组规则
+        member_ids = set(db.scalars(select(Membership.user_id).where(Membership.workspace_id == workspace_id)).all())
+        if (set(payload.allow_users) | set(payload.deny_users)) - member_ids:
+            raise Problem(422, 'INVALID_PRINCIPAL', '空间管理员仅可授权本空间成员')
+        current = device_policy(db, device_id)
+        payload = payload.model_copy(update={'allow_groups': current['allow_groups'], 'deny_groups': current['deny_groups']})
+    return response(request, save_device_policy(db, actor, node, device, payload))
+
+
+@router.get('/workspaces/{workspace_id}/governance/summary')
+def get_workspace_governance_summary(workspace_id: str, request: Request, actor: Actor, db: Db):
+    require_workspace_admin(db, actor, workspace_id)
+    return response(request, workspace_governance_summary(db, workspace_id))
 
 
 @router.get('/workspaces/{workspace_id}/storage-usage')

@@ -36,9 +36,29 @@ export function renderSpace(ctx) {
     raw(badge(({ pending: "待审批", approved: "已通过", rejected: "已拒绝" })[req.status] || req.status)),
     req.status === "pending" ? raw(`<div class="live-row-actions">${btn("批准", "admin-approve-join", req.id, "primary")}${btn("拒绝", "admin-reject-join", req.id)}</div>`) : date(req.reviewed_at),
   ]);
+  const roleLabels = { admin: "空间管理员", editor: "研发成员", annotator: "标注员", viewer: "查看者" };
+  const canTransfer = Boolean(ctx.session?.user?.is_admin || (ctx.session?.user?.id && ctx.workspace.owner_id === ctx.session.user.id));
+  const formatQuota = q => {
+    if (!q || !Object.keys(q).length) return "跟随平台";
+    return QUOTAS.filter(([k]) => q[k] != null).map(([k, label]) => `${label}:${q[k]}`).join(" / ") || "跟随平台";
+  };
+  const gov = ctx.data.governanceSummary;
+  const govSection = gov ? `<div class="section-heading"><h2>空间预算与成员账单</h2>${ctx.session?.user?.is_admin ? btn("配置空间预算", "gov-workspace-budget", ctx.workspace.id) : ""}</div>` +
+    fieldsInfo([
+      ["并发预算", `${gov.budget.usage.concurrent_jobs} / ${gov.budget.concurrent_jobs ?? "不限"}`],
+      ["GPU 预算", `${gov.budget.usage.gpu_count} / ${gov.budget.gpu_count ?? "不限"}`],
+      ["存储预算", `${(gov.budget.usage.storage_bytes / 1048576).toFixed(2)} MiB / ${gov.budget.storage_gib == null ? "不限" : `${gov.budget.storage_gib} GiB`}`],
+    ]) +
+    table(["成员", "角色", "空间子配额", "存储占用", "作业(总/运行/成功)", "GPU 时长", "智能 Token"], (gov.members || []).map(m => [
+      `${m.display_name} (${m.account})`, raw(tag(roleLabels[m.role] || m.role)), formatQuota(m.quota),
+      `${(m.storage_bytes / 1048576).toFixed(2)} MiB`,
+      `${m.jobs.total} / ${m.jobs.active} / ${m.jobs.succeeded}`,
+      `${(m.gpu_seconds / 3600).toFixed(2)} 小时`, String(m.assistant_tokens),
+    ]), "暂无成员账单") : "";
   const memberSection = can(ctx, "members.manage") ? `<div class="section-heading"><h2>空间成员</h2><div class="heading-actions">${btn("生成空间邀请", "modal", "workspace-invite")}${btn("添加成员", "modal", "member", "primary")}</div></div>` + inviteBanner +
-    table(["成员", "账号", "空间角色", "操作"], (members?.data || []).map(member => [member.display_name, member.account, raw(tag(member.role === "viewer" ? "查看者" : "编辑者")),
-      ctx.workspace.owner_id === member.user_id ? raw(tag("所有者")) : raw(`<div class="live-row-actions">${btn("修改角色", "edit-member", member.user_id)}${btn("移除", "admin-remove-member", member.user_id)}</div>`) ])) + pager(members?.pagination) +
+    table(["成员", "账号", "空间角色", "空间子配额", "操作"], (members?.data || []).map(member => [member.display_name, member.account, raw(tag(roleLabels[member.role] || member.role)), formatQuota(member.quota),
+      ctx.workspace.owner_id === member.user_id ? raw(tag("所有者")) : raw(`<div class="live-row-actions">${btn("配置成员", "edit-member", member.user_id)}${canTransfer ? btn("转让所有权", "transfer-owner", member.user_id) : ""}${btn("移除", "admin-remove-member", member.user_id)}</div>`) ])) + pager(members?.pagination) +
+    govSection +
     `<div class="section-heading"><h2>空间邀请码</h2></div>` + table(["邀请码", "默认角色", "加入方式", "使用次数", "过期时间", "状态", "操作"], inviteRows, "暂无空间邀请") +
     `<div class="section-heading"><h2>加入申请</h2></div>` + table(["姓名", "账号", "申请角色", "状态", "处理"], requestRows, "暂无加入申请") : "";
   return pageHeader("用户空间", "", (can(ctx, "assistants.use") ? `<a class="btn btn-secondary" href="#/assistants">智能辅助</a>` : "") + (can(ctx, "members.manage") && can(ctx, "assistants.use") ? btn("智能辅助授权", "assistant-policy") : "") + btn("个人资料", "modal", "profile") + btn("修改密码", "modal", "password-own") + joinBtn + create + (can(ctx, "members.manage") ? btn("修改空间", "modal", "workspace-edit") + btn("删除空间", "modal", "workspace-delete") : "")) + spaces +

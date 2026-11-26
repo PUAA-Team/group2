@@ -35,10 +35,12 @@ export function governanceDialog(modal) {
     const controls = (field, title, items) => `<fieldset class="live-check-field"><legend>${title}</legend><div class="live-checks">${items.map(p => `<label><input type="checkbox" name="${field}" value="${e(p.id)}" ${policy[field].includes(p.id) ? 'checked' : ''}/>${e(p.name)}</label>`).join('') || '暂无对象'}</div></fieldset>`;
     return { title: '设备策略', wide: true, fields: select('设备用途', 'purpose', options(Object.entries(devicePurposes), policy.purpose || 'shared')) +
       `<label class="check-item"><input type="checkbox" name="enabled" ${policy.enabled ? 'checked' : ''}/>允许新任务使用</label>` +
-      controls('allow_users', '允许用户', item.principals.users) + controls('allow_groups', '允许用户组', item.principals.groups) +
-      controls('deny_users', '禁止用户', item.principals.users) + controls('deny_groups', '禁止用户组', item.principals.groups) };
+      controls('allow_users', '允许用户', item.principals.users) +
+      (item.workspaceScoped ? '' : controls('allow_groups', '允许用户组', item.principals.groups)) +
+      controls('deny_users', '禁止用户', item.principals.users) +
+      (item.workspaceScoped ? '' : controls('deny_groups', '禁止用户组', item.principals.groups)) };
   }
-  if (modal.kind === 'gov-group-budget') return { title: '用户组共享预算', fields:
+  if (modal.kind === 'gov-group-budget' || modal.kind === 'gov-workspace-budget') return { title: modal.kind === 'gov-workspace-budget' ? '工作空间总预算' : '用户组共享预算', fields:
     [['gpu_count', 'GPU 数量'], ['concurrent_jobs', '并发任务'], ['storage_gib', '存储 GiB']].map(([key, text]) =>
       input(text, key, item.budget[key] ?? '', 'type="number" min="0" step="1" placeholder="不另设上限"')).join('') +
       fieldsInfo([['已占并发', e(item.budget.usage.concurrent_jobs)], ['已占 GPU', e(item.budget.usage.gpu_count)], ['已存文件', `${(item.budget.usage.storage_bytes / 1048576).toFixed(2)} MiB`]]) };
@@ -59,12 +61,12 @@ export function governanceDialog(modal) {
 export async function saveGovernance(api, modal, form) {
   const item = modal.item || {}; let path, body;
   if (modal.kind === 'gov-device-policy') {
-    path = `/resources/devices/${item.id}/policy`;
+    path = item.workspaceScoped ? `/workspaces/${item.workspaceId}/devices/${item.id}/policy` : `/resources/devices/${item.id}/policy`;
     body = { revision: item.policy.revision, enabled: form.has('enabled'),
       ...(form.has('purpose') ? { purpose: form.get('purpose') } : {}),
       ...Object.fromEntries(['allow_users', 'allow_groups', 'deny_users', 'deny_groups'].map(key => [key, form.getAll(key)])) };
-  } else if (modal.kind === 'gov-group-budget') {
-    path = `/admin/groups/${item.id}/budget`;
+  } else if (modal.kind === 'gov-group-budget' || modal.kind === 'gov-workspace-budget') {
+    path = modal.kind === 'gov-workspace-budget' ? `/admin/workspaces/${item.id}/budget` : `/admin/groups/${item.id}/budget`;
     body = { revision: item.budget.revision, ...Object.fromEntries(['gpu_count', 'concurrent_jobs', 'storage_gib'].map(key => [key, String(form.get(key) ?? '').trim() === '' ? null : Number(form.get(key))])) };
   } else if (modal.kind === 'gov-archive') {
     path = `/workspaces/${item.workspace_id}/${item.assetKind}/${item.id}/archive`;
@@ -83,9 +85,13 @@ export async function saveGovernance(api, modal, form) {
 export async function governanceAction(action, id, { api, ctx, openModal }) {
   if (!action.startsWith('gov-')) return false;
   if (action === 'gov-device-policy') {
-    const [policy, principals] = await Promise.all([api.request(`/resources/devices/${id}/policy`), api.request('/admin/resource-principals')]);
-    openModal(action, { id, policy: policy.data, principals: principals.data });
+    const workspaceScoped = !ctx.session?.user?.is_admin && !!ctx.workspace?.id;
+    const policyUrl = workspaceScoped ? `/workspaces/${ctx.workspace.id}/devices/${id}/policy` : `/resources/devices/${id}/policy`;
+    const principalsUrl = workspaceScoped ? `/workspaces/${ctx.workspace.id}/resource-principals` : '/admin/resource-principals';
+    const [policy, principals] = await Promise.all([api.request(policyUrl), api.request(principalsUrl)]);
+    openModal(action, { id, workspaceScoped, workspaceId: ctx.workspace?.id, policy: policy.data, principals: principals.data });
   } else if (action === 'gov-group-budget') openModal(action, { id, budget: (await api.request(`/admin/groups/${id}/budget`)).data });
+  else if (action === 'gov-workspace-budget') openModal(action, { id, budget: (await api.request(`/admin/workspaces/${id}/budget`)).data });
   else if (action === 'gov-review') openModal(action, (await api.request(`/admin/executions/${id}/review`)).data);
   else if (action === 'gov-archive' || action === 'gov-delete') openModal(action, { ...ctx.data.item, assetKind: ctx.path.startsWith('/models/') ? 'models' : 'datasets' });
   else return false;

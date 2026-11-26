@@ -145,12 +145,13 @@ async function load() {
         data = await api.request(`${base}/${catalog ? ctx.kind === "models" ? "model-catalog" : "dataset-catalog" : ctx.kind}?${query}&${filters}`, { signal });
       }
     } else if (!ctx.forbidden && ctx.workspace && ctx.path === "/space" && ctx.access.actions.includes("members.manage")) {
-      const [members, invites, joinRequests] = await Promise.all([
+      const [members, invites, joinRequests, governanceSummary] = await Promise.all([
         api.request(`${base}/members?page=${ctx.page}&page_size=20`, { signal }),
         api.request(`${base}/invites`, { signal }),
         api.request(`${base}/join-requests`, { signal }),
+        api.request(`${base}/governance/summary`, { signal }),
       ]);
-      data.members = members; data.invites = invites.data; data.joinRequests = joinRequests.data;
+      data.members = members; data.invites = invites.data; data.joinRequests = joinRequests.data; data.governanceSummary = governanceSummary.data;
     } else if (!ctx.forbidden && ctx.workspace && ctx.path === "/admin/audit") {
       data = await api.request(`${base}/audit?page=${ctx.page}&page_size=20`, { signal });
     } else if (!ctx.forbidden && ctx.workspace && ["/home", "/admin/stats"].includes(ctx.path)) {

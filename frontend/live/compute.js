@@ -68,7 +68,9 @@ function renderNode(ctx, node, manage) {
       ["内存", node.inventory.memory_mb ? `${node.inventory.memory_mb} MiB` : "—"], ["最近心跳", date(node.last_seen_at)], ["最近探测", date(node.last_inventory_at)],
       ["PyTorch", e(runtime.torch_version || "未安装")], ["CUDA", e(runtime.cuda_version || "—")], ['Worker 状态', tag(runtime.execution_contract_version >= 1 ? '已就绪' : '需升级')], ["执行槽位", e(node.slots)], ["工作空间", e(ctx.workspaces.find(space => space.id === node.workspace_id)?.name || "—")]]) +
     `<div class="section-heading"><h2>设备清单</h2></div>` + table(["设备", "标识", "用途", "显存 / 内存", "状态", "操作"], node.devices.map(device => [device.name, raw(`<span class="live-break">${e(device.hardware_id)}</span>`), raw(tag(devicePurposes[device.purpose] || devicePurposes.shared)), `${device.memory_mb} MiB`, raw(badge(device.status)),
-      ctx.session.user.is_admin && manage ? raw(btn('配置策略', 'gov-device-policy', device.id) + (device.reserved_execution_id ? btn('执行核查', 'gov-review', device.reserved_execution_id) : '')) : '—'])) +
+      (ctx.session.user.is_admin && manage) || (can(ctx, "members.manage") && node.workspace_id === ctx.workspace?.id)
+        ? raw(btn('配置策略', 'gov-device-policy', device.id) + (ctx.session.user.is_admin && manage && device.reserved_execution_id ? btn('执行核查', 'gov-review', device.reserved_execution_id) : ''))
+        : '—'])) +
     `<div class="heading-actions console-section-actions"><select class="select" data-query-filter="device" aria-label="监控设备">${options(node.devices.map(device => [device.id, device.name]), ctx.data.history?.device_id)}</select><select class="select" data-query-filter="hours" aria-label="监控时段">${options([[1, '近1小时'], [6, '近6小时'], [24, '近24小时'], [168, '近7天']], ctx.params.get('hours') || 24)}</select></div>` + historyHtml(ctx.data.history, node.devices.find(device => device.id === ctx.data.history?.device_id)?.kind) +
     (node.inventory.errors?.length ? `<div class="section-heading"><h2>探测结果</h2></div><div class="live-permissions">${node.inventory.errors.map(tag).join("")}</div>` : "");
 }

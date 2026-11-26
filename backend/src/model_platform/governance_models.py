@@ -26,6 +26,12 @@ class GroupBudget(Timestamp, Revision, Base):
     value: Mapped[dict] = mapped_column(JSON)
 
 
+class WorkspaceBudget(Timestamp, Revision, Base):
+    __tablename__ = "workspace_budgets"
+    id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), primary_key=True)
+    value: Mapped[dict] = mapped_column(JSON)
+
+
 class StoredObject(Timestamp, Base):
     __tablename__ = "stored_objects"
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
