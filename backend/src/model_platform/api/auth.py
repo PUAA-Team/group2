@@ -154,10 +154,18 @@ def reset_password_by_code(payload: PasswordReset, request: Request, db: Db):
                         settings.login_account_lock_seconds, settings.login_account_window_seconds)
         commit(db)
         raise Problem(400, "INVALID_RESET_CODE", "重置码无效或已过期")
+    used_res = db.execute(
+        update(PasswordResetCode)
+        .where(PasswordResetCode.id == row.id, PasswordResetCode.used_at.is_(None))
+        .values(used_at=now)
+        .execution_options(synchronize_session=False)
+    )
+    if used_res.rowcount != 1:
+        db.rollback()
+        raise Problem(400, "INVALID_RESET_CODE", "重置码无效或已过期")
     db.execute(update(User).where(User.id == user.id).values(
         password_hash=hash_password(payload.password),
         revision=User.revision + 1).execution_options(synchronize_session=False))
-    row.used_at = now
     db.execute(delete(SessionToken).where(SessionToken.user_id == user.id))
     client = request.client.host if request.client else "unknown"
     for key in (digest(f"account|{account}"), digest(f"{account}|{client}")):

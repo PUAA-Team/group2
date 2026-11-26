@@ -1,12 +1,13 @@
 import { ACTIONS, badge, btn, can, card, date, e, fieldsInfo, link, pageHeader, pager, QUOTAS, raw, table, tag, TASKS, workspaceRequired } from "../components.js?v=stage20a-2";
 
+const JOB_STATUS_LABELS = { draft: "草稿", queued: "排队中", preparing: "准备中", running: "运行中", stopping: "停止中", succeeded: "已完成", failed: "失败", stopped: "已停止", cancelled: "已取消" };
+
 export function renderHome(ctx) {
   if (!ctx.workspace) return pageHeader("工作台") + workspaceRequired(ctx);
   const values = ctx.data.counts || {};
   const counts = [["训练项目", values.projects, "/projects"], ["运行中训练", values.active, "/runs?status=running"], ["排队中训练", values.queued, "/runs?status=queued"], ["已完成训练", values.succeeded, "/runs?status=succeeded"], ["可用数据集", values.datasets, "/datasets"]].filter(([, value]) => value !== null);
   const actions = can(ctx, "training.write") ? '<a class="btn btn-primary" href="#/train/new">新建训练</a>' : "";
-  const labels = { draft: "草稿", queued: "排队中", preparing: "准备中", running: "运行中", stopping: "停止中", succeeded: "已完成", failed: "失败", stopped: "已停止", cancelled: "已取消" };
-  const rows = (ctx.data.recent_jobs || []).map(item => [raw(link(item.name, `/runs/${item.id}`)), raw(tag(TASKS[item.task_type] || "—")), raw(badge(labels[item.status] || item.status)), item.result?.accuracy == null ? "—" : `${(item.result.accuracy * 100).toFixed(1)}%`, item.model_name || "—", date(item.created_at)]);
+  const rows = (ctx.data.recent_jobs || []).map(item => [raw(link(item.name, `/runs/${item.id}`)), raw(tag(TASKS[item.task_type] || "—")), raw(badge(JOB_STATUS_LABELS[item.status] || item.status)), item.result?.accuracy == null ? "—" : `${(item.result.accuracy * 100).toFixed(1)}%`, item.model_name || "—", date(item.created_at)]);
   const shortcuts = [["新建训练", "/train/new", "training.write"], ["导入数据集", "/datasets/new", "datasets.write"], ["在线标注", "/annotation", "datasets.write"], ["模型仓库", "/models", "models.read"]].filter(([, , action]) => can(ctx, action)).map(([label, href]) => `<a class="quick-link" href="#${href}">${label}<span aria-hidden="true">›</span></a>`).join("");
   const actionNames = { "presets.create": "添加示例资产", "jobs.create": "创建任务", "jobs.submit": "提交任务", "jobs.stop": "停止任务", "projects.create": "新建项目", "datasets.create": "新增数据集", "dataset_versions.create": "导入数据", "models.create": "登记模型", "model_versions.create": "登记模型版本" };
   const activity = (ctx.data.activity || []).map(item => `<div class="console-activity"><strong>${e(actionNames[item.action] || item.action)}</strong><span>${e(item.actor_name)}</span><time>${date(item.created_at)}</time></div>`).join("");
@@ -51,7 +52,7 @@ export function renderSpace(ctx) {
       ['处理候选', `${((ctx.data.storage.categories.candidate || 0) / 1048576).toFixed(2)} MiB`],
       ['未归属文件', `${(ctx.data.storage.unattributed_bytes / 1048576).toFixed(2)} MiB`]]) : '') +
     (ctx.data.myJobs ? `<div class="section-heading"><h2>我的近期任务</h2></div>` + table(["任务", "类型", "状态", "创建时间"], (ctx.data.myJobs || []).map(job => [
-      raw(link(job.name, `/runs/${job.id}`)), raw(tag(TASKS[job.task_type] || job.job_kind || "—")), raw(badge(job.status)), date(job.created_at),
+      raw(link(job.name, `/runs/${job.id}`)), raw(tag(TASKS[job.task_type] || job.job_kind || "—")), raw(badge(JOB_STATUS_LABELS[job.status] || job.status)), date(job.created_at),
     ]), "暂无个人任务") : "") +
     (ctx.data.sessions ? `<div class="section-heading"><h2>登录会话管理</h2>${ctx.data.sessions.length > 1 ? btn("踢出其他设备", "session-revoke-others") : ""}</div>` + table(["会话标识", "登录时间", "过期时间", "状态", "操作"], ctx.data.sessions.map(s => [
       raw(`<code>${e(s.id)}</code>`), date(s.created_at), date(s.expires_at), raw(badge(s.current ? "当前设备" : "其他设备")),
