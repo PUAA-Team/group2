@@ -1,0 +1,10 @@
+[Unit]
+Description=Back up model platform database and storage
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/srv/model-platform/current/deploy/server/backup.sh /srv/model-platform
+TimeoutStartSec=1800

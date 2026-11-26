@@ -1,0 +1,11 @@
+[Unit]
+Description=Back up model platform database and storage daily
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+RandomizedDelaySec=600
+Persistent=true
+Unit=model-platform-backup.service
+
+[Install]
+WantedBy=timers.target
