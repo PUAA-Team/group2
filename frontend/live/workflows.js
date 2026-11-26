@@ -1,12 +1,12 @@
-import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage15-1";
-import { renderProjectCatalog, taskFilter } from "./catalog.js?v=stage15-1";
-import { renderTrainingDetail } from "./job-detail.js?v=stage15-1";
-import { renderWizard } from "./training-wizard.js?v=stage15-1";
-import { isResultPage, loadResults, renderResults, renderCallHistory, renderEvaluationReport } from "./results.js?v=stage15-1";
-import { reviewButton } from './governance.js?v=stage15-1';
-import { renderProjectDetail } from './projects.js?v=stage15-1';
-import { renderKeys } from './key-management.js?v=stage15-1';
-import { nodeOptions, syncResourceNodes } from "./resource-options.js?v=stage16-local";
+import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, raw, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage20a-2";
+import { renderProjectCatalog, taskFilter } from "./catalog.js?v=stage20a-2";
+import { renderTrainingDetail } from "./job-detail.js?v=stage20a-2";
+import { renderWizard } from "./training-wizard.js?v=stage20a-2";
+import { isResultPage, loadResults, renderResults, renderCallHistory, renderEvaluationReport } from "./results.js?v=stage20a-2";
+import { reviewButton } from './governance.js?v=stage20a-2';
+import { renderProjectDetail } from './projects.js?v=stage20a-2';
+import { renderKeys } from './key-management.js?v=stage20a-2';
+import { nodeOptions, syncResourceNodes } from "./resource-options.js?v=stage20a-2";
 
 const routes = { "/runs": "train", "/admin/jobs": "train", "/evaluation": "evaluate", "/services": "service" };
 const titles = { train: "训练任务", evaluate: "模型评估", service: "在线服务" };
@@ -108,7 +108,7 @@ function detail(ctx) {
   if (job.kind === "service" && (job.snapshot?.trainer_id === "qwen-lora-v1" || source?.trainer_id === "qwen-lora-v1")) meta.push(["输出方式", tag(job.config.inference?.mode === "label" ? "标签分类" : "自由生成")], ...(job.config.inference?.mode === "label" ? [["输出标签", job.config.inference.labels.map(tag).join(" ")]] : []));
   const configuration = `<div class="section-heading"><h2>训练配置</h2></div>` + fieldsInfo([["Epochs", e(job.config.epochs)], ["Batch size", e(job.config.batch_size)], ["Learning rate", e(job.config.learning_rate)], ["验证比例", e(job.config.validation_ratio)], ["Seed", e(job.config.seed)], ...(job.snapshot?.trainer_id === "qwen-lora-v1" ? [["最大长度", e(job.config.max_length)], ["LoRA rank", e(job.config.lora_rank)]] : [])]);
   const outcome = job.status === "succeeded" ? `<div class="section-heading"><h2>执行结果</h2><div class="heading-actions">${job.artifact_sha256 ? `<a class="btn btn-secondary" href="/api/v1/workspaces/${e(ctx.workspace.id)}/jobs/${e(job.id)}/artifact">下载产物</a>` : ""}${job.output_model_version_id && can(ctx, "training.write") ? btn("创建评估", "workflow-evaluate", job.output_model_version_id) : ""}${job.output_model_version_id && can(ctx, "services.write") ? btn("部署服务", "workflow-deploy", job.output_model_version_id, "primary") : ""}</div></div>` + fieldsInfo([...metricValues(result).map(([key, value]) => [key, e(value)]), ...["samples", "training_samples", "validation_samples", "response_tokens", "perplexity"].filter(key => result[key] !== undefined).map(key => [({ samples: "样本数", training_samples: "训练样本", validation_samples: "验证样本", response_tokens: "响应 Token", perplexity: "困惑度" })[key], e(Number(result[key]).toFixed(key === "perplexity" ? 3 : 0))])]) +
-    (result.confusion_matrix ? `<div class="section-heading"><h2>混淆矩阵</h2>${tag("行：实际 / 列：预测")}</div>` + table(["类别", ...result.labels], result.confusion_matrix.map((row, i) => [e(result.labels[i]), ...row.map(e)])) : "") : "";
+    (result.confusion_matrix ? `<div class="section-heading"><h2>混淆矩阵</h2>${tag("行：实际 / 列：预测")}</div>` + table(["类别", ...result.labels], result.confusion_matrix.map((row, i) => [result.labels[i], ...row])) : "") : "";
   const prediction = ctx.callResult?.job_id === job.id ? ctx.callResult.result : null;
   const predictionHtml = prediction?.label ? fieldsInfo([["分类结果", tag(prediction.label)]]) : prediction ? `<pre class="execution-output">${e(typeof prediction.text === "string" ? prediction.text : JSON.stringify(prediction, null, 2))}</pre>` : "";
   const invoke = job.kind === "service" && can(ctx, "services.invoke") ? `<div class="section-heading"><h2>调用测试</h2>${btn("发送请求", "workflow-invoke", job.id, "primary", job.status !== "ready")}</div>${predictionHtml}` : "";
@@ -129,10 +129,10 @@ export function renderWorkflow(ctx) {
   if (ctx.path === "/projects") return renderProjectCatalog(ctx);
   if (ctx.path === "/api-keys") return renderKeys(ctx);
   const kind = routes[ctx.path] || "train", write = can(ctx, kind === "service" ? "services.write" : "training.write");
-  let rows = (ctx.data.data || []).map(item => [link(item.name, `/runs/${item.id}`), e(item.model_name || "—"), tag(TASKS[item.task_type] || "—"), badge(JOB_STATUS[item.status]), tag(item.device_kind === "cuda" ? "GPU" : "CPU"), ...metricValues(item.result).map(([, value]) => e(value)), date(item.created_at)]);
+  let rows = (ctx.data.data || []).map(item => [raw(link(item.name, `/runs/${item.id}`)), item.model_name || "—", raw(tag(TASKS[item.task_type] || "—")), raw(badge(JOB_STATUS[item.status])), raw(tag(item.device_kind === "cuda" ? "GPU" : "CPU")), ...metricValues(item.result).map(([, value]) => value), date(item.created_at)]);
   const add = write ? btn(kind === "train" ? "新建训练" : kind === "evaluate" ? "创建评估" : "部署服务", "workflow-new", kind, "primary") : "";
   const filters = taskFilter(ctx) + `<select class="select filter-select" data-query-filter="status" aria-label="任务状态">${options([["", "全部状态"], ...Object.entries(JOB_STATUS)], ctx.params?.get("status") || "")}</select>`;
-  if (kind === "evaluate") rows = rows.map((row, index) => [`<input type="checkbox" name="ids" value="${e(ctx.data.data[index].id)}" aria-label="选择 ${e(ctx.data.data[index].name)}" ${ctx.data.data[index].status === "succeeded" ? "" : "disabled"}/>`, ...row]);
+  if (kind === "evaluate") rows = rows.map((row, index) => [raw(`<input type="checkbox" name="ids" value="${e(ctx.data.data[index].id)}" aria-label="选择 ${e(ctx.data.data[index].name)}" ${ctx.data.data[index].status === "succeeded" ? "" : "disabled"}/>`), ...row]);
   const results = table([...(kind === "evaluate" ? ["选择"] : []), "名称", "模型", "任务类型", "状态", "资源", "准确率", "Macro F1", "Loss", "创建时间"], rows);
   return pageHeader(title, "", add) + toolbar(ctx.q, filters, "搜索任务") + (kind === "evaluate" ? `<form data-form="evaluation-compare"><div class="toolbar"><button type="submit" class="btn btn-secondary">对比所选评估</button></div>${results}</form>` : results) + pager(ctx.data.pagination);
 }

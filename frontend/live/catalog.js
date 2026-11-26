@@ -1,4 +1,4 @@
-import { badge, btn, can, card, date, e, link, options, pageHeader, pager, select, STATUS, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage15-1";
+import { badge, btn, can, card, date, e, link, options, pageHeader, pager, raw, select, STATUS, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage20a-2";
 
 export const CATEGORY = { all: "全部模型", prebuilt: "预置模型", network: "基础网络", trained: "训练产物" };
 export function taskFilter(ctx) {
@@ -29,8 +29,8 @@ export function renderAssetCatalog(kind, ctx) {
   }).join("")}</div>` : table([], []);
   else body = table(models ? ["模型名称", "任务", "分类", "版本", "训练器", "模型来源", "操作"] : ["数据集名称", "任务", "版本", "样本数", "格式", "状态", "更新时间"], items.map(item => {
     const version = item.latest_version;
-    return models ? [link(item.name, `/models/${item.id}`), tag(TASKS[item.task_type]), tag(CATEGORY[item.category] || "已登记"), e(version?.version || "—"), e(ctx.templates.find(t => t.id === item.trainer_id)?.name || item.trainer_id), `<span class="live-source">${e(version?.source_ref || item.source_ref)}</span>`, write ? btn("编辑", "edit-asset", item.id) : "—"]
-      : [link(item.name, `/datasets/${item.id}`), tag(TASKS[item.task_type]), version ? tag(`v${version.number}`) : "—", e(version?.sample_count ?? "—"), tag(version?.format.toUpperCase() || "—"), badge(STATUS[version?.status] || "已登记"), date(version?.created_at || item.created_at)];
+    return models ? [raw(link(item.name, `/models/${item.id}`)), raw(tag(TASKS[item.task_type])), raw(tag(CATEGORY[item.category] || "已登记")), version?.version || "—", ctx.templates.find(t => t.id === item.trainer_id)?.name || item.trainer_id, raw(`<span class="live-source">${e(version?.source_ref || item.source_ref)}</span>`), write ? raw(btn("编辑", "edit-asset", item.id)) : "—"]
+      : [raw(link(item.name, `/datasets/${item.id}`)), raw(tag(TASKS[item.task_type])), version ? raw(tag(`v${version.number}`)) : "—", version?.sample_count ?? "—", raw(tag(version?.format.toUpperCase() || "—")), raw(badge(STATUS[version?.status] || "已登记")), date(version?.created_at || item.created_at)];
   }));
   const versionFilter = models ? '' : `<select class="select filter-select" data-query-filter="version_status" aria-label="数据状态">${options([['', '全部数据'], ['available', '可训练'], ['needs_annotation', '待标注'], ['unversioned', '无版本']], ctx.params?.get('version_status') || '')}</select>`;
   return pageHeader(title, "", add) + tabs + toolbar(ctx.q, taskFilter(ctx) + archiveFilter(ctx) + versionFilter + view, models ? "搜索模型" : "搜索数据集") + body + pager(ctx.data.pagination);

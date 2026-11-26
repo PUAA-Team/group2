@@ -1,5 +1,5 @@
-import { badge, btn, can, date, e, fieldsInfo, link, pageHeader, pager, STATUS, table, tag, TASKS, toolbar, workspaceRequired } from "../components.js?v=stage15-1";
-import { renderAssetCatalog } from "../catalog.js?v=stage15-1";
+import { badge, btn, can, date, e, fieldsInfo, link, pageHeader, pager, raw, STATUS, table, tag, TASKS, toolbar, workspaceRequired } from "../components.js?v=stage20a-2";
+import { renderAssetCatalog } from "../catalog.js?v=stage20a-2";
 
 export function renderAssets(kind, ctx) {
   if (!ctx.path?.startsWith("/admin/")) return renderAssetCatalog(kind, ctx);
@@ -7,9 +7,9 @@ export function renderAssets(kind, ctx) {
   const title = models ? "模型仓库" : "数据集";
   const actions = can(ctx, `${kind}.write`) ? btn(models ? "新增模型" : "新增数据集", "modal", models ? "model-new" : "dataset-new", "primary", !ctx.workspace) : "";
   if (!ctx.workspace) return pageHeader(title) + workspaceRequired(ctx);
-  const rows = (ctx.data.data || []).map(item => [link(item.name, `/${kind}/${item.id}`), tag(TASKS[item.task_type]),
-    ...(models ? [e(ctx.templates.find(t => t.id === item.trainer_id)?.name || item.trainer_id), `<span class="live-source" title="${e(item.source_ref)}">${e(item.source_ref)}</span>`] : [tag("版本管理")]),
-    date(item.created_at), can(ctx, `${kind}.write`) ? btn("编辑", "edit-asset", item.id) : "—"]);
+  const rows = (ctx.data.data || []).map(item => [raw(link(item.name, `/${kind}/${item.id}`)), raw(tag(TASKS[item.task_type])),
+    ...(models ? [ctx.templates.find(t => t.id === item.trainer_id)?.name || item.trainer_id, raw(`<span class="live-source" title="${e(item.source_ref)}">${e(item.source_ref)}</span>`)] : [raw(tag("版本管理"))]),
+    date(item.created_at), can(ctx, `${kind}.write`) ? raw(btn("编辑", "edit-asset", item.id)) : "—"]);
   return pageHeader(title, "", actions) + toolbar(ctx.q) + table(models ? ["模型名称", "任务", "训练模板", "模型来源", "登记时间", "操作"] : ["数据集名称", "任务", "内容", "登记时间", "操作"], rows) + pager(ctx.data.pagination);
 }
 
@@ -24,8 +24,8 @@ export function renderAssetDetail(kind, ctx) {
   if (models) metadata.push(["训练模板", e(ctx.templates.find(t => t.id === item.trainer_id)?.name || item.trainer_id)], ["模型来源", `<span class="live-break">${e(item.source_ref)}</span>`]);
   if (item.description) metadata.push(["说明", e(item.description)]);
   const rows = versions.map(version => models
-    ? [tag(version.version), `<span class="live-break">${e(version.source_ref)}</span>`, version.size_bytes == null ? "—" : `${(version.size_bytes / 1024).toFixed(1)} KiB`, badge(version.status === "available" ? "可训练" : "已登记"), date(version.created_at)]
-    : [tag(`v${version.number}`), e(version.filename), e(version.format.toUpperCase()), e(version.sample_count), `${(version.size_bytes / 1024).toFixed(1)} KiB`, tag(({train:"训练集",validation:"验证集",test:"测试集"})[version.provenance?.partition] || ({annotation:"人工标注",clean:"数据清洗",augment:"数据增强"})[version.provenance?.operation] || "上传"), badge(STATUS[version.status] || version.status), `<div class="live-row-actions">${link("浏览样本", `/datasets/${item.id}/samples?version=${version.id}`)}<a class="entity-link" href="/api/v1/workspaces/${ctx.workspace.id}/dataset-versions/${version.id}/download">下载</a>${btn("校验报告", "dataset-report", `${item.id}:${version.id}`)}${write ? btn("处理", "data-new-operation", `clean:${version.id}`) : ""}</div>`]);
+    ? [raw(tag(version.version)), raw(`<span class="live-break">${e(version.source_ref)}</span>`), version.size_bytes == null ? "—" : `${(version.size_bytes / 1024).toFixed(1)} KiB`, raw(badge(version.status === "available" ? "可训练" : "已登记")), date(version.created_at)]
+    : [raw(tag(`v${version.number}`)), version.filename, version.format.toUpperCase(), version.sample_count, `${(version.size_bytes / 1024).toFixed(1)} KiB`, raw(tag(({train:"训练集",validation:"验证集",test:"测试集"})[version.provenance?.partition] || ({annotation:"人工标注",clean:"数据清洗",augment:"数据增强"})[version.provenance?.operation] || "上传")), raw(badge(STATUS[version.status] || version.status)), raw(`<div class="live-row-actions">${link("浏览样本", `/datasets/${item.id}/samples?version=${version.id}`)}<a class="entity-link" href="/api/v1/workspaces/${ctx.workspace.id}/dataset-versions/${version.id}/download">下载</a>${btn("校验报告", "dataset-report", `${item.id}:${version.id}`)}${write ? btn("处理", "data-new-operation", `clean:${version.id}`) : ""}</div>`)]);
   return `<div class="breadcrumb"><a href="#/${kind}">${models ? "模型仓库" : "数据集"}</a><span>/</span><span>${e(item.name)}</span></div>` +
       pageHeader(item.name, "", actions) + `<div class="live-detail-meta">${tag(TASKS[item.task_type])}${item.archived ? tag('已归档') : ''}</div>` +
     fieldsInfo(metadata) + `<div class="section-heading"><h2>历史版本</h2>${!models && uploadSupported ? btn("下载模板", "template", item.task_type) : ""}</div>` +
@@ -37,5 +37,5 @@ export function renderAssetDetail(kind, ctx) {
 export function renderPreview(preview) {
   const keys = Object.keys(preview.samples[0] || {});
   return `<div class="section-heading" id="samples"><h2>样本预览</h2>${tag(`共 ${preview.total} 条`)}</div>` +
-    table(keys, preview.samples.map(row => keys.map(key => `<div class="live-sample">${e(row[key])}</div>`)));
+    table(keys, preview.samples.map(row => keys.map(key => raw(`<div class="live-sample">${e(row[key])}</div>`))));
 }

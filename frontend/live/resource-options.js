@@ -1,4 +1,4 @@
-import { options } from "./components.js?v=stage15-1";
+import { options } from "./components.js?v=stage20a-2";
 
 export function nodeOptions(nodes, jobKind, deviceKind, selected = "", keepSelection = true) {
   const dedicated = jobKind === "service" ? "inference" : "train_eval";

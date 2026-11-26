@@ -1,4 +1,4 @@
-import { e, icon, input } from "../components.js?v=stage15-1";
+import { e, icon, input } from "../components.js?v=stage20a-2";
 
 export function renderAuth({ initialized = true, enabled = false, registration = false, reset = false, invitation = "", invitations_enabled = false, self_registration_enabled = false, platform_name = "模训平台" } = {}, error = "") {
   const setup = !initialized && enabled;

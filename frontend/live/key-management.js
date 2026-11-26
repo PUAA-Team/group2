@@ -1,4 +1,4 @@
-import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, table } from './components.js?v=stage15-1';
+import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, raw, table } from './components.js?v=stage20a-2';
 
 const localDate = value => { const item = new Date(value); return new Date(item.getTime() - item.getTimezoneOffset() * 60000).toISOString().slice(0, 16); };
 
@@ -17,12 +17,12 @@ export function renderKeys(ctx) {
   const filters = `<select class="select filter-select" data-query-filter="key_service" aria-label="关联服务">${options([['', '全部服务'], ...(ctx.data.services || []).map(row => [row.id, row.name])], ctx.params?.get('key_service') || '')}</select>` +
     `<select class="select filter-select" data-query-filter="key_status" aria-label="密钥状态">${options([['', '全部状态'], ['active', '启用'], ['expired', '已过期'], ['revoked', '已撤销']], ctx.params?.get('key_status') || '')}</select>`;
   const generated = ctx.generatedKey ? `<div class="notice"><label for="one-time-key">新密钥（仅显示本次）</label><div class="heading-actions"><input id="one-time-key" class="input" readonly value="${e(ctx.generatedKey)}"/>${btn('复制', 'workflow-copy-key')}${btn('关闭', 'workflow-hide-key')}</div></div>` : '';
-  const rows = (ctx.data.data || []).map(key => [e(key.name), e(key.masked_identifier || '••••' + key.id.slice(-8)),
-    link(ctx.data.services?.find(service => service.id === key.job_id)?.name || key.job_id, '/runs/' + key.job_id),
-    badge(key.revoked_at ? '停用' : new Date(key.expires_at) <= new Date() ? '已过期' : '启用'),
-    e(key.recorded_calls ?? '—'), date(key.last_called_at), date(key.expires_at),
-    `<div class="live-row-actions">${btn('接入示例', 'keys-example', key.id)}${write && !key.revoked_at ? btn('有效期', 'keys-expiry', key.id) +
-      btn('轮换', 'workflow-rotate-key', key.id, 'secondary', new Date(key.expires_at) <= new Date()) + btn('撤销', 'workflow-revoke-key', key.id) : ''}</div>`]);
+  const rows = (ctx.data.data || []).map(key => [key.name, key.masked_identifier || '••••' + key.id.slice(-8),
+    raw(link(ctx.data.services?.find(service => service.id === key.job_id)?.name || key.job_id, '/runs/' + key.job_id)),
+    raw(badge(key.revoked_at ? '停用' : new Date(key.expires_at) <= new Date() ? '已过期' : '启用')),
+    key.recorded_calls ?? '—', date(key.last_called_at), date(key.expires_at),
+    raw(`<div class="live-row-actions">${btn('接入示例', 'keys-example', key.id)}${write && !key.revoked_at ? btn('有效期', 'keys-expiry', key.id) +
+      btn('轮换', 'workflow-rotate-key', key.id, 'secondary', new Date(key.expires_at) <= new Date()) + btn('撤销', 'workflow-revoke-key', key.id) : ''}</div>`) ]);
   return pageHeader('API KEY管理', '', write ? btn('创建密钥', 'modal', 'key-new', 'primary') : '') + generated +
     `<div class="toolbar"><div class="heading-actions">${filters}</div>${btn('刷新', 'refresh')}</div>` +
     table(['名称', '标识', '服务', '状态', '已记录调用', '最近调用', '到期时间', '操作'], rows);

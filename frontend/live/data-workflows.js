@@ -1,5 +1,5 @@
-import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage15-1";
-import { renderAnnotation } from "./annotation-view.js?v=stage15-1";
+import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, raw, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage20a-2";
+import { renderAnnotation } from "./annotation-view.js?v=stage20a-2";
 
 export const DATA_STATES = { open: "进行中", draft: "草稿", submitted: "待审核", approved: "已通过", rejected: "已退回", queued: "排队中", running: "运行中", review: "待发布", published: "已发布", failed: "失败", cancelled: "已取消" };
 export const DATA_KINDS = { clean: "数据清洗", split: "数据划分", augment: "数据增强" };
@@ -34,7 +34,7 @@ export async function loadDataWorkflow(api, ctx, signal) {
 
 export function renderSampleTable(ctx, data, taskType, imageBase) {
   if (!data) return "";
-  const rows = data.samples.map(row => [tag(row.index + 1), ...(taskType === "image_classification" ? [`<img class="data-thumbnail" src="${e(imageBase(row.index))}" alt="样本${row.index + 1}" loading="lazy"/>`, e(row.filename), tag(row.label || "未标注")] : taskType === "llm_sft" ? [e(row.instruction), `<div class="data-sample-text">${e(row.input)}</div>`, `<div class="data-sample-text">${e(row.output)}</div>`] : [`<div class="data-sample-text">${e(row.text)}</div>`, tag(row.label || "未标注")])]);
+  const rows = data.samples.map(row => [raw(tag(row.index + 1)), ...(taskType === "image_classification" ? [raw(`<img class="data-thumbnail" src="${e(imageBase(row.index))}" alt="样本${row.index + 1}" loading="lazy"/>`), row.filename, raw(tag(row.label || "未标注"))] : taskType === "llm_sft" ? [row.instruction, raw(`<div class="data-sample-text">${e(row.input)}</div>`), raw(`<div class="data-sample-text">${e(row.output)}</div>`)] : [raw(`<div class="data-sample-text">${e(row.text)}</div>`), raw(tag(row.label || "未标注"))])]);
   return table(taskType === "image_classification" ? ["序号", "图片", "文件", "标签"] : taskType === "llm_sft" ? ["序号", "指令", "输入", "输出"] : ["序号", "文本", "标签"], rows) + pager({ page: data.page, page_size: data.page_size, total: data.total });
 }
 
@@ -65,7 +65,7 @@ export function renderDataWorkflow(ctx) {
   if (ctx.path.startsWith("/data-operations/")) return operationDetail(ctx);
   const annotation = ctx.path === "/annotation", augment = ctx.path === "/augmentation";
   const actions = can(ctx, "datasets.write") ? btn(annotation ? "新建标注" : augment ? "新建增强" : "新建处理", annotation ? "data-new-annotation" : "data-new-operation", annotation ? "" : augment ? "augment" : "clean", "primary") : "";
-  const rows = (ctx.data.data || []).map(item => annotation ? [link(item.name, `/annotation/${item.id}`), e(item.dataset_name), tag(`v${item.version_number}`), tag(TASKS[item.task_type]), badge(DATA_STATES[item.status]), `${item.counts.approved || 0}/${item.counts.total}`, date(item.created_at)] : [link(item.name, `/data-operations/${item.id}`), tag(DATA_KINDS[item.kind]), e(item.dataset_name), tag(`v${item.version_number}`), badge(DATA_STATES[item.status]), item.progress.total ? `${item.progress.done}/${item.progress.total}` : "—", date(item.created_at)]);
+  const rows = (ctx.data.data || []).map(item => annotation ? [raw(link(item.name, `/annotation/${item.id}`)), item.dataset_name, raw(tag(`v${item.version_number}`)), raw(tag(TASKS[item.task_type])), raw(badge(DATA_STATES[item.status])), `${item.counts.approved || 0}/${item.counts.total}`, date(item.created_at)] : [raw(link(item.name, `/data-operations/${item.id}`)), raw(tag(DATA_KINDS[item.kind])), item.dataset_name, raw(tag(`v${item.version_number}`)), raw(badge(DATA_STATES[item.status])), item.progress.total ? `${item.progress.done}/${item.progress.total}` : "—", date(item.created_at)]);
   const filter = !annotation && !augment ? `<select class="select" data-query-filter="kind" aria-label="处理类型">${options([["", "全部类型"], ...Object.entries(DATA_KINDS)], ctx.params.get("kind"))}</select>` : "";
   return pageHeader(annotation ? "在线标注" : augment ? "数据增强" : "数据处理", "", actions) + toolbar(ctx.q, filter, "搜索任务名称") + table(annotation ? ["标注批次", "数据集", "版本", "任务", "状态", "已审核", "创建时间"] : ["处理任务", "类型", "数据集", "版本", "状态", "已处理", "创建时间"], rows) + pager(ctx.data.pagination);
 }

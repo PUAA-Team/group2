@@ -1,4 +1,4 @@
-import { badge, btn, can, e, link, options, pageHeader, pager, tag } from "./components.js?v=stage15-1";
+import { badge, btn, can, e, link, options, pageHeader, pager, tag } from "./components.js?v=stage20a-2";
 
 const states = { draft: "草稿", submitted: "待审核", approved: "已通过", rejected: "已退回" };
 export function annotationKey(ctx, index) { return `${ctx.workspace.id}/${ctx.data.id}/${index}`; }

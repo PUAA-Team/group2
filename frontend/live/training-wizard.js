@@ -1,5 +1,5 @@
-import { btn, can, card, e, fieldsInfo, input, options, pageHeader, select, tag, TASKS, workspaceRequired } from "./components.js?v=stage15-1";
-import { nodeOptions } from "./resource-options.js?v=stage16-local";
+import { btn, can, card, e, fieldsInfo, input, options, pageHeader, select, tag, TASKS, workspaceRequired } from "./components.js?v=stage20a-2";
+import { nodeOptions } from "./resource-options.js?v=stage20a-2";
 
 const steps = ["任务与模型", "数据集", "参数与资源", "核对提交"];
 const numbers = ["epochs", "batch_size", "learning_rate", "validation_ratio", "seed", "max_length", "lora_rank"];

@@ -1,4 +1,4 @@
-import { annotationKey } from "./annotation-view.js?v=stage15-1";
+import { annotationKey } from "./annotation-view.js?v=stage20a-2";
 
 export function syncProcessing(form, ctx) {
   if (!form?.elements.namedItem("kind")) return;

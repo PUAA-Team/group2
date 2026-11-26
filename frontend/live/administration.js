@@ -1,7 +1,7 @@
-import { ACTIONS, badge, btn, can, card, date, e, fieldsInfo, input, link, options, pageHeader, pager, QUOTAS, select, table, tag, TASKS, toolbar } from "./components.js?v=stage15-1";
-import { actionLabel } from "./labels.js?v=stage15-1";
-import { extraJobView, jobTabs, renderExtraJobs } from './admin-workflows.js?v=stage15-1';
-import { filterControls, auditExport } from './query-controls.js?v=stage15-1';
+import { ACTIONS, badge, btn, can, card, date, e, fieldsInfo, input, link, options, pageHeader, pager, QUOTAS, raw, select, table, tag, TASKS, toolbar } from "./components.js?v=stage20a-2";
+import { actionLabel } from "./labels.js?v=stage20a-2";
+import { extraJobView, jobTabs, renderExtraJobs } from './admin-workflows.js?v=stage20a-2';
+import { filterControls, auditExport } from './query-controls.js?v=stage20a-2';
 
 const catalogs = { "/admin/data": "datasets", "/admin/models": "models", "/admin/jobs": "jobs", "/admin/audit": "audit" };
 const titles = { datasets: "数据管理", models: "模型管理", jobs: "作业管理", audit: "操作记录" };
@@ -49,13 +49,13 @@ export function renderManagement(ctx) {
   if (ctx.path === "/admin/settings") return renderSettings(ctx);
   if (ctx.path === "/admin/stats") {
     const data = ctx.data, counts = data.counts || {};
-    return pageHeader("统计面板", "", btn("刷新", "refresh")) + `<div class="toolbar">${spaceFilter(ctx)}${filterControls(ctx)}</div><section class="console-summary console-summary-six">${[["用户", "users"], ["数据集", "datasets"], ["模型", "models"], ["全部作业", "jobs"], ["运行中", "active"], ["失败作业", "failed"]].filter(([, key]) => counts[key] !== null).map(([label, key]) => `<div><span>${label}</span><strong>${counts[key] ?? "—"}</strong></div>`).join("")}</section><div class="console-detail-grid">${card(`<div class="card-header"><h2>作业趋势</h2></div>${trendChart(data.trend || [])}`)}${card(`<div class="card-header"><h2>作业状态</h2></div>${fieldsInfo(Object.entries(data.states || {}).map(([state, count]) => [states[state] || state, e(count)]))}`)}</div>${resourcePanel(data)}<div class="section-heading"><h2>工作空间</h2></div>${table(["工作空间", "作业数"], (data.workspaces || []).map(item => [e(item.name), e(item.jobs)]))}`;
+    return pageHeader("统计面板", "", btn("刷新", "refresh")) + `<div class="toolbar">${spaceFilter(ctx)}${filterControls(ctx)}</div><section class="console-summary console-summary-six">${[["用户", "users"], ["数据集", "datasets"], ["模型", "models"], ["全部作业", "jobs"], ["运行中", "active"], ["失败作业", "failed"]].filter(([, key]) => counts[key] !== null).map(([label, key]) => `<div><span>${label}</span><strong>${counts[key] ?? "—"}</strong></div>`).join("")}</section><div class="console-detail-grid">${card(`<div class="card-header"><h2>作业趋势</h2></div>${trendChart(data.trend || [])}`)}${card(`<div class="card-header"><h2>作业状态</h2></div>${fieldsInfo(Object.entries(data.states || {}).map(([state, count]) => [states[state] || state, e(count)]))}`)}</div>${resourcePanel(data)}<div class="section-heading"><h2>工作空间</h2></div>${table(["工作空间", "作业数"], (data.workspaces || []).map(item => [item.name, item.jobs]))}`;
   }
   const kind = catalogs[ctx.path], data = ctx.data.data || [];
   const jobFilters = kind === "jobs" ? `<select class="select filter-select" data-query-filter="job_kind" aria-label="作业类型">${options([["", "全部类型"], ...Object.entries(kinds)], ctx.params.get("job_kind") || "")}</select><select class="select filter-select" data-query-filter="status" aria-label="作业状态">${options([["", "全部状态"], ...Object.entries(states)], ctx.params.get("status") || "")}</select>` : ['datasets', 'models'].includes(kind) ? `<select class="select filter-select" data-query-filter="status" aria-label="归档状态">${options([['', '全部资产'], ['active', '未归档'], ['archived', '已归档']], ctx.params.get('status') || '')}</select>` : kind === 'audit' ? `<select class="select filter-select" data-query-filter="status" aria-label="操作结果">${options([['', '全部结果'], ['success', '成功'], ['failure', '失败']], ctx.params.get('status') || '')}</select>` : "";
   const heads = kind === "audit" ? ["时间", "操作", "操作者", "工作空间", "目标", "结果", '错误码', '请求编号'] : kind === "jobs" ? ["作业", "类型", "工作空间", "创建人", "状态", "资源", "创建时间", "操作"] : ["名称", "任务", "工作空间", "创建人", "最新版本", ...(kind === "datasets" ? ["样本数"] : ["训练器"]), '状态', '存储', "创建时间"];
   const rows = data.map(item => {
-    if (kind === "audit") return [date(item.created_at), e(actionLabel(item.action)), e(item.actor_name), e(item.workspace_name), `<span class="live-source">${e(item.target_id)}</span>`, badge(item.result === "success" ? "已保存" : "失败"), e(item.error_code || '—'), `<span class="live-source" title="${e(item.request_id || '')}">${e(item.request_id || '—')}</span>`];
+    if (kind === "audit") return [date(item.created_at), actionLabel(item.action), item.actor_name, item.workspace_name, raw(`<span class="live-source">${e(item.target_id)}</span>`), raw(badge(item.result === "success" ? "已保存" : "失败")), item.error_code || '—', raw(`<span class="live-source" title="${e(item.request_id || '')}">${e(item.request_id || '—')}</span>`)];
     const href = kind === "jobs" ? `/runs/${item.id}?workspace=${item.workspace_id}` : `/${kind}/${item.id}?workspace=${item.workspace_id}`;
     if (kind === "jobs") {
       const op = ["draft", "queued", "preparing", "running", "ready"].includes(item.status)
@@ -63,9 +63,9 @@ export function renderManagement(ctx) {
         : ["succeeded", "failed", "stopped", "cancelled"].includes(item.status)
           ? btn("重跑", "admin-job-retry", `${item.workspace_id}:${item.id}`)
           : "—";
-      return [link(item.name, href), tag(kinds[item.kind]), e(item.workspace_name), e(item.actor_name), badge(states[item.status] || item.status), tag(item.device_kind === "cuda" ? "GPU" : "CPU"), date(item.created_at), `<div class="live-row-actions">${op}</div>`];
+      return [raw(link(item.name, href)), raw(tag(kinds[item.kind])), item.workspace_name, item.actor_name, raw(badge(states[item.status] || item.status)), raw(tag(item.device_kind === "cuda" ? "GPU" : "CPU")), date(item.created_at), raw(`<div class="live-row-actions">${op}</div>`)];
     }
-    return [link(item.name, href), tag(TASKS[item.task_type]), e(item.workspace_name), e(item.actor_name), e(kind === "datasets" ? item.latest_version ? `v${item.latest_version.number}` : "—" : item.latest_version?.version || "—"), e(kind === "datasets" ? item.latest_version?.sample_count ?? "—" : item.trainer_id), badge(item.archived ? '已归档' : '正常'), `${((item.storage_bytes || 0) / 1024).toFixed(1)} KiB`, date(item.created_at)];
+    return [raw(link(item.name, href)), raw(tag(TASKS[item.task_type])), item.workspace_name, item.actor_name, kind === "datasets" ? item.latest_version ? `v${item.latest_version.number}` : "—" : item.latest_version?.version || "—", kind === "datasets" ? item.latest_version?.sample_count ?? "—" : item.trainer_id, raw(badge(item.archived ? '已归档' : '正常')), `${((item.storage_bytes || 0) / 1024).toFixed(1)} KiB`, date(item.created_at)];
   });
   const types = ['datasets', 'models'].includes(kind) ? `<select class="select filter-select" data-query-filter="task_type" aria-label="任务类型">${options([['', '全部任务'], ...Object.entries(TASKS)], ctx.params.get('task_type') || '')}</select>` : '';
   return pageHeader(titles[kind], '', kind === 'audit' ? auditExport(ctx) : '') + (kind === 'jobs' ? jobTabs(ctx) : '') + toolbar(ctx.q, spaceFilter(ctx) + jobFilters + types + filterControls(ctx), kind === "audit" ? "搜索操作" : "搜索名称") + table(heads, rows) + pager(ctx.data.pagination);
@@ -77,7 +77,7 @@ function renderSettings(ctx) {
   return pageHeader("系统设置", "", btn("修改设置", "modal", "settings-edit", "primary")) +
     card(`<div class="card-header"><h2>平台设置</h2></div>${fieldsInfo([["平台名称", e(config.platform_name)], ["邀请注册", tag(config.invitations_enabled ? "开启" : "关闭")], ["开放注册", tag(config.self_registration_enabled ? "开启" : "关闭")], ["默认注册用户组", e(defaultGroup)], ["全局并发上限", e(config.global_concurrent_jobs)], ["单文件上限", `${config.max_upload_mib} MiB`], ["样本数上限", e(config.max_samples)]])}`) +
     `<div class="section-heading"><h2>大模型连接</h2>${btn("新增连接", "modal", "connection-new", "primary")}</div>` +
-    table(["连接", "服务地址", "模型", "能力", "凭据", "状态", "操作"], (ctx.data.connections || []).map(item => [e(item.name), `<span class="live-source" title="${e(item.endpoint)}">${e(item.endpoint)}</span>`, e(item.model), item.capabilities.map(capability => tag(capabilities[capability])).join(" "), tag(item.credential_set ? "已配置" : "未配置"), badge(!item.active ? "停用" : item.health.status === "available" ? "连接成功" : item.health.status === "failed" ? "连接失败" : "未测试"), `<div class="live-row-actions">${btn("配置", "admin-edit-connection", item.id)}${btn("测试连接", "admin-test-connection", item.id, "secondary", !item.active)}</div>`]));
+    table(["连接", "服务地址", "模型", "能力", "凭据", "状态", "操作"], (ctx.data.connections || []).map(item => [item.name, raw(`<span class="live-source" title="${e(item.endpoint)}">${e(item.endpoint)}</span>`), item.model, raw(item.capabilities.map(capability => tag(capabilities[capability])).join(" ")), raw(tag(item.credential_set ? "已配置" : "未配置")), raw(badge(!item.active ? "停用" : item.health.status === "available" ? "连接成功" : item.health.status === "failed" ? "连接失败" : "未测试")), raw(`<div class="live-row-actions">${btn("配置", "admin-edit-connection", item.id)}${btn("测试连接", "admin-test-connection", item.id, "secondary", !item.active)}</div>`) ]));
 }
 
 export function administrationDialog(modal, ctx) {
@@ -99,7 +99,7 @@ export function administrationDialog(modal, ctx) {
   if (modal.kind === "workspace-delete") return { title: "删除工作空间", fields: `<div class="notice">删除前需已清空空间内所有节点、任务、项目、模型和数据集。</div>` + input(`请输入「${ctx.workspace.name}」确认删除`, "confirm_name", "", 'required maxlength="100"'), submit: "确认删除" };
   if (modal.kind === "member-remove") return { title: "移除空间成员", fields: fieldsInfo([["成员", e(item.display_name)], ["账号", e(item.account)]]), submit: "确认移除" };
   if (modal.kind === "user-access") return { title: `${item.display_name}的有效权限`, readOnly: true, fields: `<div class="live-permissions">${item.access.actions.map(key => tag(ACTIONS.find(([action]) => action === key)?.[1] || key)).join("")}</div>` + fieldsInfo(QUOTAS.map(([key, label]) => [label, e(item.access.quota[key])])) };
-  if (modal.kind === "group-members") return { title: `${item.name}的成员`, readOnly: true, wide: true, fields: table(["成员", "账号", "状态", "操作"], item.users.map(user => [e(user.display_name), e(user.account), badge(user.active ? "启用" : "停用"), btn("配置", "admin-edit-member-user", user.id)])) };
+  if (modal.kind === "group-members") return { title: `${item.name}的成员`, readOnly: true, wide: true, fields: table(["成员", "账号", "状态", "操作"], item.users.map(user => [user.display_name, user.account, raw(badge(user.active ? "启用" : "停用")), raw(btn("配置", "admin-edit-member-user", user.id))])) };
   return null;
 }
 

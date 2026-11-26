@@ -1,5 +1,5 @@
-import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, select, table, tag, TASKS, workspaceRequired } from "./components.js?v=stage15-1";
-import { captureDraft, jobPayload } from "./training-wizard.js?v=stage15-1";
+import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, raw, select, table, tag, TASKS, workspaceRequired } from "./components.js?v=stage20a-2";
+import { captureDraft, jobPayload } from "./training-wizard.js?v=stage20a-2";
 
 const STATES = { preview: "预览待确认", queued: "排队中", running: "进行中", succeeded: "已完成", applied: "已采纳", failed: "失败", cancelled: "已取消" };
 const PURPOSES = { annotation: "智能标注", parameters: "智能参数", logs: "智能解释" };
@@ -43,8 +43,8 @@ export function renderAssistant(ctx) {
 }
 
 function requestList(ctx) {
-  const rows = (ctx.data.data || []).map(item => [objectLink(item), tag(PURPOSES[item.purpose] || item.purpose), badge(STATES[item.status] || item.status),
-    e(item.preview?.connection?.name || "—"), date(item.created_at), link("详情", `/assistants/${item.id}`)]);
+  const rows = (ctx.data.data || []).map(item => [raw(objectLink(item)), raw(tag(PURPOSES[item.purpose] || item.purpose)), raw(badge(STATES[item.status] || item.status)),
+    item.preview?.connection?.name || "—", date(item.created_at), raw(link("详情", `/assistants/${item.id}`))]);
   const filter = (key, label, entries) => `<select class="select" data-query-filter="${key}" aria-label="${label}">${options(entries, ctx.params.get(key))}</select>`;
   const actions = (can(ctx, "members.manage") ? btn("空间授权", "assistant-policy") : "") + btn("刷新", "refresh");
   return pageHeader("智能辅助", "", actions) +
@@ -54,9 +54,9 @@ function requestList(ctx) {
 
 function resultPanel(item) {
   const result = item.result || {};
-  const suggestions = rows => table(["参数", "建议值", "理由"], rows.map(value => [e(PARAMETERS[value.field] || value.field), e(value.value), e(value.reason)]));
+  const suggestions = rows => table(["参数", "建议值", "理由"], rows.map(value => [PARAMETERS[value.field] || value.field, value.value, value.reason]));
   if (item.purpose === "annotation") {
-    return table(["样本", "建议值", "理由"], (result.samples || []).map(value => [tag(value.index + 1), e(value.value), e(value.reason)]));
+    return table(["样本", "建议值", "理由"], (result.samples || []).map(value => [raw(tag(value.index + 1)), value.value, value.reason]));
   }
   if (item.purpose === "parameters") return suggestions(result.suggestions || []);
   return fieldsInfo([["摘要", e(result.summary || "—")]]) +

@@ -1,14 +1,14 @@
-import { ACTIONS, badge, btn, description, e, fieldsInfo, input, options, QUOTAS, select, table, taskOptions } from "./components.js?v=stage15-1";
-import { computeDialog } from "./compute.js?v=stage15-1";
-import { workflowDialog } from "./workflows.js?v=stage15-1";
-import { administrationDialog } from "./administration.js?v=stage15-1";
-import { dataDialog } from "./data-workflows.js?v=stage15-1";
-import { assistantDialog } from "./assistant.js?v=stage15-1";
-import { governanceDialog } from './governance.js?v=stage15-1';
-import { parameterTemplateDialog } from './parameter-templates.js?v=stage15-1';
-import { projectDialog } from './projects.js?v=stage15-1';
-import { keyDialog } from './key-management.js?v=stage15-1';
-import { queryDialog } from './query-controls.js?v=stage15-1';
+import { ACTIONS, badge, btn, description, e, fieldsInfo, input, options, QUOTAS, select, table, taskOptions } from "./components.js?v=stage20a-2";
+import { computeDialog } from "./compute.js?v=stage20a-2";
+import { workflowDialog } from "./workflows.js?v=stage20a-2";
+import { administrationDialog } from "./administration.js?v=stage20a-2";
+import { dataDialog } from "./data-workflows.js?v=stage20a-2";
+import { assistantDialog } from "./assistant.js?v=stage20a-2";
+import { governanceDialog } from './governance.js?v=stage20a-2';
+import { parameterTemplateDialog } from './parameter-templates.js?v=stage20a-2';
+import { projectDialog } from './projects.js?v=stage20a-2';
+import { keyDialog } from './key-management.js?v=stage20a-2';
+import { queryDialog } from './query-controls.js?v=stage20a-2';
 
 function policyFields(item = {}, personal = false) {
   const checks = (name, label) => `<fieldset class="live-check-field"><legend>${label}</legend><div class="live-checks">${ACTIONS.map(([key, text]) => `<label><input type="checkbox" name="${name}" value="${key}" ${(item[name] || []).includes(key) ? "checked" : ""}/>${e(text)}</label>`).join("")}</div></fieldset>`;
@@ -16,10 +16,25 @@ function policyFields(item = {}, personal = false) {
     `<div class="live-field-grid">${QUOTAS.map(([key, label]) => input(label, key, item.quota?.[key] ?? "", `type="number" min="0" step="1" ${personal ? 'placeholder="继承"' : 'placeholder="0"'}`)).join("")}</div>`;
 }
 
+// 对话框 kind → 渲染函数路由表（替代原来的 || 串联；新增 kind 只需在此加一行）。
+const DIALOG_RENDERERS = new Map([
+  ...["project-new", "project-edit", "project-archive", "project-delete"].map(kind => [kind, projectDialog]),
+  ...["keys-expiry", "keys-example"].map(kind => [kind, keyDialog]),
+  ["query-filter", queryDialog],
+  ...["parameter-template-list", "parameter-template-new", "parameter-template-edit", "parameter-template-archive"].map(kind => [kind, parameterTemplateDialog]),
+  ...["gov-device-policy", "gov-group-budget", "gov-archive", "gov-delete", "gov-review"].map(kind => [kind, governanceDialog]),
+  ...["assistant-policy", "assistant-annotation-new", "assistant-parameters-new", "assistant-logs-new", "assistant-apply"].map(kind => [kind, assistantDialog]),
+  ...["data-annotation-new", "data-operation-new", "data-publish", "annotation-publish", "data-cancel"].map(kind => [kind, dataDialog]),
+  ...["settings-edit", "connection-new", "connection-edit", "invite-new", "password-own", "password-reset", "profile", "workspace-edit", "workspace-invite", "workspace-join", "workspace-delete", "member-remove", "user-access", "group-members"].map(kind => [kind, administrationDialog]),
+  ...["enroll-new", "local-worker", "node-edit", "node-toggle", "node-revoke", "enrollment-revoke", "local-stop"].map(kind => [kind, computeDialog]),
+  ...["job-new", "job-edit", "job-stop", "job-priority", "service-invoke", "key-new", "key-revoke", "key-rotate"].map(kind => [kind, workflowDialog]),
+]);
+
 export function renderDialog(modal, ctx) {
   if (!modal) return "";
   const item = modal.item || {};
-  let { title = "", fields = "", submit = "保存", wide = false, readOnly = false } = projectDialog(modal) || keyDialog(modal) || queryDialog(modal) || parameterTemplateDialog(modal, ctx) || governanceDialog(modal, ctx) || assistantDialog(modal, ctx) || dataDialog(modal, ctx) || administrationDialog(modal, ctx) || computeDialog(modal, ctx) || workflowDialog(modal, ctx) || {};
+  const renderer = DIALOG_RENDERERS.get(modal.kind);
+  let { title = "", fields = "", submit = "保存", wide = false, readOnly = false } = renderer ? renderer(modal, ctx) || {} : {};
   if (modal.kind === "workspace-new") { title = "创建工作空间"; fields = input("空间名称", "name", "", 'required maxlength="100"'); submit = "创建"; }
   if (["model-new", "dataset-new"].includes(modal.kind)) {
     const model = modal.kind === "model-new";
@@ -63,7 +78,7 @@ export function renderDialog(modal, ctx) {
   }
   if (modal.kind === "dataset-report") {
     title = "数据集校验报告"; readOnly = true; wide = true;
-    const rows = (item.label_distribution || []).map(row => [e(row.label), e(row.count), `${((Number(row.ratio) || 0) * 100).toFixed(1)}%`]);
+    const rows = (item.label_distribution || []).map(row => [row.label, row.count, `${((Number(row.ratio) || 0) * 100).toFixed(1)}%`]);
     fields = fieldsInfo([
       ["版本", `v${e(item.number ?? "")}`],
       ["样本数", e(item.sample_count ?? 0)],

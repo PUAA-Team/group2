@@ -1,5 +1,5 @@
-import { btn, date, e, fieldsInfo, input, options, select } from './components.js?v=stage15-1';
-import { devicePurposes } from './labels.js?v=stage15-1';
+import { btn, date, e, fieldsInfo, input, options, select } from './components.js?v=stage20a-2';
+import { devicePurposes } from './labels.js?v=stage20a-2';
 
 export const reviewButton = (ctx, job) => ctx.session?.user?.is_admin && ctx.session?.access?.actions?.includes('resources.manage') && job.execution ?
   btn(job.execution.finished_at ? '核查记录' : '执行核查', 'gov-review', job.execution.id) : '';

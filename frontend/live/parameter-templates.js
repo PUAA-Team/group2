@@ -1,5 +1,5 @@
-import { badge, btn, e, input, table, tag, TASKS } from './components.js?v=stage15-1';
-import { captureDraft, ensureDraft, parameterFields } from './training-wizard.js?v=stage15-1';
+import { badge, btn, e, input, raw, table, tag, TASKS } from './components.js?v=stage20a-2';
+import { captureDraft, ensureDraft, parameterFields } from './training-wizard.js?v=stage20a-2';
 
 const common = ['epochs', 'batch_size', 'learning_rate', 'validation_ratio', 'seed'];
 export function templateConfig(values, task) {
@@ -15,8 +15,8 @@ export function applyTemplateValues(draft, result) {
 export function parameterTemplateDialog(modal) {
   const item = modal.item || {};
   if (modal.kind === 'parameter-template-list') return { title: '参数模板', readOnly: true, wide: true,
-    fields: table(['模板', '任务', '状态', '操作'], (item.rows || []).map(row => [e(row.name), tag(TASKS[row.task_type]),
-      badge(row.archived ? '已归档' : '启用'), btn('修改', 'param-edit', row.id) + btn(row.archived ? '恢复' : '归档', 'param-archive', row.id)])) };
+    fields: table(['模板', '任务', '状态', '操作'], (item.rows || []).map(row => [row.name, raw(tag(TASKS[row.task_type])),
+      raw(badge(row.archived ? '已归档' : '启用')), raw(btn('修改', 'param-edit', row.id) + btn(row.archived ? '恢复' : '归档', 'param-archive', row.id))])) };
   if (['parameter-template-new', 'parameter-template-edit'].includes(modal.kind)) return {
     title: modal.kind === 'parameter-template-new' ? '另存参数模板' : '修改参数模板', wide: true,
     fields: (input('模板名称', 'name', item.name || '', 'required maxlength="100"') + `<div class="heading-actions">${tag(TASKS[item.task_type])}</div>` + parameterFields(item.config, item.task_type === 'llm_sft')).replace(/(for|id)="live-/g, '$1="template-') };

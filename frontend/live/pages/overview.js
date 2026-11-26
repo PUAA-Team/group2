@@ -1,4 +1,4 @@
-import { ACTIONS, badge, btn, can, card, date, e, fieldsInfo, link, pageHeader, pager, QUOTAS, table, tag, TASKS, workspaceRequired } from "../components.js?v=stage15-1";
+import { ACTIONS, badge, btn, can, card, date, e, fieldsInfo, link, pageHeader, pager, QUOTAS, raw, table, tag, TASKS, workspaceRequired } from "../components.js?v=stage20a-2";
 
 export function renderHome(ctx) {
   if (!ctx.workspace) return pageHeader("工作台") + workspaceRequired(ctx);
@@ -6,7 +6,7 @@ export function renderHome(ctx) {
   const counts = [["训练项目", values.projects, "/projects"], ["运行中训练", values.active, "/runs?status=running"], ["排队中训练", values.queued, "/runs?status=queued"], ["已完成训练", values.succeeded, "/runs?status=succeeded"], ["可用数据集", values.datasets, "/datasets"]].filter(([, value]) => value !== null);
   const actions = can(ctx, "training.write") ? '<a class="btn btn-primary" href="#/train/new">新建训练</a>' : "";
   const labels = { draft: "草稿", queued: "排队中", preparing: "准备中", running: "运行中", stopping: "停止中", succeeded: "已完成", failed: "失败", stopped: "已停止", cancelled: "已取消" };
-  const rows = (ctx.data.recent_jobs || []).map(item => [link(item.name, `/runs/${item.id}`), tag(TASKS[item.task_type] || "—"), badge(labels[item.status] || item.status), item.result?.accuracy == null ? "—" : `${(item.result.accuracy * 100).toFixed(1)}%`, e(item.model_name || "—"), date(item.created_at)]);
+  const rows = (ctx.data.recent_jobs || []).map(item => [raw(link(item.name, `/runs/${item.id}`)), raw(tag(TASKS[item.task_type] || "—")), raw(badge(labels[item.status] || item.status)), item.result?.accuracy == null ? "—" : `${(item.result.accuracy * 100).toFixed(1)}%`, item.model_name || "—", date(item.created_at)]);
   const shortcuts = [["新建训练", "/train/new", "training.write"], ["导入数据集", "/datasets/new", "datasets.write"], ["在线标注", "/annotation", "datasets.write"], ["模型仓库", "/models", "models.read"]].filter(([, , action]) => can(ctx, action)).map(([label, href]) => `<a class="quick-link" href="#${href}">${label}<span aria-hidden="true">›</span></a>`).join("");
   const actionNames = { "presets.create": "添加示例资产", "jobs.create": "创建任务", "jobs.submit": "提交任务", "jobs.stop": "停止任务", "projects.create": "新建项目", "datasets.create": "新增数据集", "dataset_versions.create": "导入数据", "models.create": "登记模型", "model_versions.create": "登记模型版本" };
   const activity = (ctx.data.activity || []).map(item => `<div class="console-activity"><strong>${e(actionNames[item.action] || item.action)}</strong><span>${e(item.actor_name)}</span><time>${date(item.created_at)}</time></div>`).join("");
@@ -25,19 +25,19 @@ export function renderSpace(ctx) {
   const members = ctx.data.members;
   const inviteBanner = ctx.generatedSpaceInvite ? `<div class="notice"><label for="space-invite-url">空间邀请链接（仅显示本次）</label><div class="heading-actions"><input id="space-invite-url" class="input" readonly value="${e(ctx.generatedSpaceInvite.url)}"/>${btn("复制链接", "admin-copy-space-invite")}${btn("关闭", "admin-hide-space-invite")}</div></div>` : "";
   const inviteRows = (ctx.data.invites || []).map(inv => [
-    e(inv.code_preview), tag(inv.role === "viewer" ? "查看者" : "编辑者"), tag(inv.require_approval ? "需审核" : "免审核"),
-    e(inv.max_uses == null ? `${inv.used_count} / 不限` : `${inv.used_count} / ${inv.max_uses}`),
-    date(inv.expires_at), badge(inv.revoked_at ? "已撤销" : "有效"),
-    inv.revoked_at ? "—" : btn("撤销", "admin-revoke-space-invite", inv.id),
+    inv.code_preview, raw(tag(inv.role === "viewer" ? "查看者" : "编辑者")), raw(tag(inv.require_approval ? "需审核" : "免审核")),
+    inv.max_uses == null ? `${inv.used_count} / 不限` : `${inv.used_count} / ${inv.max_uses}`,
+    date(inv.expires_at), raw(badge(inv.revoked_at ? "已撤销" : "有效")),
+    inv.revoked_at ? "—" : raw(btn("撤销", "admin-revoke-space-invite", inv.id)),
   ]);
   const requestRows = (ctx.data.joinRequests || []).map(req => [
-    e(req.display_name), e(req.account), tag(req.requested_role === "viewer" ? "查看者" : "编辑者"),
-    badge(({ pending: "待审批", approved: "已通过", rejected: "已拒绝" })[req.status] || req.status),
-    req.status === "pending" ? `<div class="live-row-actions">${btn("批准", "admin-approve-join", req.id, "primary")}${btn("拒绝", "admin-reject-join", req.id)}</div>` : date(req.reviewed_at),
+    req.display_name, req.account, raw(tag(req.requested_role === "viewer" ? "查看者" : "编辑者")),
+    raw(badge(({ pending: "待审批", approved: "已通过", rejected: "已拒绝" })[req.status] || req.status)),
+    req.status === "pending" ? raw(`<div class="live-row-actions">${btn("批准", "admin-approve-join", req.id, "primary")}${btn("拒绝", "admin-reject-join", req.id)}</div>`) : date(req.reviewed_at),
   ]);
   const memberSection = can(ctx, "members.manage") ? `<div class="section-heading"><h2>空间成员</h2><div class="heading-actions">${btn("生成空间邀请", "modal", "workspace-invite")}${btn("添加成员", "modal", "member", "primary")}</div></div>` + inviteBanner +
-    table(["成员", "账号", "空间角色", "操作"], (members?.data || []).map(member => [e(member.display_name), e(member.account), tag(member.role === "viewer" ? "查看者" : "编辑者"),
-      ctx.workspace.owner_id === member.user_id ? tag("所有者") : `<div class="live-row-actions">${btn("修改角色", "edit-member", member.user_id)}${btn("移除", "admin-remove-member", member.user_id)}</div>`])) + pager(members?.pagination) +
+    table(["成员", "账号", "空间角色", "操作"], (members?.data || []).map(member => [member.display_name, member.account, raw(tag(member.role === "viewer" ? "查看者" : "编辑者")),
+      ctx.workspace.owner_id === member.user_id ? raw(tag("所有者")) : raw(`<div class="live-row-actions">${btn("修改角色", "edit-member", member.user_id)}${btn("移除", "admin-remove-member", member.user_id)}</div>`) ])) + pager(members?.pagination) +
     `<div class="section-heading"><h2>空间邀请码</h2></div>` + table(["邀请码", "默认角色", "加入方式", "使用次数", "过期时间", "状态", "操作"], inviteRows, "暂无空间邀请") +
     `<div class="section-heading"><h2>加入申请</h2></div>` + table(["姓名", "账号", "申请角色", "状态", "处理"], requestRows, "暂无加入申请") : "";
   return pageHeader("用户空间", "", (can(ctx, "assistants.use") ? `<a class="btn btn-secondary" href="#/assistants">智能辅助</a>` : "") + (can(ctx, "members.manage") && can(ctx, "assistants.use") ? btn("智能辅助授权", "assistant-policy") : "") + btn("个人资料", "modal", "profile") + btn("修改密码", "modal", "password-own") + joinBtn + create + (can(ctx, "members.manage") ? btn("修改空间", "modal", "workspace-edit") + btn("删除空间", "modal", "workspace-delete") : "")) + spaces +
@@ -51,11 +51,11 @@ export function renderSpace(ctx) {
       ['处理候选', `${((ctx.data.storage.categories.candidate || 0) / 1048576).toFixed(2)} MiB`],
       ['未归属文件', `${(ctx.data.storage.unattributed_bytes / 1048576).toFixed(2)} MiB`]]) : '') +
     (ctx.data.myJobs ? `<div class="section-heading"><h2>我的近期任务</h2></div>` + table(["任务", "类型", "状态", "创建时间"], (ctx.data.myJobs || []).map(job => [
-      link(job.name, `/runs/${job.id}`), tag(TASKS[job.task_type] || job.job_kind || "—"), badge(job.status), date(job.created_at),
+      raw(link(job.name, `/runs/${job.id}`)), raw(tag(TASKS[job.task_type] || job.job_kind || "—")), raw(badge(job.status)), date(job.created_at),
     ]), "暂无个人任务") : "") +
     (ctx.data.sessions ? `<div class="section-heading"><h2>登录会话管理</h2>${ctx.data.sessions.length > 1 ? btn("踢出其他设备", "session-revoke-others") : ""}</div>` + table(["会话标识", "登录时间", "过期时间", "状态", "操作"], ctx.data.sessions.map(s => [
-      `<code>${e(s.id)}</code>`, date(s.created_at), date(s.expires_at), badge(s.current ? "当前设备" : "其他设备"),
-      s.current ? tag("当前会话") : btn("退出该设备", "session-revoke", s.id),
+      raw(`<code>${e(s.id)}</code>`), date(s.created_at), date(s.expires_at), raw(badge(s.current ? "当前设备" : "其他设备")),
+      s.current ? raw(tag("当前会话")) : raw(btn("退出该设备", "session-revoke", s.id)),
     ]), "暂无活跃会话") : "") + memberSection;
 }
 

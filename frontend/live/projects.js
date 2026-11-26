@@ -1,4 +1,4 @@
-import { badge, btn, can, date, description, e, fieldsInfo, input, link, pageHeader, table } from './components.js?v=stage15-1';
+import { badge, btn, can, date, description, e, fieldsInfo, input, link, pageHeader, raw, table } from './components.js?v=stage20a-2';
 
 export function renderProjectDetail(ctx) {
   const item = ctx.data.project, write = can(ctx, 'training.write');
@@ -8,8 +8,8 @@ export function renderProjectDetail(ctx) {
     fieldsInfo([['状态', badge(item.archived ? '已归档' : '正常')], ['说明', e(item.description || '—')], ['训练次数', e(item.job_count)],
       ['活跃任务', e(item.active_count)], ['最高准确率', item.best_accuracy == null ? '—' : `${(item.best_accuracy * 100).toFixed(1)}%`], ['创建时间', date(item.created_at)]]) +
     `<div class="section-heading"><h2>最近实验</h2>${link('全部实验', '/runs?project=' + item.id)}</div>` +
-    table(['训练任务', '模型', '状态', '创建时间'], (item.recent_jobs || []).map(job => [link(job.name, '/runs/' + job.id), e(job.model_name || '—'),
-      badge(({ draft: '草稿', queued: '排队中', preparing: '准备中', running: '运行中', succeeded: '已完成', stopped: '已停止', failed: '失败', cancelled: '已取消', stopping: '停止中' })[job.status] || job.status), date(job.created_at)]));
+    table(['训练任务', '模型', '状态', '创建时间'], (item.recent_jobs || []).map(job => [raw(link(job.name, '/runs/' + job.id)), job.model_name || '—',
+      raw(badge(({ draft: '草稿', queued: '排队中', preparing: '准备中', running: '运行中', succeeded: '已完成', stopped: '已停止', failed: '失败', cancelled: '已取消', stopping: '停止中' })[job.status] || job.status)), date(job.created_at)]));
 }
 
 export function projectDialog(modal) {

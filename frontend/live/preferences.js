@@ -1,4 +1,4 @@
-import { NAV_GROUPS } from "../js/ui.js?v=console-4";
+import { NAV_GROUPS } from "./ui/ui.js?v=stage20a-2";
 const KEY = "model-platform-live-preferences";
 export function loadPreferences(storage) {
   let saved = {};

@@ -1,4 +1,4 @@
-import { ADMIN_NAV, badge, card, escapeHtml as e, icon, NAV_GROUPS, pageHeader } from "../js/ui.js?v=console-4";
+import { ADMIN_NAV, badge, card, escapeHtml as e, icon, NAV_GROUPS, pageHeader } from "./ui/ui.js?v=stage20a-2";
 export { badge, card, e, icon, pageHeader };
 export const pageTitle = path => [...NAV_GROUPS.flatMap(group => group.children), ...ADMIN_NAV].find(([, href]) => path === href || path.startsWith(`${href}/`))?.[0] || "工作空间";
 
@@ -14,6 +14,9 @@ export const ACTIONS = [
 export const QUOTAS = [["gpu_count", "GPU 数量"], ["concurrent_jobs", "并发任务"], ["storage_gib", "存储 GiB"]];
 export const STATUS = { registered: "已登记", available: "可训练", needs_annotation: "待标注" };
 export const date = value => value ? new Date(value).toLocaleString("zh-CN", { hour12: false }) : "—";
+// 受信任的 HTML 片段标记：table() 只原样输出 raw() 包裹的内容，其余单元格一律转义。
+export function raw(html) { return { __rawHtml: true, html: String(html) }; }
+const cellHtml = cell => cell && typeof cell === "object" && cell.__rawHtml ? cell.html : e(cell ?? "");
 export const btn = (text, action, value = "", kind = "secondary", disabled = false) => `<button type="button" class="btn btn-${kind}" data-action="${e(action)}" data-id="${e(value)}" ${disabled ? "disabled" : ""}>${e(text)}</button>`;
 export const tag = text => `<span class="chip">${e(text)}</span>`;
 export const link = (name, href) => `<a class="row-link" href="#${e(href)}">${e(name)}</a>`;
@@ -23,7 +26,7 @@ export const input = (label, name, value = "", attrs = "") => `<div class="field
 export const select = (label, name, content, attrs = "") => `<div class="field"><label for="live-${e(name)}">${e(label)}</label><select id="live-${e(name)}" class="select" name="${e(name)}" ${attrs}>${content}</select></div>`;
 export const description = value => `<div class="field"><label for="live-description">说明</label><textarea id="live-description" class="textarea" name="description" rows="3" maxlength="2000">${e(value || "")}</textarea></div>`;
 export function table(headings, rows, empty = "暂无记录") {
-  return rows.length ? card(`<div class="table-scroll"><table class="table"><thead><tr>${headings.map(head => `<th>${e(head)}</th>`).join("")}</tr></thead><tbody>${rows.map(cells => `<tr>${cells.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`, "live-table")
+  return rows.length ? card(`<div class="table-scroll"><table class="table"><thead><tr>${headings.map(head => `<th>${e(head)}</th>`).join("")}</tr></thead><tbody>${rows.map(cells => `<tr>${cells.map(cell => `<td>${cellHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`, "live-table")
     : `<div class="empty-state"><div class="empty-icon">${icon("data", 24)}</div><h3>${e(empty)}</h3></div>`;
 }
 export function pager(pagination, unit = "条") {

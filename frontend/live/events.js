@@ -1,20 +1,20 @@
-import { errorMessage } from "./api.js?v=stage15-1";
-import { QUOTAS, options } from "./components.js?v=stage15-1";
-import { addExamples, CSV_TEMPLATE, JSONL_TEMPLATE } from "./examples.js?v=stage15-1";
-import { computeAction, saveCompute } from "./compute.js?v=stage15-1";
-import { workflowAction, saveWorkflow, workflowModelChanged, workflowOutputModeChanged } from "./workflows.js?v=stage15-1";
-import { pageAction, pageChanged, syncImport } from "./page-events.js?v=stage15-1";
-import { captureDraft, ensureDraft, persistTraining } from "./training-wizard.js?v=stage15-1";
-import { persistImport } from "./dataset-import.js?v=stage15-1";
-import { administrationAction, saveAdministration } from "./administration.js?v=stage15-1";
-import { captureAnnotation, dataAction, saveAnnotation, saveDataWorkflow, syncProcessing } from "./data-actions.js?v=stage15-1";
-import { assistantAction, saveAssistant } from "./assistant.js?v=stage15-1";
-import { governanceAction, saveGovernance } from './governance.js?v=stage15-1';
-import { parameterTemplateAction, saveParameterTemplate } from './parameter-templates.js?v=stage15-1';
-import { projectAction, saveProject } from './projects.js?v=stage15-1';
-import { keyAction, saveKey } from './key-management.js?v=stage15-1';
-import { queryAction, saveQuery } from './query-controls.js?v=stage15-1';
-import { syncResourceNodes } from './resource-options.js?v=stage16-local';
+import { errorMessage } from "./api.js?v=stage20a-2";
+import { QUOTAS, options } from "./components.js?v=stage20a-2";
+import { addExamples, CSV_TEMPLATE, JSONL_TEMPLATE } from "./examples.js?v=stage20a-2";
+import { computeAction, saveCompute } from "./compute.js?v=stage20a-2";
+import { workflowAction, saveWorkflow, workflowModelChanged, workflowOutputModeChanged } from "./workflows.js?v=stage20a-2";
+import { pageAction, pageChanged, syncImport } from "./page-events.js?v=stage20a-2";
+import { captureDraft, ensureDraft, persistTraining } from "./training-wizard.js?v=stage20a-2";
+import { persistImport } from "./dataset-import.js?v=stage20a-2";
+import { administrationAction, saveAdministration } from "./administration.js?v=stage20a-2";
+import { captureAnnotation, dataAction, saveAnnotation, saveDataWorkflow, syncProcessing } from "./data-actions.js?v=stage20a-2";
+import { assistantAction, saveAssistant } from "./assistant.js?v=stage20a-2";
+import { governanceAction, saveGovernance } from './governance.js?v=stage20a-2';
+import { parameterTemplateAction, saveParameterTemplate } from './parameter-templates.js?v=stage20a-2';
+import { projectAction, saveProject } from './projects.js?v=stage20a-2';
+import { keyAction, saveKey } from './key-management.js?v=stage20a-2';
+import { queryAction, saveQuery } from './query-controls.js?v=stage20a-2';
+import { syncResourceNodes } from './resource-options.js?v=stage20a-2';
 
 function showError(selector, error) {
   const target = document.querySelector(selector);
@@ -39,61 +39,66 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
     Object.entries(changes).forEach(([key, value]) => value ? params.set(key, String(value)) : params.delete(key));
     navigate(path + (params.size ? `?${params}` : ""));
   }
+  // 点击动作分发表：先按顺序试各功能模块的动作处理器，命中即停；
+  // 再查单动作路由表。新增动作只需在表里加一行，不改分发逻辑。
+  const clickPipeline = [
+    deps => pageAction(deps.action, deps.ctx, deps.api, deps.render),
+    deps => projectAction(deps.action, { ctx: deps.ctx, openModal: deps.openModal }),
+    deps => keyAction(deps.action, deps.id, { ctx: deps.ctx, openModal: deps.openModal, toast: deps.toast }),
+    deps => queryAction(deps.action, { ctx: deps.ctx, openModal: deps.openModal, navigate: deps.navigate }),
+    deps => parameterTemplateAction(deps.action, deps.id, { api: deps.api, ctx: deps.ctx, openModal: deps.openModal, render: deps.render, toast: deps.toast, form: deps.button.form }),
+    deps => dataAction(deps.action, deps.id, { api: deps.api, ctx: deps.ctx, openModal: deps.openModal, load: deps.load, toast: deps.toast }),
+    deps => assistantAction(deps.action, deps.id, { api: deps.api, ctx: deps.ctx, openModal: deps.openModal, load: deps.load, toast: deps.toast, form: deps.button.form }),
+    // admin-test-connection：调用前后禁用/恢复按钮，避免重复测试。
+    async deps => {
+      if (deps.action !== "admin-test-connection") return false;
+      const caption = deps.button.textContent;
+      deps.button.disabled = true; deps.button.textContent = "正在测试…";
+      try { await administrationAction(deps.action, deps.id, { api: deps.api, ctx: deps.ctx, openModal: deps.openModal, render: deps.render, load: deps.load, toast: deps.toast }); }
+      finally { if (deps.button.isConnected) { deps.button.disabled = false; deps.button.textContent = caption; } }
+      return true;
+    },
+    deps => administrationAction(deps.action, deps.id, { api: deps.api, ctx: deps.ctx, openModal: deps.openModal, render: deps.render, load: deps.load, toast: deps.toast }),
+    deps => computeAction(deps.action, deps.id, { api: deps.api, ctx: deps.ctx, openModal: deps.openModal, toast: deps.toast, load: deps.load }),
+    deps => governanceAction(deps.action, deps.id, { api: deps.api, ctx: deps.ctx, openModal: deps.openModal }),
+    deps => workflowAction(deps.action, deps.id, { api: deps.api, ctx: deps.ctx, openModal: deps.openModal, toast: deps.toast, load: deps.load, render: deps.render, navigate: deps.navigate }),
+  ];
+  const clickActions = new Map([
+    ["toggle-password", deps => { const field = document.getElementById("live-password"); field.type = field.type === "password" ? "text" : "password"; deps.button.setAttribute("aria-label", field.type === "text" ? "隐藏密码" : "显示密码"); }],
+    ["toggle-nav", deps => { deps.ctx.ui.navOpen[deps.group] = !deps.ctx.ui.navOpen[deps.group]; deps.render(); deps.persist(); }],
+    ["collapse-sidebar", deps => { deps.ctx.ui.sidebarCollapsed = !deps.ctx.ui.sidebarCollapsed; deps.render(); deps.persist(); }],
+    ["open-menu", deps => { deps.ctx.ui.menuOpen = true; document.getElementById("shell")?.classList.toggle("menu-open", true); }],
+    ["close-menu", deps => { deps.ctx.ui.menuOpen = false; document.getElementById("shell")?.classList.toggle("menu-open", false); }],
+    ["logout", async deps => { await deps.api.request("/auth/logout", { method: "POST" }); deps.api.csrf = ""; deps.ctx.session = null; deps.ctx.ui.modal = null; deps.ctx.resourceConnection = null; deps.ctx.generatedKey = null; deps.ctx.generatedInvite = null; deps.ctx.pendingCall = null; deps.ctx.callResult = null; deps.ctx.wizard = null; deps.ctx.importDraft = null; deps.ctx.annotationDrafts = null; deps.ctx.dataChoices = null; deps.ctx.assistantOptions = null; deps.navigate("/login"); }],
+    ["refresh", deps => deps.load()],
+    ["go", deps => deps.navigate(deps.id)],
+    ["modal", deps => deps.openModal(deps.id, ["model-version", "model-upload", "dataset-version"].includes(deps.id) ? deps.ctx.data.item : undefined)],
+    ["close-modal", deps => deps.closeModal()],
+    ["edit-asset", deps => deps.openModal("asset-edit", deps.ctx.data.item || deps.ctx.data.data.find(item => item.id === deps.id))],
+    ["edit-group", deps => deps.openModal("group-edit", deps.ctx.data.data.find(item => item.id === deps.id))],
+    ["edit-user", deps => deps.openModal("user-edit", deps.ctx.data.data.find(item => item.id === deps.id))],
+    ["edit-member", deps => deps.openModal("member", deps.ctx.data.members.data.find(item => item.user_id === deps.id))],
+    ["toggle-user", deps => deps.openModal("toggle-user", deps.ctx.data.data.find(item => item.id === deps.id))],
+    ["page", deps => changedQuery({ page: Number(deps.id) })],
+    ["clear-search", () => changedQuery({ page: 1, q: "" })],
+    ["template", deps => template(deps.id)],
+    ["select-workspace", deps => { deps.ctx.ui.workspaceId = deps.id; deps.persist(); deps.navigate("/home"); }],
+    ["preview", async deps => { const epoch = deps.ctx.epoch; const result = await deps.api.request(`/workspaces/${deps.ctx.workspace.id}/datasets/${deps.ctx.data.item.id}/versions/${deps.id}/preview?limit=20`); if (epoch === deps.ctx.epoch) { deps.ctx.data.preview = result.data; deps.render(); document.getElementById("samples")?.scrollIntoView({ block: "start", behavior: "smooth" }); } }],
+    ["dataset-report", async deps => { const [datasetId, versionId] = String(deps.id).split(":"); const result = await deps.api.request(`/workspaces/${deps.ctx.workspace.id}/datasets/${datasetId}/versions/${versionId}/report`); deps.openModal("dataset-report", result.data); }],
+    ["session-revoke", async deps => { await deps.api.request(`/auth/sessions/${deps.id}`, { method: "DELETE" }); deps.toast("已退出该会话"); await deps.load(); }],
+    ["session-revoke-others", async deps => { const res = await deps.api.request("/auth/sessions/revoke-others", { method: "POST" }); deps.toast(`已退出其他 ${res.data.revoked} 个会话`); await deps.load(); }],
+    ["admin-job-stop", async deps => { const [ws, jobId] = String(deps.id).split(":"); await deps.api.request(`/workspaces/${ws}/jobs/${jobId}/stop`, { method: "POST" }); deps.toast("已提交停止/取消"); await deps.load(); }],
+    ["admin-job-retry", async deps => { const [ws, jobId] = String(deps.id).split(":"); const res = await deps.api.request(`/workspaces/${ws}/jobs/${jobId}/retry`, { method: "POST" }); deps.toast("已创建重跑草稿"); deps.navigate(`/runs/${res.data.id}?workspace=${ws}`); }],
+  ]);
+
   document.addEventListener("click", async event => {
     const button = event.target.closest("[data-action]");
     if (!button || button.disabled || busy) return;
     const { action, id, group } = button.dataset;
+    const deps = { api, ctx, load, render, persist, navigate, toast, openModal, closeModal, button, action, id, group };
     try {
-      if (await pageAction(action, ctx, api, render)) return;
-      if (await projectAction(action, { ctx, openModal })) return;
-      if (await keyAction(action, id, { ctx, openModal, toast })) return;
-      if (await queryAction(action, { ctx, openModal, navigate })) return;
-      if (await parameterTemplateAction(action, id, { api, ctx, openModal, render, toast, form: button.form })) return;
-      if (await dataAction(action, id, { api, ctx, openModal, load, toast })) return;
-      if (await assistantAction(action, id, { api, ctx, openModal, load, toast, form: button.form })) return;
-      if (action === "admin-test-connection") {
-        const caption = button.textContent;
-        button.disabled = true; button.textContent = "正在测试…";
-        try { await administrationAction(action, id, { api, ctx, openModal, render, load, toast }); }
-        finally { if (button.isConnected) { button.disabled = false; button.textContent = caption; } }
-        return;
-      }
-      if (await administrationAction(action, id, { api, ctx, openModal, render, load, toast })) return;
-      if (await computeAction(action, id, { api, ctx, openModal, toast, load })) return;
-      if (await governanceAction(action, id, { api, ctx, openModal })) return;
-      if (await workflowAction(action, id, { api, ctx, openModal, toast, load, render, navigate })) return;
-      if (action === "toggle-password") { const field = document.getElementById("live-password"); field.type = field.type === "password" ? "text" : "password"; button.setAttribute("aria-label", field.type === "text" ? "隐藏密码" : "显示密码"); }
-      if (action === "toggle-nav") { ctx.ui.navOpen[group] = !ctx.ui.navOpen[group]; render(); persist(); }
-      if (action === "collapse-sidebar") { ctx.ui.sidebarCollapsed = !ctx.ui.sidebarCollapsed; render(); persist(); }
-      if (action === "open-menu" || action === "close-menu") { ctx.ui.menuOpen = action === "open-menu"; document.getElementById("shell")?.classList.toggle("menu-open", ctx.ui.menuOpen); }
-      if (action === "logout") { await api.request("/auth/logout", { method: "POST" }); api.csrf = ""; ctx.session = null; ctx.ui.modal = null; ctx.resourceConnection = null; ctx.generatedKey = null; ctx.generatedInvite = null; ctx.pendingCall = null; ctx.callResult = null; ctx.wizard = null; ctx.importDraft = null; ctx.annotationDrafts = null; ctx.dataChoices = null; ctx.assistantOptions = null; navigate("/login"); }
-      if (action === "refresh") await load();
-      if (action === "go") navigate(id);
-      if (action === "modal") openModal(id, ["model-version", "model-upload", "dataset-version"].includes(id) ? ctx.data.item : undefined);
-      if (action === "close-modal") closeModal();
-      if (action === "edit-asset") openModal("asset-edit", ctx.data.item || ctx.data.data.find(item => item.id === id));
-      if (action === "edit-group") openModal("group-edit", ctx.data.data.find(item => item.id === id));
-      if (action === "edit-user") openModal("user-edit", ctx.data.data.find(item => item.id === id));
-      if (action === "edit-member") openModal("member", ctx.data.members.data.find(item => item.user_id === id));
-      if (action === "toggle-user") openModal("toggle-user", ctx.data.data.find(item => item.id === id));
-      if (action === "page") changedQuery({ page: Number(id) });
-      if (action === "clear-search") changedQuery({ page: 1, q: "" });
-      if (action === "template") template(id);
-      if (action === "select-workspace") { ctx.ui.workspaceId = id; persist(); navigate("/home"); }
-      if (action === "preview") {
-        const epoch = ctx.epoch;
-        const result = await api.request(`/workspaces/${ctx.workspace.id}/datasets/${ctx.data.item.id}/versions/${id}/preview?limit=20`);
-        if (epoch === ctx.epoch) { ctx.data.preview = result.data; render(); document.getElementById("samples")?.scrollIntoView({ block: "start", behavior: "smooth" }); }
-      }
-      if (action === "dataset-report") {
-        const [datasetId, versionId] = String(id).split(":");
-        const result = await api.request(`/workspaces/${ctx.workspace.id}/datasets/${datasetId}/versions/${versionId}/report`);
-        openModal("dataset-report", result.data);
-      }
-      if (action === "session-revoke") { await api.request(`/auth/sessions/${id}`, { method: "DELETE" }); toast("已退出该会话"); await load(); }
-      if (action === "session-revoke-others") { const res = await api.request("/auth/sessions/revoke-others", { method: "POST" }); toast(`已退出其他 ${res.data.revoked} 个会话`); await load(); }
-      if (action === "admin-job-stop") { const [ws, jobId] = String(id).split(":"); await api.request(`/workspaces/${ws}/jobs/${jobId}/stop`, { method: "POST" }); toast("已提交停止/取消"); await load(); }
-      if (action === "admin-job-retry") { const [ws, jobId] = String(id).split(":"); const res = await api.request(`/workspaces/${ws}/jobs/${jobId}/retry`, { method: "POST" }); toast("已创建重跑草稿"); navigate(`/runs/${res.data.id}?workspace=${ws}`); }
+      for (const handle of clickPipeline) if (await handle(deps)) return;
+      await clickActions.get(action)?.(deps);
     } catch (error) { toast(errorMessage(error)); }
   });
 

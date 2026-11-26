@@ -1,4 +1,4 @@
-import { btn, e, input, tag } from './components.js?v=stage15-1';
+import { btn, e, input, tag } from './components.js?v=stage20a-2';
 
 const KEYS = ['creator', 'created_from', 'created_to', 'action'];
 const LABELS = { creator: '创建人', created_from: '开始日期', created_to: '结束日期', action: '操作代码' };
