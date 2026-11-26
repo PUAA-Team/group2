@@ -50,6 +50,8 @@ class LoginAttempt(Base):
     key_digest: Mapped[str] = mapped_column(String(64), primary_key=True)
     failures: Mapped[int] = mapped_column(Integer, default=0)
     blocked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # 账号维度滑动窗口的起始时间；单 IP 桶不使用该字段。
+    window_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Workspace(Timestamp, Revision, Base):

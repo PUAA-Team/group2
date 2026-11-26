@@ -17,6 +17,10 @@ class Settings:
     session_hours: int = 8
     login_failures: int = 5
     login_lock_seconds: int = 300
+    # 账号维度全局滑动限流：阈值约为单 IP 的 3 倍，窗口与锁定时长 15 分钟。
+    login_account_failures: int = 15
+    login_account_lock_seconds: int = 900
+    login_account_window_seconds: int = 900
     max_upload_bytes: int = 10 * 1024 * 1024
     max_samples: int = 10000
     node_timeout_seconds: int = 20

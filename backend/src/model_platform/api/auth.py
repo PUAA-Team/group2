@@ -19,32 +19,65 @@ router = APIRouter(prefix="/api/v1/auth", tags=["身份认证"])
 DUMMY_PASSWORD = hash_password(secrets.token_urlsafe(24))
 
 
+def _is_blocked(attempt, now):
+    return attempt is not None and attempt.blocked_until is not None and aware(attempt.blocked_until) > now
+
+
+def _reset_if_unblocked(attempt, now):
+    # 锁定期已过：计数归零，滑动窗口重新起计。
+    if attempt is not None and attempt.blocked_until is not None and aware(attempt.blocked_until) <= now:
+        attempt.failures = 0
+        attempt.blocked_until = None
+        attempt.window_started_at = None
+
+
+def _record_failure(db, key, now, threshold, lock_seconds, window_seconds=None):
+    """累计一次失败并在达到阈值时锁定；返回更新后的记录。
+
+    window_seconds 为 None 时按固定计数桶处理（单 IP 桶沿用旧语义）；
+    否则按滑动窗口处理：窗口过期则计数归零重新起计。
+    """
+    attempt = db.get(LoginAttempt, key)
+    if attempt is None:
+        attempt = LoginAttempt(key_digest=key, failures=0, window_started_at=now if window_seconds else None)
+        db.add(attempt)
+    _reset_if_unblocked(attempt, now)
+    if window_seconds is not None:
+        started = aware(attempt.window_started_at) if attempt.window_started_at else None
+        if started is None or (now - started).total_seconds() >= window_seconds:
+            attempt.failures = 0
+            attempt.window_started_at = now
+    attempt.failures += 1
+    if attempt.failures >= threshold:
+        attempt.blocked_until = now + timedelta(seconds=lock_seconds)
+    return attempt
+
+
 @router.post("/login", response_model=Envelope[SessionOut])
 def login(payload: Login, request: Request, output: Response, db: Db):
     settings = request.app.state.settings
     account = payload.account.strip().lower()
     client = request.client.host if request.client else "unknown"
-    key = digest(f"{account}|{client}")
-    attempt = db.get(LoginAttempt, key)
+    # 单 IP 桶：沿用旧语义；账号桶：纯账号维度全局滑动计数，轮换 IP 也无法绕过。
+    ip_key = digest(f"{account}|{client}")
+    account_key = digest(f"account|{account}")
+    ip_attempt = db.get(LoginAttempt, ip_key)
+    account_attempt = db.get(LoginAttempt, account_key)
     now = utcnow()
-    if attempt and attempt.blocked_until and aware(attempt.blocked_until) > now:
+    if _is_blocked(ip_attempt, now) or _is_blocked(account_attempt, now):
         raise Problem(429, "RATE_LIMITED", "登录尝试过多，请稍后重试")
-    if attempt and attempt.blocked_until:
-        attempt.failures = 0
-        attempt.blocked_until = None
     user = db.scalar(select(User).where(User.account == account))
     password_valid = verify_password(payload.password, user.password_hash if user else DUMMY_PASSWORD)
     if not user or not user.active or not password_valid:
-        if attempt is None:
-            attempt = LoginAttempt(key_digest=key, failures=0)
-            db.add(attempt)
-        attempt.failures += 1
-        if attempt.failures >= settings.login_failures:
-            attempt.blocked_until = now + timedelta(seconds=settings.login_lock_seconds)
+        _record_failure(db, ip_key, now, settings.login_failures, settings.login_lock_seconds)
+        _record_failure(db, account_key, now, settings.login_account_failures,
+                        settings.login_account_lock_seconds, settings.login_account_window_seconds)
         commit(db)
         raise Problem(401, "INVALID_CREDENTIALS", "账号或密码错误")
-    if attempt:
-        db.delete(attempt)
+    if ip_attempt:
+        db.delete(ip_attempt)
+    if account_attempt:
+        db.delete(account_attempt)
     raw = secrets.token_urlsafe(48)
     token = SessionToken(id=new_id("ses"), user_id=user.id, token_digest=digest(raw),
                          expires_at=now + timedelta(hours=settings.session_hours))

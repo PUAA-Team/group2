@@ -1,6 +1,7 @@
 from datetime import timedelta
 import hashlib
 import json
+import uuid
 
 from sqlalchemy import select, update
 
@@ -100,13 +101,29 @@ def store_artifact(db, settings, node, execution_id, content):
             raise Problem(409, "ARTIFACT_CONFLICT", "该执行已上传不同的产物")
         return {"sha256": sha}
     key = f"{job.workspace_id}/artifacts/{execution.id}.zip"
+    # 抢占式声明产物槽位：只有 artifact_sha256 仍为空时才能拿到。
+    # owned_execution 的行锁在 PostgreSQL 上已串行化同一执行的上传，
+    # 这里的条件更新再补一层数据库级保证：SQLite 下无行锁时，
+    # 并发双传也只有一个能拿到槽位，另一个回滚后重读并按幂等/冲突处理，
+    # 不会覆盖已落盘的产物。
+    claimed = db.execute(
+        update(Job).where(Job.id == job.id, Job.artifact_sha256.is_(None))
+        .values(artifact_key=key, artifact_sha256=sha, artifact_bytes=len(content),
+                revision=Job.revision + 1)
+        .execution_options(synchronize_session=False))
+    if claimed.rowcount != 1:
+        db.rollback()
+        current = db.scalar(select(Job.artifact_sha256).where(Job.id == job.id))
+        if current == sha:
+            return {"sha256": sha}
+        raise Problem(409, "ARTIFACT_CONFLICT", "该执行已上传不同的产物")
     from .budgets import charge_objects
     actor = db.get(User, job.created_by)
     charge_objects(db, actor, [{'id': 'artifact:' + job.id, 'workspace_id': job.workspace_id,
         'kind': 'artifact', 'object_id': job.id, 'storage_key': key, 'size_bytes': len(content)}])
     try:
-        path, _, _ = write_atomic(settings, key, content)
-        job.artifact_key, job.artifact_sha256, job.artifact_bytes = key, sha, len(content)
+        # 每次上传用唯一临时文件名，写盘与提交之间不与并发上传共用暂存文件。
+        write_atomic(settings, key, content, staged_name=f"{execution.id}.{uuid.uuid4().hex}.zip")
         commit(db)
     except Exception:
         db.rollback()
