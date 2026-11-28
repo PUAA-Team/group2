@@ -1,14 +1,14 @@
-import { ACTIONS, badge, btn, description, e, fieldsInfo, input, options, QUOTAS, select, table, taskOptions } from "./components.js?v=stage20a-2";
-import { computeDialog } from "./compute.js?v=stage20a-2";
-import { workflowDialog } from "./workflows.js?v=stage20a-2";
-import { administrationDialog } from "./administration.js?v=stage20a-2";
-import { dataDialog } from "./data-workflows.js?v=stage20a-2";
-import { assistantDialog } from "./assistant.js?v=stage20a-2";
-import { governanceDialog } from './governance.js?v=stage20a-2';
-import { parameterTemplateDialog } from './parameter-templates.js?v=stage20a-2';
-import { projectDialog } from './projects.js?v=stage20a-2';
-import { keyDialog } from './key-management.js?v=stage20a-2';
-import { queryDialog } from './query-controls.js?v=stage20a-2';
+import { ACTIONS, badge, btn, description, e, fieldsInfo, input, options, QUOTAS, select, table, taskOptions } from "./components.js?v=stage29-1";
+import { computeDialog } from "./compute.js?v=stage29-1";
+import { workflowDialog } from "./workflows.js?v=stage29-1";
+import { administrationDialog } from "./administration.js?v=stage29-1";
+import { dataDialog } from "./data-workflows.js?v=stage29-1";
+import { assistantDialog } from "./assistant.js?v=stage29-1";
+import { governanceDialog } from './governance.js?v=stage29-1';
+import { parameterTemplateDialog } from './parameter-templates.js?v=stage29-1';
+import { projectDialog } from './projects.js?v=stage29-1';
+import { keyDialog } from './key-management.js?v=stage29-1';
+import { queryDialog } from './query-controls.js?v=stage29-1';
 
 function policyFields(item = {}, personal = false) {
   const checks = (name, label) => `<fieldset class="live-check-field"><legend>${label}</legend><div class="live-checks">${ACTIONS.map(([key, text]) => `<label><input type="checkbox" name="${name}" value="${key}" ${(item[name] || []).includes(key) ? "checked" : ""}/>${e(text)}</label>`).join("")}</div></fieldset>`;
@@ -25,7 +25,7 @@ const DIALOG_RENDERERS = new Map([
   ...["gov-device-policy", "gov-group-budget", "gov-workspace-budget", "gov-archive", "gov-delete", "gov-review"].map(kind => [kind, governanceDialog]),
   ...["assistant-policy", "assistant-annotation-new", "assistant-parameters-new", "assistant-logs-new", "assistant-apply"].map(kind => [kind, assistantDialog]),
   ...["data-annotation-new", "data-operation-new", "data-publish", "annotation-publish", "data-cancel"].map(kind => [kind, dataDialog]),
-  ...["settings-edit", "connection-new", "connection-edit", "invite-new", "password-own", "password-reset", "profile", "workspace-edit", "workspace-invite", "workspace-join", "workspace-delete", "member-remove", "user-access", "group-members"].map(kind => [kind, administrationDialog]),
+  ...["settings-edit", "connection-new", "connection-edit", "invite-new", "password-own", "password-reset", "profile", "workspace-edit", "workspace-invite", "workspace-join", "workspace-delete", "member-remove", "user-access", "group-members", "session-revoke-confirm", "session-revoke-own-confirm", "session-revoke-others-confirm", "storage-reconcile-confirm"].map(kind => [kind, administrationDialog]),
   ...["enroll-new", "local-worker", "node-edit", "node-toggle", "node-revoke", "enrollment-revoke", "local-stop"].map(kind => [kind, computeDialog]),
   ...["job-new", "job-edit", "job-stop", "job-priority", "service-invoke", "key-new", "key-revoke", "key-rotate"].map(kind => [kind, workflowDialog]),
 ]);

@@ -9,8 +9,7 @@
 .console-entity-card h3{font-size:17px;margin:16px 0;overflow-wrap:anywhere}.console-entity-card h3 .row-link{color:var(--link);font-weight:600}.console-entity-card .project-foot{margin:20px -20px 0;padding:14px 20px;background:#f6f8fc;border-top:1px solid var(--line);border-radius:0 0 8px 8px;min-height:59px;gap:12px;flex-wrap:wrap}
 .console-card-fields{display:grid;grid-template-columns:84px minmax(0,1fr);gap:12px;align-items:baseline;flex:1;font-size:14px}
 .console-card-fields>span{min-width:0;overflow-wrap:anywhere}.console-card-fields strong{font-size:14px;font-weight:500}.console-view-toggle{display:flex;gap:4px}
-.data-candidate-heading{flex-wrap:wrap;gap:14px}.data-candidate-heading h2{flex-shrink:0;white-space:nowrap}.data-candidate-heading>.select{width:280px;max-width:100%;min-width:0}.annotation-queue .status-label{display:none}
-.data-thumbnail{display:block;width:88px;height:62px;object-fit:contain;background:#f4f6f8;border:1px solid var(--line);border-radius:6px}.data-sample-text{max-width:680px;min-width:160px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}.annotation-workbench{display:grid;grid-template-columns:176px minmax(0,1fr) 230px;gap:20px;align-items:start;margin-bottom:20px}.annotation-queue{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px;max-height:610px;overflow:auto}.annotation-queue-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 10px;border-radius:6px;color:var(--ink);font-size:14px}.annotation-queue-item.is-active{background:#edf4f2;font-weight:600;color:#276d62}.annotation-queue-item:hover{background:#f1f4f7}.annotation-queue-item .chip{padding:2px 6px}.annotation-content{min-width:0;background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px;min-height:420px}.annotation-content .section-heading{margin-top:0}.annotation-content h3{font-size:16px;margin:22px 0 12px}.annotation-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:16px;line-height:1.9}.annotation-image{display:grid;place-items:center;min-height:320px;background:#f5f7fa;border-radius:6px;padding:18px}.annotation-image img{display:block;max-width:100%;max-height:450px;object-fit:contain}.annotation-editor{min-width:0}.annotation-editor .field{gap:12px}.annotation-editor .field>label{font-weight:600;font-size:16px}.annotation-save-actions,.annotation-review-actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.annotation-save-actions .btn{flex:1;white-space:nowrap}.annotation-review-actions{padding-top:18px;border-top:1px solid var(--line)}
+.data-candidate-heading{flex-wrap:wrap;gap:14px}.data-candidate-heading h2{flex-shrink:0;white-space:nowrap}.data-candidate-heading>.select{width:280px;max-width:100%;min-width:0}.data-thumbnail{display:block;width:88px;height:62px;object-fit:contain;background:#f4f6f8;border:1px solid var(--line);border-radius:6px}.data-sample-text{max-width:680px;min-width:160px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}.annotation-workbench{display:grid;grid-template-columns:176px minmax(0,1fr) 230px;gap:20px;align-items:start;margin-bottom:20px}.annotation-queue{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px;max-height:610px;overflow:auto}.annotation-queue-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 10px;border-radius:6px;color:var(--ink);font-size:14px}.annotation-queue-item.is-active{background:#edf4f2;font-weight:600;color:#276d62}.annotation-queue-item:hover{background:#f1f4f7}.annotation-queue-item .chip{padding:2px 6px}.annotation-content{min-width:0;background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px;min-height:420px}.annotation-content .section-heading{margin-top:0}.annotation-content h3{font-size:16px;margin:22px 0 12px}.annotation-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:16px;line-height:1.9}.annotation-image{display:grid;place-items:center;min-height:320px;background:#f5f7fa;border-radius:6px;padding:18px}.annotation-image img{display:block;max-width:100%;max-height:450px;object-fit:contain}.annotation-editor{min-width:0}.annotation-editor .field{gap:12px}.annotation-editor .field>label{font-weight:600;font-size:16px}.annotation-save-actions,.annotation-review-actions{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}.annotation-save-actions .btn{flex:1;white-space:nowrap}.annotation-review-actions{padding-top:18px;border-top:1px solid var(--line)}
 @media(max-width:1100px){.annotation-workbench{grid-template-columns:146px minmax(0,1fr)}.annotation-editor{grid-column:2}.annotation-content{min-height:300px}.annotation-queue{grid-row:1/3;max-height:720px}}
 @media(max-width:620px){.annotation-workbench{grid-template-columns:minmax(0,1fr);gap:14px}.annotation-queue{grid-row:auto;display:flex;max-height:140px;flex-wrap:wrap;gap:4px}.annotation-queue-item{padding:8px;font-size:14px}.annotation-editor{grid-column:1}.annotation-content{padding:18px;min-height:240px}.annotation-image{min-height:180px}.annotation-text{font-size:16px}.annotation-save-actions .btn{flex:0 1 auto}}
 .console-stepper{list-style:none;display:flex;padding:0;margin:10px 0 26px;gap:0;max-width:1040px}
@@ -28,3 +27,85 @@
 @media(max-width:600px){.console-summary-six{grid-template-columns:repeat(2,minmax(0,1fr))}.console-summary-six>div{border:0;padding:0 18px}.auth-switch{margin-top:18px}}
 @media(max-width:1100px){.console-summary>a{padding:0 16px}.console-home-bottom{grid-template-columns:1fr}.console-detail-grid{grid-template-columns:1fr}.console-import-layout{grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr)}.console-activity{gap:12px}}
 @media(max-width:700px){.console-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 0;padding:20px 0}.console-summary>a{border:0;gap:10px;padding:0 18px}.console-summary strong{font-size:24px}.console-catalog{grid-template-columns:1fr}.console-import-layout{grid-template-columns:1fr}.console-activity{grid-template-columns:minmax(0,1fr) auto}.console-activity time{grid-column:1/-1}.console-stepper{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.console-stepper li::after{display:none}.console-stepper li{gap:8px}.console-wizard-footer{align-items:flex-start;flex-wrap:wrap}.console-wizard-footer>.heading-actions{justify-content:flex-end;flex:1;flex-wrap:wrap}.console-form-panel{padding:18px}.console-detail-grid .card-header{flex-wrap:wrap;gap:12px}.console-view-toggle{margin-left:auto}}
+/* 22-2：工作台进行中统计高亮、训练详情结果统计条、进度条、图表最新值与日志行数。 */
+.console-summary>a.is-active strong{color:var(--blue)}
+.console-summary-three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.console-summary-three>div{display:flex;flex-direction:column;gap:14px;min-width:0;padding:0 24px;border-right:1px solid var(--line);color:var(--ink)}
+.console-summary-three>div:last-child{border:0}
+.console-summary-three>div>span{font-size:14px}
+.console-summary-three strong{font-size:27px;font-weight:600;line-height:1.2}
+.live-progress{display:inline-block;width:120px;max-width:40%;height:6px;border-radius:6px;background:#eef1f4;vertical-align:middle;margin-right:8px}
+.live-progress>span{display:block;height:100%;border-radius:6px;background:var(--blue)}
+.chart-summary{font-size:14px;color:var(--muted);margin:2px 0 12px}
+.execution-log-meta{margin-top:12px;color:var(--muted)}
+.execution-log-meta+.execution-log{margin-top:8px}
+@media(max-width:1100px){.console-summary-three>div{padding:0 16px}}
+@media(max-width:700px){.console-summary-three{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 0;padding:20px 0}.console-summary-three>div{border:0;gap:10px;padding:0 18px}.console-summary-three strong{font-size:21px}.live-progress{width:80px}}
+/* 22-3：资源设备卡片、统计面板四列资源条、窄屏工具栏与筛选控件。 */
+.device-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:20px}
+.device-card{min-width:0;background:#fff;border:1px solid var(--line);border-radius:8px;padding:18px 20px}
+.device-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.device-card-head h3{font-size:15px;margin:0;overflow-wrap:anywhere}
+.device-card-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.device-card-id{font-size:13px;color:var(--muted);margin-bottom:12px}
+.device-card-meter{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:14px}
+.device-card-meter strong{font-weight:600}
+.device-card .live-progress{display:block;width:100%;max-width:none;margin:6px 0 12px}
+.device-card-foot{margin-top:4px}
+.console-summary-four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.console-summary-four>div{display:flex;flex-direction:column;gap:14px;min-width:0;padding:0 24px;border-right:1px solid var(--line);color:var(--ink)}
+.console-summary-four>div:last-child{border:0}
+.console-summary-four>div>span{font-size:14px}
+.console-summary-four strong{font-size:27px;font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+@media(max-width:1100px){.device-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.console-summary-four{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 0}.console-summary-four>div:nth-child(2){border:0}}
+@media(max-width:700px){
+.device-cards{grid-template-columns:1fr}
+.console-summary-four{grid-template-columns:repeat(2,minmax(0,1fr))}
+.console-summary-four>div{border:0;padding:0 18px}
+.console-summary-four strong{font-size:24px}
+.toolbar{flex-direction:column;align-items:stretch}
+.toolbar .live-search{width:100%}
+.toolbar .live-search .search-field{max-width:none}
+.toolbar .heading-actions{width:100%}
+.heading-actions-spaced{margin-top:20px}
+.toolbar .heading-actions .filter-select{flex:1 1 140px;min-width:0}
+.toolbar .heading-actions .btn{flex:0 1 auto}
+.console-history-filters .select{flex:1 1 140px;min-width:0}
+.device-card{padding:16px}
+}
+/* 22-4：数据与模型目录视觉重做：数据集卡片与模型卡片一致、卡片内长来源省略、资产详情数字汇总条、标注队列状态圆点与审核进度条。 */
+.console-card-fields .live-source{max-width:100%}
+.annotation-state{flex:none;width:10px;height:10px;border-radius:50%;background:#c4cbd1}
+.annotation-state.is-draft{background:#8a94a0}
+.annotation-state.is-submitted{background:#c98a1b}
+.annotation-state.is-approved{background:#276d62}
+.annotation-state.is-rejected{background:#c0392b}
+.annotation-state.is-none{background:transparent;border:1.5px solid #c4cbd1}
+.annotation-progress{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);white-space:nowrap}
+.annotation-progress .live-progress{width:100px;margin:0}
+@media(max-width:700px){.annotation-progress .live-progress{width:64px}}
+/* 22-5：训练列表视觉重做：名称省略、数据集与耗时列、筛选工具栏新增设备/项目/排序；向导步骤条已完成步骤显示对勾。 */
+.job-duration{white-space:nowrap}
+/* 22-6：智能辅助、评估对比与结果详情视觉重做：数字统计条、对比最佳值、混淆矩阵对角线、最弱 F1、日志原因卡片。 */
+.live-stat-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;margin:4px 0 24px;padding:20px 0;background:#fff;border:1px solid var(--line);border-radius:8px}
+.live-stat-strip>div{display:flex;flex-direction:column;gap:10px;min-width:0;padding:0 20px;border-right:1px solid var(--line)}
+.live-stat-strip>div:last-child{border:0}
+.live-stat-strip>div>span{font-size:14px;color:var(--muted)}
+.live-stat-strip strong{font-size:24px;font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.live-best{color:var(--blue);font-weight:700;white-space:nowrap}
+.live-matrix-diag{display:inline-block;min-width:30px;padding:2px 8px;border-radius:6px;background:var(--blue-light);color:var(--blue-dark);font-weight:700;text-align:center}
+.live-worst{display:inline-block;padding:2px 8px;border-radius:6px;background:var(--amber-light);color:var(--amber);font-weight:700;white-space:nowrap}
+.live-cause{border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin:0 0 16px;background:#fff}
+.live-cause h3{font-size:15px;margin:0 0 8px}
+.live-cause p{margin:0 0 12px;line-height:1.7}
+.live-cause p:last-child{margin-bottom:0}
+.live-cause ol{margin:0 0 4px;padding-left:20px;line-height:1.8}
+.live-cause .live-detail-meta{margin-bottom:12px}
+@media(max-width:700px){.live-stat-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 0}.live-stat-strip>div{border:0;padding:0 16px}.live-stat-strip strong{font-size:21px}}
+/* 22-7：数据导入向导步骤条与校验统计条、数据处理/标注列表进度条与区分空态、样本浏览统计条、标注样本位置与文件名。 */
+.data-progress{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.data-progress .live-progress{width:100px;margin:0}
+.live-stat-strip .live-progress{width:100%;max-width:180px;margin:0}
+.annotation-file{margin-top:12px;font-size:14px;color:var(--muted)}
+.annotation-file.live-source{max-width:100%}
+@media(max-width:700px){.data-progress .live-progress{width:64px}}

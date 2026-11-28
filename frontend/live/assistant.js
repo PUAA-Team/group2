@@ -1,10 +1,11 @@
-import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, raw, select, table, tag, TASKS, workspaceRequired } from "./components.js?v=stage20a-2";
-import { captureDraft, jobPayload } from "./training-wizard.js?v=stage20a-2";
+import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, raw, select, table, tag, TASKS, workspaceRequired } from "./components.js?v=stage29-1";
+import { captureDraft, jobPayload } from "./training-wizard.js?v=stage29-1";
 
 const STATES = { preview: "预览待确认", queued: "排队中", running: "进行中", succeeded: "已完成", applied: "已采纳", failed: "失败", cancelled: "已取消" };
 const PURPOSES = { annotation: "智能标注", parameters: "智能参数", logs: "智能解释" };
 const SCOPES = [["configuration", "训练配置"], ["logs", "运行日志"], ["text_samples", "文本样本"], ["image_samples", "图像样本"]];
-const PARAMETERS = { epochs: "Epochs", batch_size: "Batch size", learning_rate: "Learning rate", validation_ratio: "验证比例", seed: "Seed", max_length: "最大长度", lora_rank: "LoRA rank" };
+const PARAMETERS = { epochs: "训练轮次", batch_size: "批量大小", learning_rate: "学习率", validation_ratio: "验证比例", seed: "随机种子", max_length: "最大序列长度", lora_rank: "LoRA 秩" };
+const USAGE_LABELS = { prompt_tokens: "提示 Token", completion_tokens: "完成 Token", total_tokens: "总 Token" };
 const NEW_REQUESTS = ["assistant-annotation-new", "assistant-parameters-new", "assistant-logs-new"];
 
 export const isAssistantPage = path => path === "/assistants" || /^\/assistants\/[^/]+$/.test(path);
@@ -42,27 +43,44 @@ export function renderAssistant(ctx) {
   return requestId(ctx.path) ? requestDetail(ctx) : requestList(ctx);
 }
 
+function objectCell(item) {
+  const text = objectText(item);
+  return raw(`<span class="live-source" title="${e(text)}">${objectLink(item)}</span>`);
+}
+
+function connectionText(item) {
+  const connection = item.preview?.connection;
+  if (!connection) return "—";
+  return connection.model ? `${connection.name} · ${connection.model}` : connection.name;
+}
+
 function requestList(ctx) {
-  const rows = (ctx.data.data || []).map(item => [raw(objectLink(item)), raw(tag(PURPOSES[item.purpose] || item.purpose)), raw(badge(STATES[item.status] || item.status)),
-    item.preview?.connection?.name || "—", date(item.created_at), raw(link("详情", `/assistants/${item.id}`))]);
+  const rows = (ctx.data.data || []).map(item => [objectCell(item), raw(tag(PURPOSES[item.purpose] || item.purpose)),
+    raw(badge(STATES[item.status] || item.status) + (item.expired ? tag("预览已过期") : "")),
+    raw(`<span class="live-source" title="${e(connectionText(item))}">${e(connectionText(item))}</span>`),
+    date(item.created_at), raw(link("详情", `/assistants/${item.id}`))]);
   const filter = (key, label, entries) => `<select class="select" data-query-filter="${key}" aria-label="${label}">${options(entries, ctx.params.get(key))}</select>`;
   const actions = (can(ctx, "members.manage") ? btn("空间授权", "assistant-policy") : "") + btn("刷新", "refresh");
+  const filtered = ["purpose", "status"].some(key => ctx.params?.get(key));
   return pageHeader("智能辅助", "", actions) +
     `<div class="toolbar">${filter("purpose", "用途", [["", "全部用途"], ...Object.entries(PURPOSES)])}${filter("status", "状态", [["", "全部状态"], ...Object.entries(STATES)])}</div>` +
-    table(["对象", "用途", "状态", "模型连接", "创建时间", "操作"], rows) + pager(ctx.data.pagination);
+    table(["对象", "用途", "状态", "模型连接", "创建时间", "操作"], rows, filtered ? "没有符合筛选条件的智能辅助请求" : "暂无智能辅助请求") + pager(ctx.data.pagination);
 }
 
 function resultPanel(item) {
   const result = item.result || {};
-  const suggestions = rows => table(["参数", "建议值", "理由"], rows.map(value => [PARAMETERS[value.field] || value.field, value.value, value.reason]));
+  const suggestions = rows => table(["参数", "建议值", "理由"], rows.map(value => [PARAMETERS[value.field] || value.field, value.value, value.reason]), "暂无参数建议");
   if (item.purpose === "annotation") {
-    return table(["样本", "建议值", "理由"], (result.samples || []).map(value => [raw(tag(value.index + 1)), value.value, value.reason]));
+    return table(["样本", "建议值", "理由"], (result.samples || []).map(value => [raw(tag(value.index + 1)), value.value, value.reason]), "暂无样本建议");
   }
   if (item.purpose === "parameters") return suggestions(result.suggestions || []);
+  const causes = result.causes || [];
   return fieldsInfo([["摘要", e(result.summary || "—")]]) +
-    (result.causes || []).map(cause => fieldsInfo([["可能原因", e(cause.reason)],
-      ["日志序号", cause.evidence.length ? cause.evidence.map(value => tag(value)).join("") : "—"],
-      ["排查步骤", cause.steps.map(step => `<div>${e(step)}</div>`).join("")]])) +
+    (causes.length ? `<div class="section-heading"><h2>可能原因</h2><div class="heading-actions">${tag(`共 ${causes.length} 个`)}</div></div>` +
+      causes.map((cause, index) => `<div class="live-cause"><h3>原因 ${index + 1}</h3><p>${e(cause.reason || "—")}</p>` +
+        `<div class="live-detail-meta">${(cause.evidence || []).length ? (cause.evidence || []).map(value => tag(value)).join("") : tag("无日志序号")}</div>` +
+        ((cause.steps || []).length ? `<ol>${(cause.steps || []).map(step => `<li>${e(step)}</li>`).join("")}</ol>` : "<p>暂无排查步骤</p>") +
+        `</div>`).join("") : "") +
     (result.suggestions?.length ? suggestions(result.suggestions) : "");
 }
 
@@ -78,14 +96,15 @@ function requestDetail(ctx) {
   if (preview.image_count) marks.push(tag(`图像 ${preview.image_count} 张 · 序号 ${(preview.image_indices || []).join(", ")}`));
   for (const [label, count] of Object.entries(preview.redactions || {})) marks.push(tag(`${label}已脱敏 ${count}`));
   const usage = Object.entries(item.usage || {}).filter(([, value]) => typeof value === "number");
+  const usageStrip = usage.length ? `<div class="live-stat-strip">${usage.map(([key, value]) => `<div><span>${e(USAGE_LABELS[key] || key)}</span><strong>${e(value)}</strong></div>`).join("")}</div>` : "";
   return `<div class="breadcrumb">${link("智能辅助", "/assistants")} / ${e(objectText(item))}</div>` + pageHeader(objectText(item), "", actions) +
     `<div class="live-detail-meta">${marks.join("")}</div>` +
     fieldsInfo([["对象", objectLink(item)], ["模型连接", e(preview.connection ? `${preview.connection.name} · ${preview.connection.model}` : item.connection_id)],
-      ["创建时间", date(item.created_at)], ["确认时间", date(item.confirmed_at)],
-      ...(usage.length ? [["Token 用量", e(usage.map(([key, value]) => `${key} ${value}`).join(" / "))]] : [])]) +
+      ["创建时间", date(item.created_at)], ["确认时间", date(item.confirmed_at)]]) +
+    usageStrip +
     (item.expired ? '<div class="notice">预览已过期，请从对应业务页面重新生成。</div>' : "") +
     (item.error?.message ? `<div class="notice notice-danger" role="alert">${e(item.error.message)}</div>` : "") +
-    `<div class="section-heading"><h2>外发内容</h2><div class="heading-actions">${tag(`输出上限 ${preview.max_tokens || item.max_tokens} Token`)}</div></div>` +
+    `<div class="section-heading"><h2>外发内容</h2><div class="heading-actions">${tag(`输出上限 ${preview.max_tokens || item.max_tokens || "—"} Token`)}</div></div>` +
     (preview.system ? fieldsInfo([["系统指令", `<span class="live-break">${e(preview.system)}</span>`]]) : "") +
     `<pre class="execution-log console-log">${e(preview.text || "")}</pre>` +
     (preview.images || []).map(image => `<figure class="annotation-image"><img src="${e(image.data_url)}" alt="外发样本 ${image.index + 1}"/><figcaption>样本 ${image.index + 1}</figcaption></figure>`).join("") +

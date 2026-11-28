@@ -127,8 +127,12 @@ def test_audit_filters_dates_and_safe_export_match(app, admin, workspace, monkey
     records = list(csv.reader(io.StringIO(result.content.decode('utf-8-sig'))))
     assert len(records) == len(rows) + 1 and records[1][2] == "'=1+1"
     assert 'token_digest' not in result.text and 'password_hash' not in result.text
-    monkeypatch.setattr(reports, 'MAX_AUDIT_ROWS', 0)
-    assert admin.get('/api/v1/admin/audit-export', params=params).status_code == 422
+    # 导出改走分页流式：即使每页只取 1 条也不再 422，仍完整导出全部命中行
+    monkeypatch.setattr(reports, 'AUDIT_EXPORT_PAGE_SIZE', 1)
+    result = admin.get('/api/v1/admin/audit-export', params=params)
+    assert result.status_code == 200 and result.content.startswith(b'\xef\xbb\xbf')
+    records = list(csv.reader(io.StringIO(result.content.decode('utf-8-sig'))))
+    assert len(records) == len(rows) + 1 and records[1][2] == "'=1+1"
 
 
 def test_evaluation_report_metrics_unknown_values_and_exports(app, admin, workspace):

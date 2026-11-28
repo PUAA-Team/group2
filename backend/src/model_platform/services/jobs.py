@@ -215,8 +215,11 @@ def queue_reason(db, job, settings):
 
 def job_view(db, job, settings=None):
     from .console import job_summary
+    from .job_failures import failure_detail
     view = job_summary(db, job)
     execution = db.scalar(select(Execution).where(Execution.job_id == job.id))
     view["execution"] = serialize(execution) if execution else None
     view["queue_reason_code"], view["queue_reason"] = queue_reason(db, job, settings)
+    if job.status == "failed":
+        view["failure"] = failure_detail(db, job)
     return view

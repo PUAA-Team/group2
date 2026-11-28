@@ -1,7 +1,9 @@
-import { btn, can, card, e, fieldsInfo, input, options, pageHeader, select, tag, TASKS, workspaceRequired } from "./components.js?v=stage20a-2";
-import { nodeOptions } from "./resource-options.js?v=stage20a-2";
+import { btn, can, card, e, fieldsInfo, input, options, pageHeader, select, tag, TASKS, workspaceRequired } from "./components.js?v=stage29-1";
+import { nodeOptions } from "./resource-options.js?v=stage29-1";
 
 const steps = ["任务与模型", "数据集", "参数与资源", "核对提交"];
+// 核对页不直接显示 epochs/validation_ratio 这类配置键，统一用表单同款中文标签。
+const PARAM_LABELS = { epochs: "Epochs", batch_size: "Batch size", learning_rate: "Learning rate", validation_ratio: "验证比例", seed: "Seed", max_length: "最大长度", lora_rank: "LoRA rank" };
 const numbers = ["epochs", "batch_size", "learning_rate", "validation_ratio", "seed", "max_length", "lora_rank"];
 const defaults = task => ({ epochs: task === "llm_sft" ? 1 : 5, batch_size: task === "llm_sft" ? 1 : 8, learning_rate: task === "llm_sft" ? 0.0002 : 0.01, validation_ratio: 0.2, seed: 42, max_length: 128, lora_rank: 4 });
 
@@ -60,11 +62,11 @@ export function renderWizard(ctx) {
   }
   if (draft.step === 3) {
     const dataset = compatible.find(item => item.id === v.dataset_version_id);
-    fields = fieldsInfo([["任务名称", e(v.name)], ["任务类型", tag(TASKS[v.task_type])], ["模型", e(model ? `${model.name} / ${model.version}` : "—")], ["数据集", e(dataset ? `${dataset.name} / v${dataset.number}` : "—")], ["设备", tag(v.device_kind === "cuda" ? "GPU" : "CPU")], ["节点", e(ctx.data.nodes?.find(node => node.id === v.node_id)?.name || "自动选择")], ...numbers.filter(key => v.task_type === "llm_sft" || !["max_length", "lora_rank"].includes(key)).map(key => [key, e(v[key])])]);
+    fields = fieldsInfo([["任务名称", e(v.name)], ["任务类型", tag(TASKS[v.task_type])], ["模型", e(model ? `${model.name} / ${model.version}` : "—")], ["数据集", e(dataset ? `${dataset.name} / v${dataset.number}${dataset.sample_count == null ? "" : ` · ${dataset.sample_count} 条`}` : "—")], ["设备", tag(v.device_kind === "cuda" ? "GPU" : "CPU")], ["节点", e(ctx.data.nodes?.find(node => node.id === v.node_id)?.name || "自动选择")], ...numbers.filter(key => v.task_type === "llm_sft" || !["max_length", "lora_rank"].includes(key)).map(key => [PARAM_LABELS[key], e(v[key])])]);
   }
   const archivedProject = (ctx.data.projects || []).find(item => item.id === v.project_id)?.archived;
   return `<div class="breadcrumb"><a href="#/runs">训练任务</a><span>/</span><span>${draft.editId ? "编辑草稿" : "新建训练"}</span></div>` + pageHeader(draft.editId ? "编辑训练草稿" : "新建训练") + (archivedProject ? '<div class="notice">项目已归档，请先恢复项目或选择其他项目。</div>' : '') +
-    `<ol class="console-stepper">${steps.map((name, index) => `<li class="${index === draft.step ? "active" : index < draft.step ? "complete" : ""}" ${index === draft.step ? 'aria-current="step"' : ""}><span>${index + 1}</span><strong>${name}</strong></li>`).join("")}</ol>` +
+    `<ol class="console-stepper">${steps.map((name, index) => `<li class="${index === draft.step ? "active" : index < draft.step ? "complete" : ""}" ${index === draft.step ? 'aria-current="step"' : ""}><span>${index < draft.step ? "✓" : index + 1}</span><strong>${name}</strong></li>`).join("")}</ol>` +
     `<form data-form="training-wizard" class="console-wizard-form"><div class="notice notice-danger" data-wizard-error role="alert" ${draft.error ? "" : "hidden"}>${e(draft.error || "")}</div>${card(`<div class="card-header"><h2>${steps[draft.step]}</h2>${draft.step === 2 && can(ctx, "assistants.use") ? btn("智能参数", "assistant-parameters-new") : ""}</div><div class="stack">${fields}</div>`, "console-form-panel")}<div class="console-wizard-footer"><a class="btn btn-secondary" href="#/runs">返回列表</a><div class="heading-actions">${draft.step ? btn("上一步", "wizard-back") : ""}${draft.step < 3 ? btn("下一步", "wizard-next", "", "primary") : '<button class="btn btn-secondary" type="submit" name="intent" value="draft">保存草稿</button><button class="btn btn-primary" type="submit" name="intent" value="submit">提交训练</button>'}</div></div></form>`;
 }
 

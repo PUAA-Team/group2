@@ -137,8 +137,9 @@ def test_nginx_csp_allows_only_same_origin():
     assert "connect-src 'self'" in csp
     assert "frame-ancestors 'none'" in csp
     assert "object-src 'none'" in csp
-    # 前端 JS 模板仍有少量 style="..." 行内样式，见验收文档残留边界。
-    assert "style-src 'self' 'unsafe-inline'" in csp
+    # stage23-1 已把 live/ 全部行内样式迁走，style-src 不再放行 'unsafe-inline'。
+    assert "style-src 'self'" in csp
+    assert "'unsafe-inline'" not in csp
 
 
 # ---------- .env.example / 续期 / systemd ----------

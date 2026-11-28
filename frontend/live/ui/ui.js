@@ -50,6 +50,8 @@ export const ADMIN_NAV = [
   ["统计面板", "/admin/stats", "panel"], ["资源管理", "/admin/resources", "resources"],
   ["数据管理", "/admin/data", "data"], ["模型管理", "/admin/models", "models"],
   ["作业管理", "/admin/jobs", "training"], ["用户管理", "/admin/users", "users"],
+  ["会话管理", "/admin/sessions", "key"],
+  ["存储对账", "/admin/storage", "data"],
   ["操作记录", "/admin/audit", "audit"], ["系统设置", "/admin/settings", "settings"]
 ];
 

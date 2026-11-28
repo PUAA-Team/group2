@@ -1,9 +1,12 @@
-import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, raw, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage20a-2";
-import { renderAnnotation } from "./annotation-view.js?v=stage20a-2";
+import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, progressBar, raw, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage29-1";
+import { renderAnnotation } from "./annotation-view.js?v=stage29-1";
+import { autoRefreshControl } from "./auto-refresh.js";
 
 export const DATA_STATES = { open: "进行中", draft: "草稿", submitted: "待审核", approved: "已通过", rejected: "已退回", queued: "排队中", running: "运行中", review: "待发布", published: "已发布", failed: "失败", cancelled: "已取消" };
 export const DATA_KINDS = { clean: "数据清洗", split: "数据划分", augment: "数据增强" };
 export const PARTITIONS = { train: "训练集", validation: "验证集", test: "测试集" };
+// 进度（已完成/总数）：总数缺失或为 0 时显示“—”，不冒充 0%。
+export const dataProgress = (done, total) => { const finished = Number(done) || 0, all = Number(total) || 0; return !all ? "—" : raw(`<span class="data-progress">${progressBar(Math.min(100, Math.round(finished / all * 100)))}${finished}/${all}</span>`); };
 export const isDataPage = path => ["/annotation", "/augmentation", "/data-operations"].includes(path) || /^\/(annotation|data-operations)\/[^/]+$/.test(path) || /^\/datasets\/[^/]+\/samples$/.test(path);
 export const versionOptions = (ctx, chosen = "") => options((ctx.dataChoices?.versions || []).map(version => [version.id, `${version.name} · v${version.number} · ${TASKS[version.task_type]}`]), chosen);
 
@@ -34,25 +37,31 @@ export async function loadDataWorkflow(api, ctx, signal) {
 
 export function renderSampleTable(ctx, data, taskType, imageBase) {
   if (!data) return "";
-  const rows = data.samples.map(row => [raw(tag(row.index + 1)), ...(taskType === "image_classification" ? [raw(`<img class="data-thumbnail" src="${e(imageBase(row.index))}" alt="样本${row.index + 1}" loading="lazy"/>`), row.filename, raw(tag(row.label || "未标注"))] : taskType === "llm_sft" ? [row.instruction, raw(`<div class="data-sample-text">${e(row.input)}</div>`), raw(`<div class="data-sample-text">${e(row.output)}</div>`)] : [raw(`<div class="data-sample-text">${e(row.text)}</div>`), raw(tag(row.label || "未标注"))])]);
+  const rows = data.samples.map(row => [raw(tag(row.index + 1)), ...(taskType === "image_classification" ? [raw(`<img class="data-thumbnail" src="${e(imageBase(row.index))}" alt="样本${row.index + 1}" loading="lazy"/>`), raw(`<span class="live-source" title="${e(row.filename || "")}">${e(row.filename || "—")}</span>`), raw(tag(row.label || "未标注"))] : taskType === "llm_sft" ? [raw(`<div class="data-sample-text" title="${e(row.instruction ?? "")}">${e(row.instruction)}</div>`), raw(`<div class="data-sample-text" title="${e(row.input ?? "")}">${e(row.input)}</div>`), raw(`<div class="data-sample-text" title="${e(row.output ?? "")}">${e(row.output)}</div>`)] : [raw(`<div class="data-sample-text" title="${e(row.text ?? "")}">${e(row.text)}</div>`), raw(tag(row.label || "未标注"))])]);
   return table(taskType === "image_classification" ? ["序号", "图片", "文件", "标签"] : taskType === "llm_sft" ? ["序号", "指令", "输入", "输出"] : ["序号", "文本", "标签"], rows) + pager({ page: data.page, page_size: data.page_size, total: data.total });
 }
 
 function samplesPage(ctx) {
   const { item, versions, version, samples } = ctx.data;
   const base = `/api/v1/workspaces/${ctx.workspace.id}/dataset-versions/${version?.id}`;
+  const labels = samples?.labels || {};
   return `<div class="breadcrumb">${link("数据集", "/datasets")}/ ${link(item.name, `/datasets/${item.id}`)} / 样本</div>` + pageHeader(item.name, "", version ? `<a class="btn btn-secondary" href="${base}/download">下载版本</a>${can(ctx, "datasets.write") ? btn("新建标注", "data-new-annotation", version.id, "primary") : ""}` : "") +
-    `<div class="toolbar"><select class="select" data-query-filter="version" aria-label="数据版本">${options(versions.map(value => [value.id, `v${value.number} · ${value.filename}`]), version?.id)}</select><div class="heading-actions">${tag(TASKS[item.task_type])}${version?.provenance.partition ? tag(PARTITIONS[version.provenance.partition]) : ""}${Object.entries(samples?.labels || {}).map(([label, count]) => tag(`${label} ${count}`)).join("")}</div></div>` + renderSampleTable(ctx, samples, item.task_type, index => `${base}/images/${index}`);
+    `<div class="toolbar"><select class="select" data-query-filter="version" aria-label="数据版本">${options(versions.map(value => [value.id, `v${value.number} · ${value.filename}`]), version?.id)}</select><div class="heading-actions">${tag(TASKS[item.task_type])}${version?.provenance.partition ? tag(PARTITIONS[version.provenance.partition]) : ""}${Object.entries(labels).map(([label, count]) => tag(`${label} ${count}`)).join("")}</div></div>` +
+    (samples ? `<div class="live-stat-strip"><div><span>样本总数</span><strong>${samples.total}</strong></div><div><span>标签种类</span><strong>${Object.keys(labels).length}</strong></div><div><span>当前页样本</span><strong>${samples.samples.length}</strong></div></div>` : "") + renderSampleTable(ctx, samples, item.task_type, index => `${base}/images/${index}`);
 }
 
 function operationDetail(ctx) {
   const { item, preview, candidate } = ctx.data;
   const base = `/api/v1/workspaces/${ctx.workspace.id}/data-operations/${item.id}`;
   const write = can(ctx, "datasets.write");
-  const actions = btn("刷新", "refresh") + (write && ["queued", "running", "review"].includes(item.status) ? btn("取消任务", "data-confirm-cancel", item.id) : "") + (write && item.status === "review" ? btn("发布版本", "data-confirm-publish", item.id, "primary") : "");
+  const actions = btn("刷新", "refresh") + (write && ["queued", "running", "review"].includes(item.status) ? btn("取消任务", "data-confirm-cancel", item.id) : "") + (write && item.status === "review" ? btn("发布版本", "data-confirm-publish", item.id, "primary") : "") + autoRefreshControl(ctx);
   const choices = item.candidates.map((value, index) => [index, `${PARTITIONS[value.partition] || DATA_KINDS[item.kind]} · ${value.sample_count} 条`]);
+  const total = item.progress.total || 0, done = item.progress.done || 0;
+  const percent = total ? Math.min(100, Math.round(done / total * 100)) : 0;
   return `<div class="breadcrumb">${link(DATA_KINDS[item.kind], item.kind === "augment" ? "/augmentation" : "/data-operations")} / ${e(item.name)}</div>` + pageHeader(item.name, "", actions) +
-    `<div class="live-detail-meta">${tag(DATA_KINDS[item.kind])}${badge(DATA_STATES[item.status])}</div>` + fieldsInfo([["源数据", link(`${item.dataset_name} · v${item.version_number}`, `/datasets/${item.dataset_id}/samples?version=${item.version_id}`)], ["随机种子", e(item.options.seed)], ["处理进度", `${e(item.progress.phase || "等待处理")} ${item.progress.total ? `${item.progress.done}/${item.progress.total}` : ""}`], ["创建时间", e(date(item.created_at))]]) +
+    `<div class="live-detail-meta">${tag(DATA_KINDS[item.kind])}${badge(DATA_STATES[item.status])}</div>` +
+    `<div class="live-stat-strip"><div><span>已处理</span><strong>${total ? `${done}/${total}` : "—"}</strong>${total ? progressBar(percent) : ""}</div><div><span>候选分区</span><strong>${item.candidates.length}</strong></div><div><span>已发布版本</span><strong>${item.status === "published" ? item.output_version_ids.length : "—"}</strong></div></div>` +
+    fieldsInfo([["源数据", link(`${item.dataset_name} · v${item.version_number}`, `/datasets/${item.dataset_id}/samples?version=${item.version_id}`)], ["随机种子", e(item.options.seed)], ["处理进度", `${e(item.progress.phase || "等待处理")}${total ? ` · ${percent}%` : ""}`], ["创建时间", e(date(item.created_at))]]) +
     (item.error ? `<div class="notice notice-danger" role="alert">${e(item.error)}</div>` : "") +
     (item.status === "published" ? `<div class="section-heading"><h2>已发布版本</h2><div class="heading-actions">${item.output_version_ids.map((id, index) => link(PARTITIONS[item.candidates[index]?.partition] || "查看样本", `/datasets/${item.dataset_id}/samples?version=${id}`)).join("")}</div></div>` : "") +
     (preview ? `<div class="section-heading data-candidate-heading"><h2>结果预览</h2><select class="select" data-query-filter="candidate" aria-label="候选分区">${options(choices, candidate)}</select></div>${renderSampleTable(ctx, preview, item.task_type, index => `${base}/images/${index}?candidate=${candidate}`)}` : "");
@@ -65,9 +74,11 @@ export function renderDataWorkflow(ctx) {
   if (ctx.path.startsWith("/data-operations/")) return operationDetail(ctx);
   const annotation = ctx.path === "/annotation", augment = ctx.path === "/augmentation";
   const actions = can(ctx, "datasets.write") ? btn(annotation ? "新建标注" : augment ? "新建增强" : "新建处理", annotation ? "data-new-annotation" : "data-new-operation", annotation ? "" : augment ? "augment" : "clean", "primary") : "";
-  const rows = (ctx.data.data || []).map(item => annotation ? [raw(link(item.name, `/annotation/${item.id}`)), item.dataset_name, raw(tag(`v${item.version_number}`)), raw(tag(TASKS[item.task_type])), raw(badge(DATA_STATES[item.status])), `${item.counts.approved || 0}/${item.counts.total}`, date(item.created_at)] : [raw(link(item.name, `/data-operations/${item.id}`)), raw(tag(DATA_KINDS[item.kind])), item.dataset_name, raw(tag(`v${item.version_number}`)), raw(badge(DATA_STATES[item.status])), item.progress.total ? `${item.progress.done}/${item.progress.total}` : "—", date(item.created_at)]);
+  const rows = (ctx.data.data || []).map(item => annotation ? [raw(`<span class="live-source" title="${e(item.name)}">${link(item.name, `/annotation/${item.id}`)}</span>`), item.dataset_name, raw(tag(`v${item.version_number}`)), raw(tag(TASKS[item.task_type])), raw(badge(DATA_STATES[item.status])), dataProgress(item.counts.approved || 0, item.counts.total), date(item.created_at)] : [raw(`<span class="live-source" title="${e(item.name)}">${link(item.name, `/data-operations/${item.id}`)}</span>`), raw(tag(DATA_KINDS[item.kind])), item.dataset_name, raw(tag(`v${item.version_number}`)), raw(badge(DATA_STATES[item.status])), dataProgress(item.progress.done, item.progress.total), date(item.created_at)]);
   const filter = !annotation && !augment ? `<select class="select" data-query-filter="kind" aria-label="处理类型">${options([["", "全部类型"], ...Object.entries(DATA_KINDS)], ctx.params.get("kind"))}</select>` : "";
-  return pageHeader(annotation ? "在线标注" : augment ? "数据增强" : "数据处理", "", actions) + toolbar(ctx.q, filter, "搜索任务名称") + table(annotation ? ["标注批次", "数据集", "版本", "任务", "状态", "已审核", "创建时间"] : ["处理任务", "类型", "数据集", "版本", "状态", "已处理", "创建时间"], rows) + pager(ctx.data.pagination);
+  const filtered = ctx.q || (!annotation && ctx.params.get("kind"));
+  const emptyText = filtered ? "没有符合筛选条件的任务" : annotation ? "暂无标注批次" : augment ? "暂无数据增强任务" : "暂无数据处理任务";
+  return pageHeader(annotation ? "在线标注" : augment ? "数据增强" : "数据处理", "", actions) + toolbar(ctx.q, filter, "搜索任务名称") + table(annotation ? ["标注批次", "数据集", "版本", "任务", "状态", "已审核", "创建时间"] : ["处理任务", "类型", "数据集", "版本", "状态", "已处理", "创建时间"], rows, emptyText) + pager(ctx.data.pagination);
 }
 
 export function dataDialog(modal, ctx) {

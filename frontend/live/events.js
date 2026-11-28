@@ -1,20 +1,20 @@
-import { errorMessage } from "./api.js?v=stage20a-2";
-import { QUOTAS, options } from "./components.js?v=stage20a-2";
-import { addExamples, CSV_TEMPLATE, JSONL_TEMPLATE } from "./examples.js?v=stage20a-2";
-import { computeAction, saveCompute } from "./compute.js?v=stage20a-2";
-import { workflowAction, saveWorkflow, workflowModelChanged, workflowOutputModeChanged } from "./workflows.js?v=stage20a-2";
-import { pageAction, pageChanged, syncImport } from "./page-events.js?v=stage20a-2";
-import { captureDraft, ensureDraft, persistTraining } from "./training-wizard.js?v=stage20a-2";
-import { persistImport } from "./dataset-import.js?v=stage20a-2";
-import { administrationAction, saveAdministration } from "./administration.js?v=stage20a-2";
-import { captureAnnotation, dataAction, saveAnnotation, saveDataWorkflow, syncProcessing } from "./data-actions.js?v=stage20a-2";
-import { assistantAction, saveAssistant } from "./assistant.js?v=stage20a-2";
-import { governanceAction, saveGovernance } from './governance.js?v=stage20a-2';
-import { parameterTemplateAction, saveParameterTemplate } from './parameter-templates.js?v=stage20a-2';
-import { projectAction, saveProject } from './projects.js?v=stage20a-2';
-import { keyAction, saveKey } from './key-management.js?v=stage20a-2';
-import { queryAction, saveQuery } from './query-controls.js?v=stage20a-2';
-import { syncResourceNodes } from './resource-options.js?v=stage20a-2';
+import { errorMessage } from "./api.js?v=stage29-1";
+import { QUOTAS, options } from "./components.js?v=stage29-1";
+import { addExamples, CSV_TEMPLATE, JSONL_TEMPLATE } from "./examples.js?v=stage29-1";
+import { computeAction, saveCompute } from "./compute.js?v=stage29-1";
+import { workflowAction, saveWorkflow, workflowModelChanged, workflowOutputModeChanged } from "./workflows.js?v=stage29-1";
+import { pageAction, pageChanged, syncImport } from "./page-events.js?v=stage29-1";
+import { captureDraft, ensureDraft, persistTraining } from "./training-wizard.js?v=stage29-1";
+import { persistImport } from "./dataset-import.js?v=stage29-1";
+import { administrationAction, saveAdministration } from "./administration.js?v=stage29-1";
+import { captureAnnotation, dataAction, saveAnnotation, saveDataWorkflow, syncProcessing } from "./data-actions.js?v=stage29-1";
+import { assistantAction, saveAssistant } from "./assistant.js?v=stage29-1";
+import { governanceAction, saveGovernance } from './governance.js?v=stage29-1';
+import { parameterTemplateAction, saveParameterTemplate } from './parameter-templates.js?v=stage29-1';
+import { projectAction, saveProject } from './projects.js?v=stage29-1';
+import { keyAction, saveKey } from './key-management.js?v=stage29-1';
+import { queryAction, saveQuery } from './query-controls.js?v=stage29-1';
+import { syncResourceNodes } from './resource-options.js?v=stage29-1';
 
 function showError(selector, error) {
   const target = document.querySelector(selector);
@@ -86,8 +86,8 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
     ["select-workspace", deps => { deps.ctx.ui.workspaceId = deps.id; deps.persist(); deps.navigate("/home"); }],
     ["preview", async deps => { const epoch = deps.ctx.epoch; const result = await deps.api.request(`/workspaces/${deps.ctx.workspace.id}/datasets/${deps.ctx.data.item.id}/versions/${deps.id}/preview?limit=20`); if (epoch === deps.ctx.epoch) { deps.ctx.data.preview = result.data; deps.render(); document.getElementById("samples")?.scrollIntoView({ block: "start", behavior: "smooth" }); } }],
     ["dataset-report", async deps => { const [datasetId, versionId] = String(deps.id).split(":"); const result = await deps.api.request(`/workspaces/${deps.ctx.workspace.id}/datasets/${datasetId}/versions/${versionId}/report`); deps.openModal("dataset-report", result.data); }],
-    ["session-revoke", async deps => { await deps.api.request(`/auth/sessions/${deps.id}`, { method: "DELETE" }); deps.toast("已退出该会话"); await deps.load(); }],
-    ["session-revoke-others", async deps => { const res = await deps.api.request("/auth/sessions/revoke-others", { method: "POST" }); deps.toast(`已退出其他 ${res.data.revoked} 个会话`); await deps.load(); }],
+    ["session-revoke", deps => { deps.openModal("session-revoke-own-confirm", (deps.ctx.data.sessions || []).find(s => s.id === deps.id)); }],
+    ["session-revoke-others", deps => { const others = (deps.ctx.data.sessions || []).filter(s => !s.current); deps.openModal("session-revoke-others-confirm", { other_count: others.length }); }],
     ["admin-job-stop", async deps => { const [ws, jobId] = String(deps.id).split(":"); await deps.api.request(`/workspaces/${ws}/jobs/${jobId}/stop`, { method: "POST" }); deps.toast("已提交停止/取消"); await deps.load(); }],
     ["admin-job-retry", async deps => { const [ws, jobId] = String(deps.id).split(":"); const res = await deps.api.request(`/workspaces/${ws}/jobs/${jobId}/retry`, { method: "POST" }); deps.toast("已创建重跑草稿"); deps.navigate(`/runs/${res.data.id}?workspace=${ws}`); }],
   ]);
@@ -118,6 +118,7 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
       form.elements.namedItem("state_dir").value = mode === "windows" ? "D:/model-training-worker" : mode === "linux" ? "~/.local/share/model-training-worker" : "/opt/model-training-worker";
       form.elements.namedItem("training_python").value = mode === "windows" ? "python" : "python3";
     }
+    if (event.target.matches("[data-auto-refresh]")) { ctx.ui.autoRefresh = event.target.checked; persist(); render(); }
     if (event.target.matches("[data-workspace-select]")) {
       ctx.ui.workspaceId = event.target.value; persist();
       ctx.assetId ? navigate(`/${ctx.kind}`) : /^\/runs\/[^/]+$/.test(ctx.path) ? navigate("/runs") : load();
@@ -217,7 +218,7 @@ export function installEvents({ api, ctx, load, render, persist, navigate, toast
         case "toggle-user": await api.request(`/admin/users/${modal.item.id}`, { method: "PATCH", revision: modal.item.revision, body: { active: !modal.item.active } }); break;
         case "examples": if (!data.getAll("examples").length) throw new Error("请选择示例资产"); else await addExamples(api, modal.workspaceId, data.getAll("examples")); break;
       }
-      if (ctx.ui.modal === modal) { ctx.ui.modal = null; toast("已保存"); destination ? navigate(destination) : await load(); }
+      if (ctx.ui.modal === modal) { ctx.ui.modal = null; toast(feature?.toast || "已保存"); destination ? navigate(destination) : await load(); }
     } catch (error) {
       if (type === "training-wizard") ctx.wizard.error = errorMessage(error);
       if (type === "dataset-import") ctx.importDraft.error = errorMessage(error);

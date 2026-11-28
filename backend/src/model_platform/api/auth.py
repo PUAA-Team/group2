@@ -91,7 +91,9 @@ def login(payload: Login, request: Request, output: Response, db: Db):
         db.delete(account_attempt)
     raw = secrets.token_urlsafe(48)
     token = SessionToken(id=new_id("ses"), user_id=user.id, token_digest=digest(raw),
-                         expires_at=now + timedelta(hours=settings.session_hours))
+                         expires_at=now + timedelta(hours=settings.session_hours),
+                         last_active_at=now, client_ip=client,
+                         client_agent=(request.headers.get("user-agent") or "")[:300] or None)
     db.add(token)
     audit(db, user, "auth.login", user.id)
     commit(db)
@@ -205,7 +207,10 @@ def list_sessions(request: Request, actor: Actor, db: Db):
         {
             "id": row.id,
             "created_at": aware(row.created_at).isoformat(),
+            "last_active_at": aware(row.last_active_at).isoformat() if row.last_active_at else None,
             "expires_at": aware(row.expires_at).isoformat(),
+            "client_ip": row.client_ip,
+            "client_agent": row.client_agent,
             "current": row.id == current_id,
         }
         for row in rows

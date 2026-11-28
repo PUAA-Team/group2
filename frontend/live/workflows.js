@@ -1,12 +1,13 @@
-import { badge, btn, can, date, e, fieldsInfo, input, link, options, pageHeader, pager, raw, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage20a-2";
-import { renderProjectCatalog, taskFilter } from "./catalog.js?v=stage20a-2";
-import { renderTrainingDetail } from "./job-detail.js?v=stage20a-2";
-import { renderWizard } from "./training-wizard.js?v=stage20a-2";
-import { isResultPage, loadResults, renderResults, renderCallHistory, renderEvaluationReport } from "./results.js?v=stage20a-2";
-import { reviewButton } from './governance.js?v=stage20a-2';
-import { renderProjectDetail } from './projects.js?v=stage20a-2';
-import { renderKeys } from './key-management.js?v=stage20a-2';
-import { nodeOptions, syncResourceNodes } from "./resource-options.js?v=stage20a-2";
+import { badge, btn, can, date, e, fieldsInfo, input, jobDuration, link, options, pageHeader, pager, raw, select, table, tag, TASKS, toolbar, workspaceRequired } from "./components.js?v=stage29-1";
+import { renderProjectCatalog, taskFilter } from "./catalog.js?v=stage29-1";
+import { autoRefreshControl } from "./auto-refresh.js";
+import { renderTrainingDetail, failureSummaryCard } from "./job-detail.js?v=stage29-1";
+import { renderWizard } from "./training-wizard.js?v=stage29-1";
+import { isResultPage, loadResults, renderResults, renderCallHistory, renderEvaluationReport } from "./results.js?v=stage29-1";
+import { reviewButton } from './governance.js?v=stage29-1';
+import { renderProjectDetail } from './projects.js?v=stage29-1';
+import { renderKeys } from './key-management.js?v=stage29-1';
+import { nodeOptions, syncResourceNodes } from "./resource-options.js?v=stage29-1";
 
 const routes = { "/runs": "train", "/admin/jobs": "train", "/evaluation": "evaluate", "/services": "service" };
 const titles = { train: "训练任务", evaluate: "模型评估", service: "在线服务" };
@@ -59,8 +60,10 @@ export async function loadWorkflow(api, ctx, signal) {
   }
   else {
     const filters = new URLSearchParams();
-    for (const key of ["status", "device_kind", "task_type", "sort"]) if (ctx.params?.get(key)) filters.set(key, ctx.params.get(key));
+    for (const key of ["status", "device_kind", "task_type", "sort", "failure_type"]) if (ctx.params?.get(key)) filters.set(key, ctx.params.get(key));
     data = await api.request(`${base}/jobs?kind=${routes[ctx.path] || "train"}&${query}&${filters}${ctx.params?.get("project") ? `&project_id=${encodeURIComponent(ctx.params.get("project"))}` : ""}`, { signal });
+    // 失败原因聚合与列表同页加载：接口失败不阻塞列表（后端与前端同版发布时恒有该接口）。
+    try { data.failureSummary = (await api.request(`${base}/jobs/failure-summary?kind=${routes[ctx.path] || "train"}`, { signal })).data; } catch { data.failureSummary = null; }
   }
   const editable = ["training.write", "services.write"].some(action => can(ctx, action));
   if (editable) {
@@ -85,11 +88,15 @@ export function metricChart(events, names, title) {
   if (!values.length) return `<section class="execution-chart"><h2>${e(title)}</h2><div class="empty-state">暂无指标</div></section>`;
   const max = Math.max(...values, 0.01) * 1.12, min = Math.min(0, ...values), width = 600, height = 210;
   const colors = ["#176bc1", "#198a71"];
+  // 图表头下方给出最新一轮各曲线数值，读图不用再逐点悬停估算。
+  const latest = rows.at(-1);
+  const summary = names.map(key => Number.isFinite(latest[key]) ? `${key} ${latest[key].toFixed(4)}` : null).filter(Boolean).join(" · ");
+  const summaryHtml = summary ? `<div class="chart-summary">最新${latest.epoch == null ? "" : `（Epoch ${e(latest.epoch)}）`}：${e(summary)}</div>` : "";
   const lines = names.map((key, index) => {
     const points = rows.map((row, position) => Number.isFinite(row[key]) ? `${52 + position / Math.max(1, rows.length - 1) * 522},${177 - (row[key] - min) / (max - min) * 148}` : null).filter(Boolean).join(" ");
     return `<polyline fill="none" stroke="${colors[index]}" stroke-width="2.4" points="${points}"/>` + rows.map((row, position) => Number.isFinite(row[key]) ? `<circle cx="${52 + position / Math.max(1, rows.length - 1) * 522}" cy="${177 - (row[key] - min) / (max - min) * 148}" r="3.2" fill="${colors[index]}"><title>Epoch ${e(row.epoch)} · ${e(key)} ${e(row[key])}</title></circle>` : "").join("");
   }).join("");
-  return `<section class="execution-chart"><div class="section-heading"><h2>${e(title)}</h2><div class="heading-actions">${names.map((name, i) => `<span class="chart-legend" style="--line:${colors[i]}">${e(name)}</span>`).join("")}</div></div><svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${e(title)}">${[0, 1, 2, 3].map(i => `<line x1="52" y1="${29 + i * 49.3}" x2="574" y2="${29 + i * 49.3}" stroke="#e6eaf0"/><text x="43" y="${34 + i * 49.3}" text-anchor="end">${(max - (max - min) * i / 3).toFixed(2)}</text>`).join("")}${lines}<text x="52" y="203">Epoch ${e(rows[0].epoch)}</text><text x="574" y="203" text-anchor="end">${e(rows.at(-1).epoch)}</text></svg></section>`;
+  return `<section class="execution-chart"><div class="section-heading"><h2>${e(title)}</h2><div class="heading-actions">${names.map((name, i) => `<span class="chart-legend" data-palette="metric" data-line="${i}">${e(name)}</span>`).join("")}</div></div>${summaryHtml}<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${e(title)}">${[0, 1, 2, 3].map(i => `<line x1="52" y1="${29 + i * 49.3}" x2="574" y2="${29 + i * 49.3}" stroke="#e6eaf0"/><text x="43" y="${34 + i * 49.3}" text-anchor="end">${(max - (max - min) * i / 3).toFixed(2)}</text>`).join("")}${lines}<text x="52" y="203">Epoch ${e(rows[0].epoch)}</text><text x="574" y="203" text-anchor="end">${e(rows.at(-1).epoch)}</text></svg></section>`;
 }
 
 function detail(ctx) {
@@ -97,7 +104,7 @@ function detail(ctx) {
   const actions = (job.status === "draft" && write ? btn("编辑草稿", "workflow-edit", job.id) + btn("提交", "workflow-submit", job.id, "primary") : "") +
     (job.status === "queued" && can(ctx, "resources.manage") ? btn("调整优先级", "workflow-priority", job.id) : "") +
     (!ended.includes(job.status) && write ? btn(job.status === "draft" || job.status === "queued" ? "取消任务" : "停止", "workflow-stop", job.id, "secondary", job.status === "stopping") : "") +
-    (ended.includes(job.status) && write ? btn("重跑", "workflow-retry", job.id) : "") + reviewButton(ctx, job);
+    (ended.includes(job.status) && write ? btn("重跑", "workflow-retry", job.id) : "") + reviewButton(ctx, job) + autoRefreshControl(ctx);
   const result = job.result || {}, events = ctx.data.events || [];
   const languageModel = job.snapshot?.task_type === "llm_sft";
   const source = ctx.data.options?.models.find(item => item.id === job.model_version_id);
@@ -114,9 +121,23 @@ function detail(ctx) {
   const invoke = job.kind === "service" && can(ctx, "services.invoke") ? `<div class="section-heading"><h2>调用测试</h2>${btn("发送请求", "workflow-invoke", job.id, "primary", job.status !== "ready")}</div>${predictionHtml}` : "";
   return `<div class="breadcrumb"><a href="#${job.kind === "train" ? "/runs" : job.kind === "service" ? "/services" : "/evaluation"}">${titles[job.kind]}</a><span>/</span>${e(job.name)}</div>` + pageHeader(job.name, "", actions) +
     fieldsInfo(meta) + (job.queue_reason ? `<div class="notice">${e(job.queue_reason)}</div>` : "") +
+    (job.status === "failed" && job.failure ? failureSummaryCard(job) : "") +
     (job.error ? `<div class="notice notice-danger" role="alert">${e(job.error)}</div>` : "") + outcome + invoke +
     (job.kind === "train" ? `<div class="execution-charts ${languageModel ? "execution-single-chart" : ""}">${metricChart(events, ["loss", "val_loss"], "Loss")}${languageModel ? "" : metricChart(events, ["accuracy", "val_accuracy"], "准确率")}</div>${configuration}` : "") +
     `<div class="section-heading"><h2>运行日志</h2>${btn("刷新", "refresh")}</div><pre class="execution-log">${e(events.filter(item => item.type === "log").map(item => item.payload.message).join("\n") || "暂无日志" )}</pre>`;
+}
+
+export function failureSummaryStrip(ctx) {
+  const summary = ctx.data.failureSummary;
+  if (!summary || !summary.total_failed) return "";
+  const activeType = ctx.params?.get("failure_type") || "";
+  const groups = summary.groups.map(group => {
+    // 点击分组条按该错误类型筛选列表；已选中的分组再点一次取消该类型筛选。
+    const active = activeType === group.error_type;
+    const href = active ? `#${e(ctx.path)}?status=failed` : `#${e(ctx.path)}?status=failed&failure_type=${encodeURIComponent(group.error_type)}`;
+    return `<a href="${href}"${active ? ` class="is-active" aria-current="true"` : ""} title="${e(group.latest_error || "无错误文本")}"><span>${e(group.error_label)}</span><strong>${group.count} 次</strong><span>首次出现 ${date(group.first_seen_at)}</span>${group.latest_error ? `<span class="live-source">${e(group.latest_error)}</span>` : ""}</a>`;
+  }).join("");
+  return `<div class="section-heading"><h2>失败原因</h2><span>${summary.total_failed} 个失败任务</span></div><section class="console-summary" aria-label="失败原因汇总">${groups}</section>`;
 }
 
 export function renderWorkflow(ctx) {
@@ -129,12 +150,21 @@ export function renderWorkflow(ctx) {
   if (ctx.path === "/projects") return renderProjectCatalog(ctx);
   if (ctx.path === "/api-keys") return renderKeys(ctx);
   const kind = routes[ctx.path] || "train", write = can(ctx, kind === "service" ? "services.write" : "training.write");
-  let rows = (ctx.data.data || []).map(item => [raw(link(item.name, `/runs/${item.id}`)), item.model_name || "—", raw(tag(TASKS[item.task_type] || "—")), raw(badge(JOB_STATUS[item.status])), raw(tag(item.device_kind === "cuda" ? "GPU" : "CPU")), ...metricValues(item.result).map(([, value]) => value), date(item.created_at)]);
+  // 列表行：名称超长省略（悬停看全名）、数据集与耗时两列与工作台最近训练表一致。
+  let rows = (ctx.data.data || []).map(item => [raw(`<span class="live-source" title="${e(item.name)}">${link(item.name, `/runs/${item.id}`)}</span>`),
+    item.model_name || "—", item.dataset_name ? `${item.dataset_name}${item.dataset_number ? ` / v${item.dataset_number}` : ""}` : "—",
+    raw(tag(TASKS[item.task_type] || "—")), raw(badge(JOB_STATUS[item.status])), raw(tag(item.device_kind === "cuda" ? "GPU" : "CPU")),
+    ...metricValues(item.result).map(([, value]) => value), raw(`<span class="job-duration">${jobDuration(item)}</span>`), date(item.created_at)]);
   const add = write ? btn(kind === "train" ? "新建训练" : kind === "evaluate" ? "创建评估" : "部署服务", "workflow-new", kind, "primary") : "";
-  const filters = taskFilter(ctx) + `<select class="select filter-select" data-query-filter="status" aria-label="任务状态">${options([["", "全部状态"], ...Object.entries(JOB_STATUS)], ctx.params?.get("status") || "")}</select>`;
+  const filters = taskFilter(ctx) + `<select class="select filter-select" data-query-filter="status" aria-label="任务状态">${options([["", "全部状态"], ...Object.entries(JOB_STATUS)], ctx.params?.get("status") || "")}</select>` +
+    `<select class="select filter-select" data-query-filter="device_kind" aria-label="设备">${options([["", "全部设备"], ["cpu", "CPU"], ["cuda", "GPU"]], ctx.params?.get("device_kind") || "")}</select>` +
+    ((ctx.data.projects || []).length ? `<select class="select filter-select" data-query-filter="project" aria-label="训练项目">${options([["", "全部项目"], ...(ctx.data.projects || []).map(project => [project.id, project.name])], ctx.params?.get("project") || "")}</select>` : "") +
+    `<select class="select filter-select" data-query-filter="sort" aria-label="排序">${options([["newest", "最新在前"], ["oldest", "最早在前"]], ctx.params?.get("sort") || "newest")}</select>`;
   if (kind === "evaluate") rows = rows.map((row, index) => [raw(`<input type="checkbox" name="ids" value="${e(ctx.data.data[index].id)}" aria-label="选择 ${e(ctx.data.data[index].name)}" ${ctx.data.data[index].status === "succeeded" ? "" : "disabled"}/>`), ...row]);
-  const results = table([...(kind === "evaluate" ? ["选择"] : []), "名称", "模型", "任务类型", "状态", "资源", "准确率", "Macro F1", "Loss", "创建时间"], rows);
-  return pageHeader(title, "", add) + toolbar(ctx.q, filters, "搜索任务") + (kind === "evaluate" ? `<form data-form="evaluation-compare"><div class="toolbar"><button type="submit" class="btn btn-secondary">对比所选评估</button></div>${results}</form>` : results) + pager(ctx.data.pagination);
+  const emptyByKind = { train: "暂无训练任务", evaluate: "暂无评估任务", service: "暂无在线服务" };
+  const hasFilter = ctx.q || ["status", "device_kind", "task_type", "project", "failure_type"].some(key => ctx.params?.get(key));
+  const results = table([...(kind === "evaluate" ? ["选择"] : []), "名称", "模型", "数据集", "任务类型", "状态", "资源", "准确率", "Macro F1", "Loss", "耗时", "创建时间"], rows, hasFilter ? "没有符合筛选条件的任务" : emptyByKind[kind]);
+  return pageHeader(title, "", add) + toolbar(ctx.q, filters, "搜索任务") + failureSummaryStrip(ctx) + (kind === "evaluate" ? `<form data-form="evaluation-compare"><div class="toolbar"><button type="submit" class="btn btn-secondary">对比所选评估</button></div>${results}</form>` : results) + pager(ctx.data.pagination);
 }
 
 export function workflowDialog(modal, ctx) {

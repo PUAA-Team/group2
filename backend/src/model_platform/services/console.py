@@ -3,8 +3,9 @@ from sqlalchemy import func, select
 
 from ..administration_models import WorkspaceJoinRequest
 from ..data_models import AnnotationBatch
+from ..database import aware
 from ..errors import Problem
-from ..job_models import Job, Project
+from ..job_models import Execution, Job, Project
 from ..models import AuditEvent, Dataset, DatasetVersion, Membership, ModelAsset, ModelVersion, User, Workspace
 from ..permissions import effective_policy, workspace_access
 from .common import page_data, search_query, serialize
@@ -63,9 +64,15 @@ def job_summary(db, job):
     model = db.get(ModelAsset, version.model_id) if version else None
     dataset_version = db.get(DatasetVersion, job.dataset_version_id) if job.dataset_version_id else None
     dataset = db.get(Dataset, dataset_version.dataset_id) if dataset_version else None
+    # 工作台耗时列用：执行起止时间来自 executions 表，无执行记录时为 None。
+    execution = db.scalar(select(Execution).where(Execution.job_id == job.id))
+    started_at = execution.started_at if execution else None
+    finished_at = execution.finished_at if execution else None
     return {**serialize(job, exclude={"artifact_key"}), "model_name": model.name if model else None,
             "model_version": version.version if version else None, "task_type": model.task_type if model else None,
-            "dataset_name": dataset.name if dataset else None, "dataset_number": dataset_version.number if dataset_version else None}
+            "dataset_name": dataset.name if dataset else None, "dataset_number": dataset_version.number if dataset_version else None,
+            "started_at": aware(started_at).isoformat() if started_at else None,
+            "finished_at": aware(finished_at).isoformat() if finished_at else None}
 
 
 def category_condition(category):

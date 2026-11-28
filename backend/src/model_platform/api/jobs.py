@@ -15,6 +15,7 @@ from pydantic import Field
 from ..services.common import audit, commit, find_asset, page_data, revision_update, search_query, serialize
 from ..services.dataset_files import controlled_path
 from ..services.jobs import TERMINAL, action_for, create_job, get_job, inputs, job_view, stop_job, submit_job, update_job_priority
+from ..services.job_failures import classify_failure, failure_code_prefilter, failure_summary, is_known_error_type
 from ..services.presets import seed_presets
 from ..services.inference_contracts import inference_suggestion
 from ..services.console import job_summary
@@ -67,8 +68,34 @@ def new_project(workspace_id: str, payload: ProjectInput, request: Request, acto
 @router.get("/jobs")
 def jobs(workspace_id: str, request: Request, actor: Actor, db: Db, kind: Literal["train", "evaluate", "service"] = "train", page: Page = 1, page_size: PageSize = 20, q: Search = "", project_id: str | None = None,
          status: Literal["draft", "queued", "preparing", "running", "ready", "stopping", "stopped", "cancelled", "succeeded", "failed"] | None = None,
-         device_kind: Literal["cpu", "cuda"] | None = None, task_type: TaskType | None = None, sort: Literal["newest", "oldest"] = "newest"):
+         device_kind: Literal["cpu", "cuda"] | None = None, task_type: TaskType | None = None, sort: Literal["newest", "oldest"] = "newest",
+         failure_type: str | None = None):
     workspace_access(db, actor, workspace_id, action_for(kind))
+    if failure_type is not None and not is_known_error_type(failure_type):
+        raise Problem(422, "VALIDATION_ERROR", "未知的失败原因类型")
+    if failure_type is not None:
+        # 失败原因分类仍在 Python 侧按固定口径精筛（failure_code/stage/错误文本），
+        # 但先按 result.failure_code 在 SQL 层预筛候选：failure_code 已明确映射到
+        # 其他错误类型的作业不可能归为目标类型，直接不加载；无 code 或未知 code
+        # 的作业仍保留候选，避免 stage/文本/空错误口径被误筛。
+        # 与非失败状态求交集为空，直接返回空页。
+        if status is not None and status != "failed":
+            return response(request, [], pagination={"page": page, "page_size": page_size, "total": 0})
+        query = select(Job).where(Job.workspace_id == workspace_id, Job.kind == kind, Job.status == "failed")
+        prefilter = failure_code_prefilter(failure_type)
+        if prefilter is not None:
+            query = query.where(prefilter)
+        if project_id:
+            query = query.where(Job.project_id == project_id)
+        if device_kind:
+            query = query.where(Job.device_kind == device_kind)
+        if task_type:
+            query = query.join(ModelVersion, ModelVersion.id == Job.model_version_id).join(ModelAsset, ModelAsset.id == ModelVersion.model_id).where(ModelAsset.task_type == task_type)
+        matched = [job for job in db.scalars(search_query(query, q, Job.name)).all() if classify_failure(job)[0] == failure_type]
+        matched.sort(key=lambda job: (job.created_at, job.id), reverse=(sort == "newest"))
+        total = len(matched)
+        items = [job_summary(db, job) for job in matched[(page - 1) * page_size:page * page_size]]
+        return response(request, items, pagination={"page": page, "page_size": page_size, "total": total})
     query = select(Job).where(Job.workspace_id == workspace_id, Job.kind == kind)
     if project_id:
         query = query.where(Job.project_id == project_id)
@@ -86,6 +113,16 @@ def jobs(workspace_id: str, request: Request, actor: Actor, db: Db, kind: Litera
 @router.post("/jobs", status_code=201)
 def new_job(workspace_id: str, payload: JobInput, request: Request, actor: Actor, db: Db):
     return response(request, job_view(db, create_job(db, actor, workspace_id, payload)))
+
+
+@router.get("/jobs/failure-summary")
+def job_failure_summary(workspace_id: str, request: Request, actor: Actor, db: Db,
+                        kind: Literal["train", "evaluate", "service"] | None = None,
+                        error_type: str | None = None):
+    workspace_access(db, actor, workspace_id, action_for(kind) if kind else "training.read")
+    if error_type is not None and not is_known_error_type(error_type):
+        raise Problem(422, "VALIDATION_ERROR", "未知的失败原因类型")
+    return response(request, failure_summary(db, workspace_id, kind, error_type))
 
 
 @router.get("/jobs/{job_id}")
